@@ -145,3 +145,8 @@ void boot()
   tf.epc = 0x1000;
   pop_tf(&tf);
 }
+
+void gtfo()
+{
+  asm("mtc0 $0,$9");
+}

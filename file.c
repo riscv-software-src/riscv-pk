@@ -93,7 +93,6 @@ static void putch(int c)
 
 sysret_t file_write(file_t* f, const void* buf, size_t size)
 {
-  kassert(f == stdout);
   for(int i = 0; i < size; i++)
     putch(((char*)buf)[i]);
   return (sysret_t){0,0};
@@ -101,7 +100,6 @@ sysret_t file_write(file_t* f, const void* buf, size_t size)
 
 sysret_t file_stat(file_t* f, struct stat* s)
 {
-  kassert(f == stdout);
   s->st_mode = S_IFCHR;
   return (sysret_t){0,0};
 }

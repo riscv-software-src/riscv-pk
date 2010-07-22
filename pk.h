@@ -9,7 +9,7 @@ typedef struct
   long badvaddr;
 } trapframe_t;
 
-#define panic(s,...) do { printk(s"\n", ##__VA_ARGS__); gtfo(); } while(0)
+#define panic(s,...) do { printk(s"\n", ##__VA_ARGS__); sys_exit(-1); } while(0)
 #define kassert(cond) do { if(!(cond)) panic("assertion failed: "#cond); } while(0)
 
 #ifdef __cplusplus
@@ -24,7 +24,8 @@ void unhandled_trap(trapframe_t*);
 void handle_syscall(trapframe_t*);
 void handle_breakpoint(trapframe_t*);
 void boot();
-void gtfo();
+
+void sys_exit(int code) __attribute__((noreturn));
 
 #ifdef __cplusplus
 }

@@ -84,13 +84,13 @@ file_t* file_get(int fd)
   return fd < 0 || fd >= MAX_FDS ? NULL : fds[fd];
 }
 
-sysret_t file_open(const char* fn, int mode)
+sysret_t file_open(const char* fn, size_t len, int mode)
 {
   file_t* f = file_get_free();
   if(!f)
     return (sysret_t){-1,ENOMEM};
 
-  sysret_t ret = frontend_syscall(SYS_open,(long)fn,mode,0,0);
+  sysret_t ret = frontend_syscall(SYS_open,(long)fn,len,mode,0);
   if(ret.result != -1)
   {
     f->kfd = ret.result;
@@ -112,6 +112,11 @@ int fd_close(int fd)
   return 0;
 }
 
+sysret_t file_read(file_t* f, void* buf, size_t size)
+{
+  return frontend_syscall(SYS_read,f->kfd,(long)buf,size,0);
+}
+
 sysret_t file_write(file_t* f, const void* buf, size_t size)
 {
   return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);
@@ -120,4 +125,9 @@ sysret_t file_write(file_t* f, const void* buf, size_t size)
 sysret_t file_stat(file_t* f, struct stat* s)
 {
   return frontend_syscall(SYS_fstat,f->kfd,(long)s,0,0);
+}
+
+sysret_t file_lseek(file_t* f, size_t ptr, int dir)
+{
+  return frontend_syscall(SYS_fstat,f->kfd,ptr,dir,0);
 }

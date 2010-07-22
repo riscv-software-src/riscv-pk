@@ -5,8 +5,8 @@ TARGETS := pk
 
 all: $(TARGETS)
 
-pk: boot.o entry.o pk.o syscall.o file.o pk.ld
-	$(CC) -o pk entry.o pk.o syscall.o file.o -T pk.ld
+pk: boot.o entry.o pk.o syscall.o file.o frontend.o pk.ld
+	$(CC) -o pk entry.o pk.o syscall.o file.o frontend.o -T pk.ld
 
 %.o: %.c *.h
 	$(CC) -c $<

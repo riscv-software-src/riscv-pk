@@ -3,17 +3,18 @@
 
 #include <sys/stat.h>
 #include <machine/syscall.h>
+#include "atomic.h"
 
 typedef struct file
 {
   int kfd; // file descriptor on the appserver side
-  int refcnt;
+  atomic_t refcnt;
 } file_t;
 
 extern file_t *stdin, *stdout, *stderr;
 
 file_t* file_get(int fd);
-file_t* file_open(const char* fn);
+sysret_t file_open(const char* fn, int mode);
 int file_dup(file_t*);
 
 sysret_t file_write(file_t* f, const void* buf, size_t n);

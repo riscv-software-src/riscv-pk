@@ -1,31 +1,45 @@
 #include <string.h>
+#include <errno.h>
 #include "file.h"
 #include "pk.h"
+#include "frontend.h"
 
 #define MAX_FDS 1000
 file_t* fds[MAX_FDS];
 #define MAX_FILES 1000
-file_t files[MAX_FILES];
+file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
 
 static void file_incref(file_t* f)
 {
-  f->refcnt++;
+  atomic_add(&f->refcnt,1);
 }
 
 static void file_decref(file_t* f)
 {
-  f->refcnt--;
+  if(atomic_add(&f->refcnt,-1) == 2)
+  {
+    if(f->kfd != -1)
+    {
+      frontend_syscall(SYS_close,f->kfd,0,0,0);
+      f->kfd = -1;
+    }
+    atomic_add(&f->refcnt,-1); // I think this could just be atomic_set(..,0)
+  }
 }
 
 static file_t* file_get_free()
 {
   for(int i = 0; i < MAX_FILES; i++)
   {
-    if(files[i].refcnt == 0)
+    if(atomic_read(&files[i].refcnt) == 0)
     {
-      files[i].refcnt = 1;
-      return &files[i];
+      if(atomic_add(&files[i].refcnt,1) == 0)
+      {
+        atomic_add(&files[i].refcnt,1);
+        return &files[i];
+      }
+      file_decref(&files[i]);
     }
   }
   return NULL;
@@ -41,10 +55,10 @@ static int fd_get_free()
 
 int file_dup(file_t* f)
 {
-  file_incref(f);
   int fd = fd_get_free();
   if(fd == -1)
     return -1;
+  file_incref(f);
   fds[fd] = f;
   return fd;
 }
@@ -70,9 +84,22 @@ file_t* file_get(int fd)
   return fd < 0 || fd >= MAX_FDS ? NULL : fds[fd];
 }
 
-file_t* file_open(const char* fn)
+sysret_t file_open(const char* fn, int mode)
 {
-  return NULL;
+  file_t* f = file_get_free();
+  if(!f)
+    return (sysret_t){-1,ENOMEM};
+
+  sysret_t ret = frontend_syscall(SYS_open,(long)fn,mode,0,0);
+  if(ret.result != -1)
+  {
+    f->kfd = ret.result;
+    ret.result = (long)f;
+  }
+  else
+    file_decref(f);
+
+  return ret;
 }
 
 int fd_close(int fd)
@@ -93,9 +120,10 @@ static void putch(int c)
 
 sysret_t file_write(file_t* f, const void* buf, size_t size)
 {
-  for(int i = 0; i < size; i++)
-    putch(((char*)buf)[i]);
-  return (sysret_t){0,0};
+  return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);
+  //for(int i = 0; i < size; i++)
+  //  putch(((char*)buf)[i]);
+  //return (sysret_t){0,0};
 }
 
 sysret_t file_stat(file_t* f, struct stat* s)

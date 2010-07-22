@@ -112,22 +112,12 @@ int fd_close(int fd)
   return 0;
 }
 
-static void putch(int c)
-{
-  char ch = c;
-  asm volatile ("mtc0 %0,$8" : : "r"(ch));
-}
-
 sysret_t file_write(file_t* f, const void* buf, size_t size)
 {
   return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);
-  //for(int i = 0; i < size; i++)
-  //  putch(((char*)buf)[i]);
-  //return (sysret_t){0,0};
 }
 
 sysret_t file_stat(file_t* f, struct stat* s)
 {
-  s->st_mode = S_IFCHR;
-  return (sysret_t){0,0};
+  return frontend_syscall(SYS_fstat,f->kfd,(long)s,0,0);
 }

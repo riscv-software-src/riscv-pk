@@ -84,13 +84,13 @@ file_t* file_get(int fd)
   return fd < 0 || fd >= MAX_FDS ? NULL : fds[fd];
 }
 
-sysret_t file_open(const char* fn, size_t len, int mode)
+sysret_t file_open(const char* fn, size_t len, int flags, int mode)
 {
   file_t* f = file_get_free();
   if(!f)
     return (sysret_t){-1,ENOMEM};
 
-  sysret_t ret = frontend_syscall(SYS_open,(long)fn,len,mode,0);
+  sysret_t ret = frontend_syscall(SYS_open,(long)fn,len,flags,mode);
   if(ret.result != -1)
   {
     f->kfd = ret.result;

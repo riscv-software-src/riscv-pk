@@ -14,7 +14,7 @@ typedef struct file
 extern file_t *stdin, *stdout, *stderr;
 
 file_t* file_get(int fd);
-sysret_t file_open(const char* fn, size_t len, int mode);
+sysret_t file_open(const char* fn, size_t len, int flags, int mode);
 int file_dup(file_t*);
 
 sysret_t file_write(file_t* f, const void* buf, size_t n);

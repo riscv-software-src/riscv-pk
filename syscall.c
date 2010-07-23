@@ -33,9 +33,9 @@ sysret_t sys_write(int fd, const char* buf, size_t n)
   return file_write(f,buf,n);
 }
 
-sysret_t sys_open(const char* name, size_t len, int mode)
+sysret_t sys_open(const char* name, size_t len, int flags, int mode)
 {
-  sysret_t ret = file_open(name, len, mode);
+  sysret_t ret = file_open(name, len, flags, mode);
   if(ret.result == -1)
     return ret;
 

@@ -9,6 +9,10 @@ typedef struct
   long badvaddr;
 } trapframe_t;
 
+#define USER_MEM_SIZE 0x70000000
+#define USER_MAINVARS_SIZE 0x1000
+#define USER_START 0x10000
+
 #define panic(s,...) do { printk(s"\n", ##__VA_ARGS__); sys_exit(-1); } while(0)
 #define kassert(cond) do { if(!(cond)) panic("assertion failed: "#cond); } while(0)
 

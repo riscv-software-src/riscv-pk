@@ -1,5 +1,6 @@
 #include "pk.h"
 #include "file.h"
+#include "frontend.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
@@ -132,16 +133,33 @@ void handle_breakpoint(trapframe_t* tf)
   pop_tf(tf);
 }
 
-void boot()
+void bss_init()
 {
   extern char edata,end;
   memset(&edata,0,&end-&edata);
+}
 
-  file_init();
+void mainvars_init()
+{
+  sysret_t r = frontend_syscall(SYS_getmainvars,
+    USER_MEM_SIZE-USER_MAINVARS_SIZE, USER_MAINVARS_SIZE, 0, 0);
 
+  kassert(r.result == 0);
+}
+
+void jump_usrstart()
+{
   trapframe_t tf;
   memset(&tf,0,sizeof(tf));
-  tf.gpr[29] = 0x70000000-128;
-  tf.epc = 0x1000;
+  tf.gpr[29] = USER_MEM_SIZE-USER_MAINVARS_SIZE;
+  tf.epc = USER_START;
   pop_tf(&tf);
+}
+
+void boot()
+{
+  bss_init();
+  file_init();
+  mainvars_init();
+  jump_usrstart();
 }

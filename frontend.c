@@ -1,7 +1,7 @@
 #include "pk.h"
 #include "atomic.h"
 #include "frontend.h"
-#include "cop0.h"
+#include "pcr.h"
 
 sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
 {
@@ -16,8 +16,8 @@ sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
   magic_mem[3] = a2;
   magic_mem[4] = a3;
 
-  dmtc0(magic_mem,16);
-  while(dmfc0(17) == 0);
+  mtpcr(magic_mem,16);
+  while(mfpcr(17) == 0);
 
   sysret_t ret = {magic_mem[0],magic_mem[1]};
 

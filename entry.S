@@ -32,11 +32,11 @@ save_tf:	# write the trap frame onto the stack
 	sd		$30,240($k1)
 	sd		$k0,248($k1)	# $ra is actually in $k0
 	# get sr, epc, badvaddr
-	dmfc0	$t0,$0			# sr
+	mfpcr	$t0,$0			# sr
 	sd		$t0,256($k1)
-	dmfc0	$t0,$1			# epc
+	mfpcr	$t0,$1			# epc
 	sd		$t0,264($k1)
-	dmfc0	$t0,$2			# badvaddr
+	mfpcr	$t0,$2			# badvaddr
 	sd		$t0,272($k1)
 	jr		$ra
 
@@ -77,7 +77,7 @@ pop_tf:	# write the trap frame onto the stack
 
 	# gtfo!
 	ld		$k0,264($k0)
-	dmtc0	$k0,$1
+	mtpcr	$k0,$1
 	eret
 
 
@@ -85,7 +85,7 @@ pop_tf:	# write the trap frame onto the stack
 	#define TRAP_TABLE_ENTRY(x) \
 	.align	7; \
 	move	$k0,$ra; \
-	dla		$k1,stack_top-320; \
+	la		$k1,stack_top-320; \
 	jal		save_tf; \
 	move	$sp,$k1; \
 	move	$a0,$k1; \

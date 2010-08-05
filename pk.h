@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 void printk(const char* s, ...);
+void init_tf(trapframe_t*, long pc, long sp);
 void pop_tf(trapframe_t*);
 void dump_tf(trapframe_t*);
 

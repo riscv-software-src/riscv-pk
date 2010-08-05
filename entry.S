@@ -1,5 +1,6 @@
 	.text
-	.set noat
+	.set	noat
+	.ent	save_tf
 save_tf:	# write the trap frame onto the stack
 	# save gprs
 	sd		$1,8($k1)
@@ -39,11 +40,15 @@ save_tf:	# write the trap frame onto the stack
 	mfpcr	$t0,$2			# badvaddr
 	sd		$t0,272($k1)
 	jr		$ra
+	.end	save_tf
 
-	.global pop_tf
+	.globl	pop_tf
+	.ent	pop_tf
 pop_tf:	# write the trap frame onto the stack
 	# restore gprs
-	di
+	ld		$t0,256($a0)	# restore sr, which should disable interrupts
+	mtpcr	$t0,$0
+
 	move	$k0,$a0
 	ld		$1,8($k0)
 	ld		$2,16($k0)
@@ -79,6 +84,7 @@ pop_tf:	# write the trap frame onto the stack
 	ld		$k0,264($k0)
 	mtpcr	$k0,$1
 	eret
+	.end	pop_tf
 
 
 
@@ -95,16 +101,26 @@ pop_tf:	# write the trap frame onto the stack
 
 	.align	12
 	.global	trap_table
+	.ent	trap_table
 trap_table:
-	TRAP_TABLE_ENTRY(unhandled_trap)
-	TRAP_TABLE_ENTRY(unhandled_trap)
-	TRAP_TABLE_ENTRY(unhandled_trap)
-	TRAP_TABLE_ENTRY(unhandled_trap)
-	TRAP_TABLE_ENTRY(unhandled_trap)
-	TRAP_TABLE_ENTRY(unhandled_trap)
+	TRAP_TABLE_ENTRY(handle_illegal_instruction)
+	TRAP_TABLE_ENTRY(handle_privileged_instruction)
+	TRAP_TABLE_ENTRY(handle_fp_disabled)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_misaligned_fetch)
+	TRAP_TABLE_ENTRY(handle_misaligned_ldst)
+	TRAP_TABLE_ENTRY(handle_fault_fetch)
+	TRAP_TABLE_ENTRY(handle_fault_ldst)
 	TRAP_TABLE_ENTRY(handle_syscall)
 	TRAP_TABLE_ENTRY(handle_breakpoint)
-	.align 12
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	.align	12
+	.end	trap_table
 
 	.bss
 	.global stack_bot

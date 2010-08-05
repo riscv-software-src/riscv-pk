@@ -1,10 +1,12 @@
+#include "pcr.h"
+
 	.text
 	.global __start
 	.ent    __start
 __start:
 
 	# set up SR
-	li		$t0, 0xFF
+	li		$t0, SR_S | SR_PS | SR_ET | SR_UX | SR_KX
 	mtpcr	$t0, $0
 
 	# set up trap table

@@ -1,3 +1,4 @@
+#include "pcr.h"
 #include "pk.h"
 #include "file.h"
 #include "frontend.h"
@@ -119,18 +120,12 @@ void dump_tf(trapframe_t* tf)
   printk("sr %lx pc %lx va %lx\n",tf->sr,tf->epc,tf->badvaddr);
 }
 
-void unhandled_trap(trapframe_t* tf)
+void init_tf(trapframe_t* tf, long pc, long sp)
 {
-  dump_tf(tf);
-  panic("unhandled trap!");
-}
-
-void handle_breakpoint(trapframe_t* tf)
-{
-  printk("Breakpoint\n");
-  dump_tf(tf);
-  tf->epc += 4;
-  pop_tf(tf);
+  memset(tf,0,sizeof(*tf));
+  tf->sr = SR_S | SR_KX | SR_UX; // SR_PS=0 (usermode); SR_ET=0
+  tf->gpr[29] = USER_MEM_SIZE-USER_MAINVARS_SIZE;
+  tf->epc = USER_START;
 }
 
 void bss_init()
@@ -150,9 +145,7 @@ void mainvars_init()
 void jump_usrstart()
 {
   trapframe_t tf;
-  memset(&tf,0,sizeof(tf));
-  tf.gpr[29] = USER_MEM_SIZE-USER_MAINVARS_SIZE;
-  tf.epc = USER_START;
+  init_tf(&tf, USER_START, USER_MEM_SIZE-USER_MAINVARS_SIZE);
   pop_tf(&tf);
 }
 

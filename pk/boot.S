@@ -1,6 +1,6 @@
 #include "pcr.h"
 
-	.text
+	.section boottext
 	.global __start
 	.ent    __start
 __start:

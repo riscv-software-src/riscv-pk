@@ -4,8 +4,6 @@ ENTRY( __start )
 
 GROUP( -lc -lgloss -lgcc )
 
-STARTUP( boot.o )
-
 
 SECTIONS
 {
@@ -18,7 +16,7 @@ SECTIONS
   . = 0x00000000;
   .boottext :
   {
-    boot.o(.text)
+    *(.boottext)
   }
 
   . = 0x70000000;
@@ -119,18 +117,6 @@ SECTIONS
     *(.data)
     *(.data.*)
     *(.gnu.linkonce.d.*)
-  }
-
-  /* gp: Address for initializing gp register (used by crt1.S) */
-  . = ALIGN(8);
-  _gp = . + 0x8000;
-
-  /* sdata: Writable small data */
-  .sdata : 
-  {
-    *(.sdata)
-    *(.sdata.*)
-    *(.gnu.linkonce.s.*)
   }
 
   /* lit4: Single precision floating point constants created by gas */

@@ -1,0 +1,20 @@
+pk_subproject_deps = \
+
+pk_hdrs = \
+	pk.h \
+
+pk_srcs = \
+	pk.c \
+	file.c \
+	syscall.c \
+	handlers.c \
+	frontend.c \
+
+pk_asm_srcs = \
+	entry.S \
+	boot.S \
+
+pk_test_srcs =
+
+pk_install_prog_srcs = \
+	riscv-pk.c \

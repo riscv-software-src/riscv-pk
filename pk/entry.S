@@ -90,8 +90,10 @@ pop_tf:	# write the trap frame onto the stack
 
 	#define TRAP_TABLE_ENTRY(x) \
 	.align	7; \
-	move	$k0,$ra; \
+	.set at=$k0; \
 	la		$k1,stack_top-320; \
+	.set noat; \
+	move	$k0,$ra; \
 	jal		save_tf; \
 	move	$sp,$k1; \
 	move	$a0,$k1; \

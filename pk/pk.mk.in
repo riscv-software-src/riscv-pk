@@ -12,7 +12,6 @@ pk_srcs = \
 
 pk_asm_srcs = \
 	entry.S \
-	boot.S \
 
 pk_test_srcs =
 

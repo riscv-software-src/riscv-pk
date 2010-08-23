@@ -16,7 +16,7 @@ SECTIONS
   . = 0x00000000;
   .boottext :
   {
-    *(.boottext)
+    riscv-pk.o(.boottext)
   }
 
   . = 0x70000000;

@@ -9,6 +9,9 @@
 #define SR_KX    0x0000000000000040
 #define SR_IM    0x000000000000FF00
 
+#define PCR_SR 0
+#define PCR_TBR 3
+
 #ifndef __ASSEMBLER__
 
 #define mtpcr(val,reg) ({ long __tmp = (long)(val); \

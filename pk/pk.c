@@ -123,7 +123,7 @@ void dump_tf(trapframe_t* tf)
 void init_tf(trapframe_t* tf, long pc, long sp)
 {
   memset(tf,0,sizeof(*tf));
-  tf->sr = SR_S | SR_KX | SR_UX; // SR_PS=0 (usermode); SR_ET=0
+  tf->sr = mfpcr(PCR_SR) & ~(SR_PS | SR_ET);
   tf->gpr[29] = USER_MEM_SIZE-USER_MAINVARS_SIZE;
   tf->epc = USER_START;
 }

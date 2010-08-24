@@ -1,6 +1,8 @@
 #ifndef _RISCV_COP0_H
 #define _RISCV_COP0_H
 
+#include "config.h"
+
 #define SR_ET    0x0000000000000001
 #define SR_PS    0x0000000000000004
 #define SR_S     0x0000000000000008
@@ -9,17 +11,19 @@
 #define SR_KX    0x0000000000000040
 #define SR_IM    0x000000000000FF00
 
-#define PCR_SR 0
-#define PCR_TBR 3
+#define PCR_SR       0
+#define PCR_EPC      1
+#define PCR_BADVADDR 2
+#define PCR_TBR      3
 
 #ifndef __ASSEMBLER__
 
 #define mtpcr(val,reg) ({ long __tmp = (long)(val); \
-                          asm volatile ("mtpcr %0,$%1"::"r"(__tmp),"i"(reg)); })
+          asm volatile ("mtpcr %0,$%1"::"r"(__tmp),"i"(reg)); })
 
 #define mfpcr(reg) ({ long __tmp; \
-                      asm volatile ("mfpcr %0,$%1" : "=r"(__tmp) : "i"(reg)); \
-                      __tmp; })
+          asm volatile ("mfpcr %0,$%1" : "=r"(__tmp) : "i"(reg)); \
+          __tmp; })
 
 #endif
 

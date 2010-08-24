@@ -5,7 +5,13 @@ void __attribute__((section(".boottext"))) __start()
   extern char stack_top;
   asm("move $sp,%0" : : "r"(&stack_top-64));
 
-  register long sr0 = SR_S | SR_PS | SR_ET | SR_UX | SR_KX;
+  register long sr0 = SR_S | SR_PS | SR_ET;
+  #ifdef PK_ENABLE_KERNEL_64BIT
+    sr0 |= SR_KX;
+    #ifdef PK_ENABLE_USER_64BIT
+      sr0 |= SR_UX;
+    #endif
+  #endif
   mtpcr(sr0,PCR_SR);
 
   extern char trap_table;

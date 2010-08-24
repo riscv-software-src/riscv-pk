@@ -2,10 +2,11 @@
 #include "atomic.h"
 #include "frontend.h"
 #include "pcr.h"
+#include <stdint.h>
 
 sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
 {
-  static volatile long magic_mem[8];
+  static volatile uint64_t magic_mem[8];
 
   static spinlock_t lock = SPINLOCK_INIT;
   spinlock_lock(&lock);

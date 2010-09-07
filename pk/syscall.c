@@ -109,7 +109,7 @@ void handle_syscall(trapframe_t* tf)
   };
 
   syscall_t p;
-  unsigned long n = tf->gpr[2];
+  unsigned long n = tf->gpr[1];
   if(n >= sizeof(syscall_table)/sizeof(void*) || !syscall_table[n])
   {
     dump_tf(tf);
@@ -118,9 +118,9 @@ void handle_syscall(trapframe_t* tf)
   else
     p = (syscall_t)syscall_table[n];
 
-  sysret_t ret = p(tf->gpr[4],tf->gpr[5],tf->gpr[6],tf->gpr[7],n);
-  tf->gpr[2] = ret.result;
-  tf->gpr[3] = ret.result == -1 ? ret.err : 0;
+  sysret_t ret = p(tf->gpr[3],tf->gpr[4],tf->gpr[5],tf->gpr[6],n);
+  tf->gpr[1] = ret.result;
+  tf->gpr[2] = ret.result == -1 ? ret.err : 0;
 
   //printk("syscall %d (%x,%x,%x,%x) from %x == %d\n",n,tf->gpr[4],tf->gpr[5],tf->gpr[6],tf->gpr[7],tf->gpr[31],tf->gpr[2]);
 

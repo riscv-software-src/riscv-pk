@@ -15,6 +15,10 @@
 #define PCR_EPC      1
 #define PCR_BADVADDR 2
 #define PCR_TBR      3
+#define PCR_TOHOST   16
+#define PCR_FROMHOST 17
+#define PCR_K0       24
+#define PCR_K1       25
 
 #ifndef __ASSEMBLER__
 

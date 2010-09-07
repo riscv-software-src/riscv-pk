@@ -7,6 +7,7 @@ typedef struct
   long sr;
   long epc;
   long badvaddr;
+  long cr29;
 } trapframe_t;
 
 #define USER_MEM_SIZE 0x70000000

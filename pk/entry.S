@@ -16,49 +16,49 @@
 save_tf:	# write the trap frame onto the stack
 
 	# save gprs
-	STORE	$2,2*REGBYTES($1)
-	mfpcr	$2,$PCR_K1
-	STORE	$2,1*REGBYTES($1)		# $x1 is actually in $PCR_K1
-	STORE	$3,3*REGBYTES($1)
-	STORE	$4,4*REGBYTES($1)
-	STORE	$5,5*REGBYTES($1)
-	STORE	$6,6*REGBYTES($1)
-	STORE	$7,7*REGBYTES($1)
-	STORE	$8,8*REGBYTES($1)
-	STORE	$9,9*REGBYTES($1)
-	STORE	$10,10*REGBYTES($1)
-	STORE	$11,11*REGBYTES($1)
-	STORE	$12,12*REGBYTES($1)
-	STORE	$13,13*REGBYTES($1)
-	STORE	$14,14*REGBYTES($1)
-	STORE	$15,15*REGBYTES($1)
-	STORE	$16,16*REGBYTES($1)
-	STORE	$17,17*REGBYTES($1)
-	STORE	$18,18*REGBYTES($1)
-	STORE	$19,19*REGBYTES($1)
-	STORE	$20,20*REGBYTES($1)
-	STORE	$21,21*REGBYTES($1)
-	STORE	$22,22*REGBYTES($1)
-	STORE	$23,23*REGBYTES($1)
-	STORE	$24,24*REGBYTES($1)
-	STORE	$25,25*REGBYTES($1)
-	STORE	$26,26*REGBYTES($1)
-	STORE	$27,27*REGBYTES($1)
-	STORE	$28,28*REGBYTES($1)
-	STORE	$29,29*REGBYTES($1)
-	STORE	$30,30*REGBYTES($1)
-	mfpcr	$2,$PCR_K0
-	STORE	$2,31*REGBYTES($1)	# $ra is actually in $PCR_K0
+	STORE	$x2,2*REGBYTES($x1)
+	mfpcr	$x2,ASM_CR(PCR_K1)
+	STORE	$x2,1*REGBYTES($x1)		# $x1 is actually in $PCR_K1
+	STORE	$x3,3*REGBYTES($x1)
+	STORE	$x4,4*REGBYTES($x1)
+	STORE	$x5,5*REGBYTES($x1)
+	STORE	$x6,6*REGBYTES($x1)
+	STORE	$x7,7*REGBYTES($x1)
+	STORE	$x8,8*REGBYTES($x1)
+	STORE	$x9,9*REGBYTES($x1)
+	STORE	$x10,10*REGBYTES($x1)
+	STORE	$x11,11*REGBYTES($x1)
+	STORE	$x12,12*REGBYTES($x1)
+	STORE	$x13,13*REGBYTES($x1)
+	STORE	$x14,14*REGBYTES($x1)
+	STORE	$x15,15*REGBYTES($x1)
+	STORE	$x16,16*REGBYTES($x1)
+	STORE	$x17,17*REGBYTES($x1)
+	STORE	$x18,18*REGBYTES($x1)
+	STORE	$x19,19*REGBYTES($x1)
+	STORE	$x20,20*REGBYTES($x1)
+	STORE	$x21,21*REGBYTES($x1)
+	STORE	$x22,22*REGBYTES($x1)
+	STORE	$x23,23*REGBYTES($x1)
+	STORE	$x24,24*REGBYTES($x1)
+	STORE	$x25,25*REGBYTES($x1)
+	STORE	$x26,26*REGBYTES($x1)
+	STORE	$x27,27*REGBYTES($x1)
+	STORE	$x28,28*REGBYTES($x1)
+	STORE	$x29,29*REGBYTES($x1)
+	STORE	$x30,30*REGBYTES($x1)
+	mfpcr	$x2,ASM_CR(PCR_K0)
+	STORE	$x2,31*REGBYTES($x1)	# $ra is actually in $PCR_K0
 
 	# get sr, epc, badvaddr, cr29 (tid)
-	mfpcr	$2,$PCR_SR					# sr
-	STORE	$2,32*REGBYTES($1)
-	mfpcr	$2,$PCR_EPC					# epc
-	STORE	$2,33*REGBYTES($1)
-	mfpcr	$2,$PCR_BADVADDR			# badvaddr
-	STORE	$2,34*REGBYTES($1)
-	mfcr	$2,$29						# cr29 (tid)
-	STORE	$2,35*REGBYTES($1)
+	mfpcr	$x2,ASM_CR(PCR_SR)					# sr
+	STORE	$x2,32*REGBYTES($x1)
+	mfpcr	$x2,ASM_CR(PCR_EPC)					# epc
+	STORE	$x2,33*REGBYTES($x1)
+	mfpcr	$x2,ASM_CR(PCR_BADVADDR)				# badvaddr
+	STORE	$x2,34*REGBYTES($x1)
+	mfcr	$x2,ASM_CR(29)						# cr29 (tid)
+	STORE	$x2,35*REGBYTES($x1)
 	jr		$ra
 	.end	save_tf
 
@@ -67,52 +67,52 @@ save_tf:	# write the trap frame onto the stack
 pop_tf:	# write the trap frame onto the stack
 	# restore gprs
 	LOAD	$t0,32*REGBYTES($a0)	# restore sr (should disable interrupts)
-	mtpcr	$t0,$PCR_SR
+	mtpcr	$t0,ASM_CR(PCR_SR)
 
-	LOAD	$1,1*REGBYTES($a0)
-	mtpcr	$1,$PCR_K0
-	LOAD	$1,2*REGBYTES($a0)
-	mtpcr	$1,$PCR_K1
-	move	$1,$a0
-	LOAD	$3,3*REGBYTES($1)
-	LOAD	$4,4*REGBYTES($1)
-	LOAD	$5,5*REGBYTES($1)
-	LOAD	$6,6*REGBYTES($1)
-	LOAD	$7,7*REGBYTES($1)
-	LOAD	$8,8*REGBYTES($1)
-	LOAD	$9,9*REGBYTES($1)
-	LOAD	$10,10*REGBYTES($1)
-	LOAD	$11,11*REGBYTES($1)
-	LOAD	$12,12*REGBYTES($1)
-	LOAD	$13,13*REGBYTES($1)
-	LOAD	$14,14*REGBYTES($1)
-	LOAD	$15,15*REGBYTES($1)
-	LOAD	$16,16*REGBYTES($1)
-	LOAD	$17,17*REGBYTES($1)
-	LOAD	$18,18*REGBYTES($1)
-	LOAD	$19,19*REGBYTES($1)
-	LOAD	$20,20*REGBYTES($1)
-	LOAD	$21,21*REGBYTES($1)
-	LOAD	$22,22*REGBYTES($1)
-	LOAD	$23,23*REGBYTES($1)
-	LOAD	$24,24*REGBYTES($1)
-	LOAD	$25,25*REGBYTES($1)
-	LOAD	$26,26*REGBYTES($1)
-	LOAD	$27,27*REGBYTES($1)
-	LOAD	$28,28*REGBYTES($1)
-	LOAD	$29,29*REGBYTES($1)
-	LOAD	$30,30*REGBYTES($1)
-	LOAD	$31,31*REGBYTES($1)
+	LOAD	$x1,1*REGBYTES($a0)
+	mtpcr	$x1,ASM_CR(PCR_K0)
+	LOAD	$x1,2*REGBYTES($a0)
+	mtpcr	$x1,ASM_CR(PCR_K1)
+	move	$x1,$a0
+	LOAD	$x3,3*REGBYTES($x1)
+	LOAD	$x4,4*REGBYTES($x1)
+	LOAD	$x5,5*REGBYTES($x1)
+	LOAD	$x6,6*REGBYTES($x1)
+	LOAD	$x7,7*REGBYTES($x1)
+	LOAD	$x8,8*REGBYTES($x1)
+	LOAD	$x9,9*REGBYTES($x1)
+	LOAD	$x10,10*REGBYTES($x1)
+	LOAD	$x11,11*REGBYTES($x1)
+	LOAD	$x12,12*REGBYTES($x1)
+	LOAD	$x13,13*REGBYTES($x1)
+	LOAD	$x14,14*REGBYTES($x1)
+	LOAD	$x15,15*REGBYTES($x1)
+	LOAD	$x16,16*REGBYTES($x1)
+	LOAD	$x17,17*REGBYTES($x1)
+	LOAD	$x18,18*REGBYTES($x1)
+	LOAD	$x19,19*REGBYTES($x1)
+	LOAD	$x20,20*REGBYTES($x1)
+	LOAD	$x21,21*REGBYTES($x1)
+	LOAD	$x22,22*REGBYTES($x1)
+	LOAD	$x23,23*REGBYTES($x1)
+	LOAD	$x24,24*REGBYTES($x1)
+	LOAD	$x25,25*REGBYTES($x1)
+	LOAD	$x26,26*REGBYTES($x1)
+	LOAD	$x27,27*REGBYTES($x1)
+	LOAD	$x28,28*REGBYTES($x1)
+	LOAD	$x29,29*REGBYTES($x1)
+	LOAD	$x30,30*REGBYTES($x1)
+	LOAD	$x31,31*REGBYTES($x1)
 
 	# restore cr29 (tid)
-	LOAD	$2,35*REGBYTES($1)
-	mtcr	$2,$29
+	LOAD	$x2,35*REGBYTES($x1)
+	mtcr	$x2,ASM_CR(29)
 
 	# gtfo!
-	LOAD	$2,33*REGBYTES($1)
-	mtpcr	$2,$PCR_EPC
-	mfpcr	$1,$PCR_K0
-	mfpcr	$2,$PCR_K1
+	LOAD	$x2,33*REGBYTES($x1)
+	mtpcr	$x2,ASM_CR(PCR_EPC)
+	mfpcr	$x1,ASM_CR(PCR_K0)
+	mfpcr	$x2,ASM_CR(PCR_K1)
 	eret
 	.end	pop_tf
 
@@ -120,12 +120,12 @@ pop_tf:	# write the trap frame onto the stack
 
 	#define TRAP_TABLE_ENTRY(x) \
 	.align	7; \
-	mtpcr	$ra,$PCR_K0; \
-	mtpcr	$1,$PCR_K1; \
-	law		$1,stack_top-320; \
+	mtpcr	$ra,ASM_CR(PCR_K0); \
+	mtpcr	$x1,ASM_CR(PCR_K1); \
+	law		$x1,stack_top-320; \
 	jal		save_tf; \
-	move	$sp,$1; \
-	move	$a0,$1; \
+	move	$sp,$x1; \
+	move	$a0,$x1; \
 	ei; \
 	jal		x; \
 	unimp

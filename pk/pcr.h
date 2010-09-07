@@ -20,13 +20,16 @@
 #define PCR_K0       24
 #define PCR_K1       25
 
+#define ASM_CR(r)   _ASM_CR(r)
+#define _ASM_CR(r)  $cr##r
+
 #ifndef __ASSEMBLER__
 
 #define mtpcr(val,reg) ({ long __tmp = (long)(val); \
-          asm volatile ("mtpcr %0,$%1"::"r"(__tmp),"i"(reg)); })
+          asm volatile ("mtpcr %0,$cr%1"::"r"(__tmp),"i"(reg)); })
 
 #define mfpcr(reg) ({ long __tmp; \
-          asm volatile ("mfpcr %0,$%1" : "=r"(__tmp) : "i"(reg)); \
+          asm volatile ("mfpcr %0,$cr%1" : "=r"(__tmp) : "i"(reg)); \
           __tmp; })
 
 #endif

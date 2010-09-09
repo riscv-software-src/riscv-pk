@@ -116,7 +116,17 @@ pop_tf:	# write the trap frame onto the stack
 	eret
 	.end	pop_tf
 
-
+	#define TIMER_IRQ_HANDLER \
+	.align	7; \
+	mtpcr	$x2,ASM_CR(PCR_K0); \
+	mtpcr	$x1,ASM_CR(PCR_K1); \
+	mfpcr	$x1,ASM_CR(PCR_COMPARE); \
+	liw		$x2,TIMER_PERIOD; \
+	addw	$x1,$x1,$x2; \
+	mtpcr	$x1,ASM_CR(PCR_COMPARE); \
+	mfpcr	$x1,ASM_CR(PCR_K1); \
+	mfpcr	$x2,ASM_CR(PCR_K0); \
+	eret
 
 	#define TRAP_TABLE_ENTRY(x) \
 	.align	7; \
@@ -150,6 +160,14 @@ trap_table:
 	TRAP_TABLE_ENTRY(handle_badtrap)
 	TRAP_TABLE_ENTRY(handle_badtrap)
 	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TRAP_TABLE_ENTRY(handle_badtrap)
+	TIMER_IRQ_HANDLER
 	.align	12
 	.end	trap_table
 

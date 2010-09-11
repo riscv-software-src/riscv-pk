@@ -144,16 +144,16 @@ pop_tf:	# write the trap frame onto the stack
 	.global	trap_table
 	.ent	trap_table
 trap_table:
+	TRAP_TABLE_ENTRY(handle_misaligned_fetch)
+	TRAP_TABLE_ENTRY(handle_fault_fetch)
 	TRAP_TABLE_ENTRY(handle_illegal_instruction)
 	TRAP_TABLE_ENTRY(handle_privileged_instruction)
 	TRAP_TABLE_ENTRY(handle_fp_disabled)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_misaligned_fetch)
-	TRAP_TABLE_ENTRY(handle_misaligned_ldst)
-	TRAP_TABLE_ENTRY(handle_fault_fetch)
-	TRAP_TABLE_ENTRY(handle_fault_ldst)
 	TRAP_TABLE_ENTRY(handle_syscall)
 	TRAP_TABLE_ENTRY(handle_breakpoint)
+	TRAP_TABLE_ENTRY(handle_misaligned_ldst)
+	TRAP_TABLE_ENTRY(handle_fault_load)
+	TRAP_TABLE_ENTRY(handle_fault_store)
 	TRAP_TABLE_ENTRY(handle_badtrap)
 	TRAP_TABLE_ENTRY(handle_badtrap)
 	TRAP_TABLE_ENTRY(handle_badtrap)

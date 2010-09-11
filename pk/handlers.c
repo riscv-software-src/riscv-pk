@@ -51,8 +51,14 @@ void handle_fault_fetch(trapframe_t* tf)
   panic("Faulting instruction access!");
 }
 
-void handle_fault_ldst(trapframe_t* tf)
+void handle_fault_load(trapframe_t* tf)
 {
   dump_tf(tf);
-  panic("Faulting data access!");
+  panic("Faulting load!");
+}
+
+void handle_fault_store(trapframe_t* tf)
+{
+  dump_tf(tf);
+  panic("Faulting store!");
 }

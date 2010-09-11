@@ -9,6 +9,9 @@ void __attribute__((section(".boottext"))) __start()
   register void* tt = &trap_table;
   mtpcr(tt,PCR_TBR);
 
+  mtpcr(0,PCR_COUNT);
+  mtpcr(0,PCR_COMPARE);
+
   register long sr0 = SR_S | SR_PS | SR_ET | SR_IM;
   #ifdef PK_ENABLE_KERNEL_64BIT
     sr0 |= SR_SX;

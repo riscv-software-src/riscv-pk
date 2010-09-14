@@ -11,7 +11,6 @@
 #endif
 
 	.text
-	.set	noat
 	.ent	save_tf
 save_tf:	# write the trap frame onto the stack
 

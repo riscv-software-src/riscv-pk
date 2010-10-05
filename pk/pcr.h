@@ -14,9 +14,10 @@
 #define PCR_SR       0
 #define PCR_EPC      1
 #define PCR_BADVADDR 2
-#define PCR_TBR      3
+#define PCR_EVEC     3
 #define PCR_COUNT    4
 #define PCR_COMPARE  5
+#define PCR_CAUSE    6
 #define PCR_TOHOST   16
 #define PCR_FROMHOST 17
 #define PCR_K0       24

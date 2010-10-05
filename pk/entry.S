@@ -49,15 +49,17 @@ save_tf:	# write the trap frame onto the stack
 	mfpcr	$x2,ASM_CR(PCR_K0)
 	STORE	$x2,31*REGBYTES($x1)	# $ra is actually in $PCR_K0
 
-	# get sr, epc, badvaddr, cr29 (tid)
+	# get sr, epc, badvaddr, cause, cr29 (tid)
 	mfpcr	$x2,ASM_CR(PCR_SR)					# sr
 	STORE	$x2,32*REGBYTES($x1)
 	mfpcr	$x2,ASM_CR(PCR_EPC)					# epc
 	STORE	$x2,33*REGBYTES($x1)
-	mfpcr	$x2,ASM_CR(PCR_BADVADDR)				# badvaddr
+	mfpcr	$x2,ASM_CR(PCR_BADVADDR)			# badvaddr
 	STORE	$x2,34*REGBYTES($x1)
-	mfcr	$x2,ASM_CR(29)						# cr29 (tid)
+	mfpcr	$x2,ASM_CR(PCR_CAUSE)				# cause
 	STORE	$x2,35*REGBYTES($x1)
+	mfcr	$x2,ASM_CR(29)						# cr29 (tid)
+	STORE	$x2,36*REGBYTES($x1)
 	jr		$ra
 	.end	save_tf
 
@@ -115,60 +117,19 @@ pop_tf:	# write the trap frame onto the stack
 	eret
 	.end	pop_tf
 
-	#define TIMER_IRQ_HANDLER \
-	.align	7; \
-	mtpcr	$x2,ASM_CR(PCR_K0); \
-	mtpcr	$x1,ASM_CR(PCR_K1); \
-	mfpcr	$x1,ASM_CR(PCR_COMPARE); \
-	liw		$x2,TIMER_PERIOD; \
-	addw	$x1,$x1,$x2; \
-	mtpcr	$x1,ASM_CR(PCR_COMPARE); \
-	mfpcr	$x1,ASM_CR(PCR_K1); \
-	mfpcr	$x2,ASM_CR(PCR_K0); \
-	eret
-
-	#define TRAP_TABLE_ENTRY(x) \
-	.align	7; \
-	mtpcr	$ra,ASM_CR(PCR_K0); \
-	mtpcr	$x1,ASM_CR(PCR_K1); \
-	law		$x1,stack_top-320; \
-	jal		save_tf; \
-	move	$sp,$x1; \
-	move	$a0,$x1; \
-	ei; \
-	jal		x; \
+	.global	trap_entry
+	.ent	trap_entry
+trap_entry:
+	mtpcr	$ra,ASM_CR(PCR_K0)
+	mtpcr	$x1,ASM_CR(PCR_K1)
+	law		$x1,stack_top-320
+	jal		save_tf
+	move	$sp,$x1
+	move	$a0,$x1
+	ei
+	jal		handle_trap
 	unimp
-
-	.align	12
-	.global	trap_table
-	.ent	trap_table
-trap_table:
-	TRAP_TABLE_ENTRY(handle_misaligned_fetch)
-	TRAP_TABLE_ENTRY(handle_fault_fetch)
-	TRAP_TABLE_ENTRY(handle_illegal_instruction)
-	TRAP_TABLE_ENTRY(handle_privileged_instruction)
-	TRAP_TABLE_ENTRY(handle_fp_disabled)
-	TRAP_TABLE_ENTRY(handle_syscall)
-	TRAP_TABLE_ENTRY(handle_breakpoint)
-	TRAP_TABLE_ENTRY(handle_misaligned_ldst)
-	TRAP_TABLE_ENTRY(handle_fault_load)
-	TRAP_TABLE_ENTRY(handle_fault_store)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TRAP_TABLE_ENTRY(handle_badtrap)
-	TIMER_IRQ_HANDLER
-	.align	12
-	.end	trap_table
+	.end	trap_entry
 
 	.bss
 	.global stack_bot

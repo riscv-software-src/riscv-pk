@@ -7,6 +7,7 @@ typedef struct
   long sr;
   long epc;
   long badvaddr;
+  long cause;
   long cr29;
 } trapframe_t;
 

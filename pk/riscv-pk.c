@@ -5,9 +5,9 @@ void __attribute__((section(".boottext"))) __start()
   extern char stack_top;
   asm("move $sp,%0" : : "r"(&stack_top-64));
 
-  extern char trap_table;
-  register void* tt = &trap_table;
-  mtpcr(tt,PCR_TBR);
+  extern char trap_entry;
+  register void* te = &trap_entry;
+  mtpcr(te,PCR_EVEC);
 
   mtpcr(0,PCR_COUNT);
   mtpcr(0,PCR_COMPARE);

@@ -17,6 +17,8 @@ sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
   magic_mem[3] = a2;
   magic_mem[4] = a3;
 
+  asm volatile ("sync");
+
   mtpcr(magic_mem,PCR_TOHOST);
   while(mfpcr(PCR_FROMHOST) == 0);
 

@@ -7,12 +7,18 @@ typedef struct { atomic_t lock; } spinlock_t;
 
 static inline long atomic_add(atomic_t* a, long inc)
 {
-  return __sync_fetch_and_add(&a->val, inc);
+  //return __sync_fetch_and_add(&a->val, inc);
+  long ret = a->val;
+  a->val++;
+  return ret;
 }
 
 static inline long atomic_swap(atomic_t* a, long val)
 {
-  return __sync_lock_test_and_set(&a->val, val);
+  //return __sync_lock_test_and_set(&a->val, val);
+  long reg = a->val;
+  a->val = val;
+  return reg;
 }
 
 static inline void atomic_set(atomic_t* a, long val)

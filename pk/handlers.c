@@ -1,6 +1,8 @@
 #include "pcr.h"
 #include "pk.h"
 
+int have_fp = 1;
+
 void handle_breakpoint(trapframe_t* tf)
 {
   printk("Breakpoint\n");
@@ -10,7 +12,16 @@ void handle_breakpoint(trapframe_t* tf)
 
 void handle_fp_disabled(trapframe_t* tf)
 {
-  tf->sr |= SR_EF;
+  if(have_fp)
+    tf->sr |= SR_EF;
+  else
+  {
+    if(emulate_fp(tf) != 0)
+    {
+      dump_tf(tf);
+      panic("FPU emulation failed!");
+    }
+  }
 }
 
 void handle_badtrap(trapframe_t* tf)
@@ -27,6 +38,9 @@ void handle_privileged_instruction(trapframe_t* tf)
 
 void handle_illegal_instruction(trapframe_t* tf)
 {
+  if(emulate_fp(tf) == 0)
+    return;
+
   dump_tf(tf);
   panic("An illegal instruction was executed!");
 }

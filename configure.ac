@@ -80,7 +80,7 @@ AC_SUBST([CFLAGS],  ["-Wall -O3 -std=gnu99"])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ pk ])
+MCPPBS_SUBPROJECTS([ pk, softfloat, softfloat_riscv ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups

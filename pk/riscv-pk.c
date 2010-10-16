@@ -1,4 +1,5 @@
 #include "pcr.h"
+#include "pk.h"
 
 void __attribute__((section(".boottext"))) __start()
 {
@@ -19,7 +20,10 @@ void __attribute__((section(".boottext"))) __start()
       sr0 |= SR_UX;
     #endif
   #endif
-  mtpcr(sr0,PCR_SR);
+
+  mtpcr(sr0 | SR_EF, PCR_SR);
+  have_fp = mfpcr(PCR_SR) & SR_EF;
+  mtpcr(sr0, PCR_SR);
 
   extern void boot();
   register void (*boot_p)() = &boot;

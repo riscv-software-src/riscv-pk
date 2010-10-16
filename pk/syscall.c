@@ -124,6 +124,6 @@ void handle_syscall(trapframe_t* tf)
 
   //printk("syscall %d (%x,%x,%x,%x) from %x == %d\n",n,tf->gpr[4],tf->gpr[5],tf->gpr[6],tf->gpr[7],tf->gpr[31],tf->gpr[2]);
 
-  tf->epc += 4;
+  advance_pc(tf);
   pop_tf(tf);
 }

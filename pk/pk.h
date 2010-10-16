@@ -9,6 +9,7 @@ typedef struct
   long badvaddr;
   long cause;
   long cr29;
+  long insn;
 } trapframe_t;
 
 #define USER_MEM_SIZE 0x70000000
@@ -22,6 +23,9 @@ typedef struct
 extern "C" {
 #endif
 
+extern int have_fp;
+int emulate_fp(trapframe_t*);
+
 void printk(const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp);
 void pop_tf(trapframe_t*);
@@ -30,9 +34,17 @@ void dump_tf(trapframe_t*);
 void unhandled_trap(trapframe_t*);
 void handle_syscall(trapframe_t*);
 void handle_breakpoint(trapframe_t*);
+void handle_misaligned_ldst(trapframe_t*);
+void handle_fault_load(trapframe_t*);
+void handle_fault_store(trapframe_t*);
 void boot();
 
 void sys_exit(int code) __attribute__((noreturn));
+
+static inline void advance_pc(trapframe_t* tf)
+{
+  tf->epc += 4;
+}
 
 #ifdef __cplusplus
 }

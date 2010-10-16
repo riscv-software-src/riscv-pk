@@ -3,6 +3,7 @@
 #include "file.h"
 #include "frontend.h"
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -25,7 +26,7 @@ static void vsprintk(char* out, const char* s, va_list vl)
           for(int i = 2*(longarg ? sizeof(long) : sizeof(int))-1; i >= 0; i--)
           {
             int d = (n >> (4*i)) & 0xF;
-            *out++ = (d < 10 ? '0'+d : 'A'+d-10);
+            *out++ = (d < 10 ? '0'+d : 'a'+d-10);
           }
           longarg = false;
           format = false;
@@ -117,7 +118,8 @@ void dump_tf(trapframe_t* tf)
     for(int j = 0; j < 4; j++)
       printk("%s %lx%c",regnames[i+j],tf->gpr[i+j],j < 3 ? ' ' : '\n');
   }
-  printk("sr %lx pc %lx va %lx\n",tf->sr,tf->epc,tf->badvaddr);
+  printk("sr %lx pc %lx va %lx insn       %x\n",tf->sr,tf->epc,tf->badvaddr,
+         (uint32_t)tf->insn);
 }
 
 void init_tf(trapframe_t* tf, long pc, long sp)

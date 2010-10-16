@@ -168,8 +168,8 @@ define subproject_template
 # system will create a library for this subproject with just the
 # corresponding dummy object file.
 
-ifeq ($$(strip $$($(2)_srcs)),)
-$(2)_srcs += _$(1).c
+ifeq ($$(strip $$($(2)_c_srcs)),)
+$(2)_c_srcs += _$(1).c
 $(2)_junk += _$(1).c
 endif
 
@@ -178,19 +178,19 @@ _$(1).c :
 
 # Build the object files for this subproject
 
-$(2)_objs := $$(patsubst %.c, %.o, $$($(2)_srcs))
+$(2)_c_objs := $$(patsubst %.c, %.o, $$($(2)_c_srcs))
 $(2)_asm_objs := $$(patsubst %.S, %.o, $$($(2)_asm_srcs))
-$(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
-$$($(2)_objs) : %.o : %.c
+$(2)_c_deps := $$(patsubst %.o, %.d, $$($(2)_c_objs))
+$$($(2)_c_objs) : %.o : %.c
 	$(COMPILE) -c $$<
 $$($(2)_asm_objs) : %.o : %.S
 	$(COMPILE) -c $$<
 
-$(2)_junk += $$($(2)_objs) $$($(2)_deps) $$($(2)_asm_objs)
+$(2)_junk += $$($(2)_c_objs) $$($(2)_c_deps) $$($(2)_asm_objs)
 
 # Build a library for this subproject
 
-lib$(1).a : $$($(2)_objs) $$($(2)_asm_objs)
+lib$(1).a : $$($(2)_c_objs) $$($(2)_asm_objs)
 	$(AR) rcv $$@ $$^
 	$(RANLIB) $$@
 
@@ -218,7 +218,7 @@ $$($(2)_test_objs) : %.o : %.c
 $$($(2)_test_exes) : %-utst : %.t.o $$($(2)_test_libnames)
 	$(LINK) -o $$@ $$< $$($(2)_test_libarg) $(LIBS)
 
-$(2)_deps += $$($(2)_test_deps)
+$(2)_c_deps += $$($(2)_test_deps)
 $(2)_junk += \
 	$$($(2)_test_objs) $$($(2)_test_deps) \
   $$($(2)_test_exes) *.junk-dat
@@ -245,7 +245,7 @@ $$($(2)_prog_objs) : %.o : %.c
 $$($(2)_prog_exes) : % : %.o $$($(2)_prog_libnames)
 	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS)
 
-$(2)_deps += $$($(2)_prog_deps)
+$(2)_c_deps += $$($(2)_prog_deps)
 $(2)_junk += $$($(2)_prog_objs) $$($(2)_prog_deps) $$($(2)_prog_exes)
 
 # Build programs which will be installed
@@ -260,7 +260,7 @@ $$($(2)_install_prog_objs) : %.o : %.c
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
 	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS)
 
-$(2)_deps += $$($(2)_install_prog_deps)
+$(2)_c_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \
   $$($(2)_install_prog_objs) $$($(2)_install_prog_deps) \
   $$($(2)_install_prog_exes)
@@ -280,11 +280,11 @@ clean-$(1) :
 # Update running variables
 
 libs += lib$(1).a
-objs += $$($(2)_objs)
-srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
+objs += $$($(2)_c_objs)
+srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_c_srcs)) 
 hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
 junk += $$($(2)_junk)
-deps += $$($(2)_deps)
+deps += $$($(2)_c_deps)
 
 test_outs += $$($(2)_test_outs)
 

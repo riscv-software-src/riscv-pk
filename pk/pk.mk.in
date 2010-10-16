@@ -1,14 +1,22 @@
 pk_subproject_deps = \
+	softfloat_riscv \
+	softfloat \
 
 pk_hdrs = \
 	pk.h \
+	pcr.h \
+	atomic.h \
+	file.h \
+	frontend.h \
+	riscv-opc.h \
 
-pk_srcs = \
+pk_c_srcs = \
 	pk.c \
 	file.c \
 	syscall.c \
 	handlers.c \
 	frontend.c \
+	fp.c \
 
 pk_asm_srcs = \
 	entry.S \

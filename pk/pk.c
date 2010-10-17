@@ -130,6 +130,18 @@ void init_tf(trapframe_t* tf, long pc, long sp)
   tf->epc = USER_START;
 }
 
+void init_fp()
+{
+  if (have_fp)
+  {
+    register long sr;
+    sr = mfpcr(PCR_SR);
+    mtpcr(sr | SR_EF, PCR_SR);
+    init_fpregs();
+    mtpcr(sr, PCR_SR);
+  }
+}
+
 void bss_init()
 {
   extern char edata,end;
@@ -146,6 +158,7 @@ void mainvars_init()
 
 void jump_usrstart()
 {
+  init_fp();
   trapframe_t tf;
   init_tf(&tf, USER_START, USER_MEM_SIZE-USER_MAINVARS_SIZE);
   pop_tf(&tf);

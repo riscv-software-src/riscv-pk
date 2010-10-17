@@ -183,6 +183,42 @@ int emulate_fp(trapframe_t* tf)
   return 0;
 }
 
+void init_fpregs()
+{
+  set_fp_reg(0, 1, 0);
+  set_fp_reg(1, 1, 0);
+  set_fp_reg(2, 1, 0);
+  set_fp_reg(3, 1, 0);
+  set_fp_reg(4, 1, 0);
+  set_fp_reg(5, 1, 0);
+  set_fp_reg(6, 1, 0);
+  set_fp_reg(7, 1, 0);
+  set_fp_reg(8, 1, 0);
+  set_fp_reg(9, 1, 0);
+  set_fp_reg(10, 1, 0);
+  set_fp_reg(11, 1, 0);
+  set_fp_reg(12, 1, 0);
+  set_fp_reg(13, 1, 0);
+  set_fp_reg(14, 1, 0);
+  set_fp_reg(15, 1, 0);
+  set_fp_reg(16, 1, 0);
+  set_fp_reg(17, 1, 0);
+  set_fp_reg(18, 1, 0);
+  set_fp_reg(19, 1, 0);
+  set_fp_reg(20, 1, 0);
+  set_fp_reg(21, 1, 0);
+  set_fp_reg(22, 1, 0);
+  set_fp_reg(23, 1, 0);
+  set_fp_reg(24, 1, 0);
+  set_fp_reg(25, 1, 0);
+  set_fp_reg(26, 1, 0);
+  set_fp_reg(27, 1, 0);
+  set_fp_reg(28, 1, 0);
+  set_fp_reg(29, 1, 0);
+  set_fp_reg(30, 1, 0);
+  set_fp_reg(31, 1, 0);
+}
+
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 

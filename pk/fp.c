@@ -183,42 +183,6 @@ int emulate_fp(trapframe_t* tf)
   return 0;
 }
 
-void init_fpregs()
-{
-  set_fp_reg(0, 1, 0);
-  set_fp_reg(1, 1, 0);
-  set_fp_reg(2, 1, 0);
-  set_fp_reg(3, 1, 0);
-  set_fp_reg(4, 1, 0);
-  set_fp_reg(5, 1, 0);
-  set_fp_reg(6, 1, 0);
-  set_fp_reg(7, 1, 0);
-  set_fp_reg(8, 1, 0);
-  set_fp_reg(9, 1, 0);
-  set_fp_reg(10, 1, 0);
-  set_fp_reg(11, 1, 0);
-  set_fp_reg(12, 1, 0);
-  set_fp_reg(13, 1, 0);
-  set_fp_reg(14, 1, 0);
-  set_fp_reg(15, 1, 0);
-  set_fp_reg(16, 1, 0);
-  set_fp_reg(17, 1, 0);
-  set_fp_reg(18, 1, 0);
-  set_fp_reg(19, 1, 0);
-  set_fp_reg(20, 1, 0);
-  set_fp_reg(21, 1, 0);
-  set_fp_reg(22, 1, 0);
-  set_fp_reg(23, 1, 0);
-  set_fp_reg(24, 1, 0);
-  set_fp_reg(25, 1, 0);
-  set_fp_reg(26, 1, 0);
-  set_fp_reg(27, 1, 0);
-  set_fp_reg(28, 1, 0);
-  set_fp_reg(29, 1, 0);
-  set_fp_reg(30, 1, 0);
-  set_fp_reg(31, 1, 0);
-}
-
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
@@ -228,9 +192,10 @@ void init_fpregs()
                 else fp_regs[which] = val; \
                 if(noisy) printk("set fp sp reg %x to %x\n",which,val); \
                 break
+#define PUT_FP_REG(which, val) asm volatile("mtf.d $f" STR(which) ",%0" : : "r"(val))
 #define PUT_FP_REG_D(which) case 32+which: \
                 if(have_fp) \
-                  asm volatile("mtf.d $f" STR(which) ",%0" : : "r"(val)); \
+                  PUT_FP_REG(which,val); \
                 else fp_regs[which] = val; \
                 if(noisy) printk("set fp dp reg %x to %x%x\n",which,(uint32_t)(val>>32),(uint32_t)val); \
                 break
@@ -391,4 +356,40 @@ static uint64_t get_fp_reg(unsigned int which, unsigned int dp)
       panic("bad fp register");
   }
   return val;
+}
+
+void init_fpregs()
+{
+  PUT_FP_REG(0, 0);
+  PUT_FP_REG(1, 0);
+  PUT_FP_REG(2, 0);
+  PUT_FP_REG(3, 0);
+  PUT_FP_REG(4, 0);
+  PUT_FP_REG(5, 0);
+  PUT_FP_REG(6, 0);
+  PUT_FP_REG(7, 0);
+  PUT_FP_REG(8, 0);
+  PUT_FP_REG(9, 0);
+  PUT_FP_REG(10, 0);
+  PUT_FP_REG(11, 0);
+  PUT_FP_REG(12, 0);
+  PUT_FP_REG(13, 0);
+  PUT_FP_REG(14, 0);
+  PUT_FP_REG(15, 0);
+  PUT_FP_REG(16, 0);
+  PUT_FP_REG(17, 0);
+  PUT_FP_REG(18, 0);
+  PUT_FP_REG(19, 0);
+  PUT_FP_REG(20, 0);
+  PUT_FP_REG(21, 0);
+  PUT_FP_REG(22, 0);
+  PUT_FP_REG(23, 0);
+  PUT_FP_REG(24, 0);
+  PUT_FP_REG(25, 0);
+  PUT_FP_REG(26, 0);
+  PUT_FP_REG(27, 0);
+  PUT_FP_REG(28, 0);
+  PUT_FP_REG(29, 0);
+  PUT_FP_REG(30, 0);
+  PUT_FP_REG(31, 0);
 }

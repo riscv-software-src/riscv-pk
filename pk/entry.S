@@ -79,7 +79,7 @@ pop_tf:	# write the trap frame onto the stack
 	LOAD	$x1,1*REGBYTES($a0)
 	mtpcr	$x1,ASM_CR(PCR_K0)
 	LOAD	$x1,2*REGBYTES($a0)
-	mtpcr	$x1,ASM_CR(PCR_K1)
+	mtpcr	$x2,ASM_CR(PCR_K1)
 	move	$x1,$a0
 	LOAD	$x3,3*REGBYTES($x1)
 	LOAD	$x4,4*REGBYTES($x1)

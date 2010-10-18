@@ -4,9 +4,9 @@
 #include "pk.h"
 #include "frontend.h"
 
-#define MAX_FDS 1000
+#define MAX_FDS 128
 file_t* fds[MAX_FDS];
-#define MAX_FILES 1000
+#define MAX_FILES 128
 file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
 

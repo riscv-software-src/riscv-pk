@@ -130,25 +130,12 @@ void init_tf(trapframe_t* tf, long pc, long sp)
   tf->epc = USER_START;
 }
 
-void init_fp()
+static void bss_init()
 {
-  if (have_fp)
-  {
-    register long sr;
-    sr = mfpcr(PCR_SR);
-    mtpcr(sr | SR_EF, PCR_SR);
-    init_fpregs();
-    mtpcr(sr, PCR_SR);
-  }
+  // front-end server zeroes the bss automagically
 }
 
-void bss_init()
-{
-  extern char edata,end;
-  memset(&edata,0,&end-&edata);
-}
-
-void mainvars_init()
+static void mainvars_init()
 {
   sysret_t r = frontend_syscall(SYS_getmainvars,
     USER_MEM_SIZE-USER_MAINVARS_SIZE, USER_MAINVARS_SIZE, 0, 0);
@@ -156,9 +143,8 @@ void mainvars_init()
   kassert(r.result == 0);
 }
 
-void jump_usrstart()
+static void jump_usrstart()
 {
-  init_fp();
   trapframe_t tf;
   init_tf(&tf, USER_START, USER_MEM_SIZE-USER_MAINVARS_SIZE);
   pop_tf(&tf);

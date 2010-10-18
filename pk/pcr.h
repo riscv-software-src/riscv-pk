@@ -23,6 +23,9 @@
 #define PCR_K0       24
 #define PCR_K1       25
 
+#define CR_FSR       0
+#define CR_TID       29
+
 #define TIMER_PERIOD 0x1000000
 
 #define ASM_CR(r)   _ASM_CR(r)
@@ -35,6 +38,13 @@
 
 #define mfpcr(reg) ({ long __tmp; \
           asm volatile ("mfpcr %0,$cr%1" : "=r"(__tmp) : "i"(reg)); \
+          __tmp; })
+
+#define mtcr(val,reg) ({ long __tmp = (long)(val); \
+          asm volatile ("mtcr %0,$cr%1"::"r"(__tmp),"i"(reg)); })
+
+#define mfcr(reg) ({ long __tmp; \
+          asm volatile ("mfcr %0,$cr%1" : "=r"(__tmp) : "i"(reg)); \
           __tmp; })
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef _PK_H
 #define _PK_H
 
+#include <stdint.h>
+
 typedef struct
 {
   long gpr[32];
@@ -11,6 +13,12 @@ typedef struct
   long cr29;
   long insn;
 } trapframe_t;
+
+typedef struct
+{
+  uint64_t fpr[32];
+  uint32_t fsr;
+} fp_state_t;
 
 #define USER_MEM_SIZE 0x70000000
 #define USER_MAINVARS_SIZE 0x1000
@@ -25,7 +33,7 @@ extern "C" {
 
 extern int have_fp;
 int emulate_fp(trapframe_t*);
-void init_fpregs();
+void init_fp_regs();
 
 void printk(const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp);

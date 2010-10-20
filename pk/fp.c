@@ -24,6 +24,7 @@ validate_address(trapframe_t* tf, long addr, int size, int store)
 
 int emulate_fp(trapframe_t* tf)
 {
+  fp_state.fsr = mfcr(CR_FSR);
   if(have_fp)
     get_fp_state();
 
@@ -52,6 +53,7 @@ int emulate_fp(trapframe_t* tf)
   uint64_t effective_address = XRS1 + IMM;
 
   softfloat_exceptionFlags = 0;
+  softfloat_roundingMode = (fp_state.fsr >> 5) & 3;
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 
@@ -188,8 +190,7 @@ int emulate_fp(trapframe_t* tf)
   else
     return -1;
 
-  fp_state.fsr |= softfloat_exceptionFlags;
-
+  mtcr(fp_state.fsr, CR_FSR);
   if(have_fp)
     put_fp_state();
 
@@ -289,8 +290,6 @@ static void __attribute__((noinline)) get_fp_state()
   GET_FP_REG(29, d, fp_state.fpr[29]);
   GET_FP_REG(30, d, fp_state.fpr[30]);
   GET_FP_REG(31, d, fp_state.fpr[31]);
-
-  fp_state.fsr = mfcr(CR_FSR);
 }
 
 static void __attribute__((noinline)) put_fp_state()
@@ -327,8 +326,6 @@ static void __attribute__((noinline)) put_fp_state()
   PUT_FP_REG(29, d, fp_state.fpr[29]);
   PUT_FP_REG(30, d, fp_state.fpr[30]);
   PUT_FP_REG(31, d, fp_state.fpr[31]);
-
-  mtcr(fp_state.fsr, CR_FSR);
 }
 
 void init_fp_regs()

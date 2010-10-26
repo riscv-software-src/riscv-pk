@@ -49,7 +49,7 @@ save_tf:	# write the trap frame onto the stack
 	mfpcr	$x2,ASM_CR(PCR_K0)
 	STORE	$x2,31*REGBYTES($x1)	# $ra is actually in $PCR_K0
 
-	# get sr, epc, badvaddr, cause, cr29 (tid)
+	# get sr, epc, badvaddr, cause
 	mfpcr	$x2,ASM_CR(PCR_SR)					# sr
 	STORE	$x2,32*REGBYTES($x1)
 	mfpcr	$x3,ASM_CR(PCR_EPC)					# epc
@@ -58,13 +58,11 @@ save_tf:	# write the trap frame onto the stack
 	STORE	$x2,34*REGBYTES($x1)
 	mfpcr	$x2,ASM_CR(PCR_CAUSE)				# cause
 	STORE	$x2,35*REGBYTES($x1)
-	mfcr	$x2,ASM_CR(29)						# cr29 (tid)
-	STORE	$x2,36*REGBYTES($x1)
 
 	# get insn
 	and		$x3,$x3,~3
 	lw		$x2,0($x3)
-	STORE	$x2, 37*REGBYTES($x1)
+	STORE	$x2, 36*REGBYTES($x1)
 
 	jr		$ra
 	.end	save_tf
@@ -110,10 +108,6 @@ pop_tf:	# write the trap frame onto the stack
 	LOAD	$x29,29*REGBYTES($x1)
 	LOAD	$x30,30*REGBYTES($x1)
 	LOAD	$x31,31*REGBYTES($x1)
-
-	# restore cr29 (tid)
-	LOAD	$x2,35*REGBYTES($x1)
-	mtcr	$x2,ASM_CR(29)
 
 	# gtfo!
 	LOAD	$x2,33*REGBYTES($x1)

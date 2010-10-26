@@ -36,6 +36,7 @@ int emulate_fp(trapframe_t* tf)
   #define RRS3 ((tf->insn >>  5) & 0x1F)
   #define RRDR ( tf->insn        & 0x1F)
   #define RRDI RRS2
+  #define RM   ((tf->insn >> 11) &  0x3) 
 
   #define IMM (((int32_t)tf->insn << 20) >> 20)
 
@@ -171,22 +172,46 @@ int emulate_fp(trapframe_t* tf)
     set_fp_reg(RRDR, 0, f32_sqrt(frs1s));
   else if(IS_INSN(SQRT_D))
     set_fp_reg(RRDR, 1, f64_sqrt(frs1d));
-  else if(IS_INSN(TRUNC_W_S))
+  else if(IS_INSN(CVT_W_S_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f32_to_i32_r_minMag(frs1s,true);
-  else if(IS_INSN(TRUNC_W_D))
+  }
+  else if(IS_INSN(CVT_W_D_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f64_to_i32_r_minMag(frs1d,true);
-  else if(IS_INSN(TRUNC_L_S))
+  }
+  else if(IS_INSN(CVT_L_S_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f32_to_i64_r_minMag(frs1s,true);
-  else if(IS_INSN(TRUNC_L_D))
+  }
+  else if(IS_INSN(CVT_L_D_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f64_to_i64_r_minMag(frs1d,true);
-  else if(IS_INSN(TRUNCU_W_S))
+  }
+  else if(IS_INSN(CVTU_W_S_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f32_to_ui32_r_minMag(frs1s,true);
-  else if(IS_INSN(TRUNCU_W_D))
+  }
+  else if(IS_INSN(CVTU_W_D_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f64_to_ui32_r_minMag(frs1d,true);
-  else if(IS_INSN(TRUNCU_L_S))
+  }
+  else if(IS_INSN(CVTU_L_S_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f32_to_ui64_r_minMag(frs1s,true);
-  else if(IS_INSN(TRUNCU_L_D))
+  }
+  else if(IS_INSN(CVTU_L_D_RM))
+  {
+    softfloat_roundingMode = RM;
     XRDR = f64_to_ui64_r_minMag(frs1d,true);
+  }
   else
     return -1;
 

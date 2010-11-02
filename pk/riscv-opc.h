@@ -225,8 +225,8 @@
 #define  MASK_SQRT_S_RM 0xfff067e0
 #define MATCH_CVTU_L_D_RM 0xd4006520
 #define  MASK_CVTU_L_D_RM 0xfff067e0
-#define MATCH_JAL 0xc8000000
-#define  MASK_JAL 0xf8000000
+#define MATCH_JAL 0xc2000000
+#define  MASK_JAL 0xfe000000
 #define MATCH_LWU 0xf0006000
 #define  MASK_LWU 0xfe007000
 #define MATCH_CVT_S_D_RM 0xd4000660
@@ -250,7 +250,7 @@
 #define MATCH_SLLW 0xee007040
 #define  MASK_SLLW 0xfe007fe0
 #define MATCH_J 0xc0000000
-#define  MASK_J 0xf8000000
+#define  MASK_J 0xfe000000
 #define MATCH_SLTI 0xe8002000
 #define  MASK_SLTI 0xfe007000
 #define MATCH_REMU 0xea0010e0

@@ -71,7 +71,7 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -O3 -std=gnu99"])
+AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

@@ -2,8 +2,7 @@ OUTPUT_ARCH( "mips:riscv" )
 
 ENTRY( __start )
 
-GROUP( -lc -lgloss -lgcc )
-
+GROUP( -lc -lgcc -lgloss )
 
 SECTIONS
 {
@@ -31,18 +30,6 @@ SECTIONS
     *(.gnu.linkonce.t.*)
   }
 
-  /* init: Code to execute before main (called by crt1.S) */
-  .init : 
-  {
-    KEEP( *(.init) )
-  }
-
-  /* fini: Code to execute after main (called by crt1.S) */
-  .fini : 
-  {
-    KEEP( *(.fini) )
-  }
-
   /* rodata: Read-only data */
   .rodata : 
   {
@@ -55,53 +42,6 @@ SECTIONS
   /* End of code and read-only segment */
   PROVIDE( etext = . );
   _etext = .;
-
-  /*--------------------------------------------------------------------*/
-  /* Global constructor/destructor segement                             */
-  /*--------------------------------------------------------------------*/
-  /* The .ctors/.dtors sections are special sections which contain a
-     list of constructor/destructor function pointers. crtbegin.o
-     includes code in a .init section which goes through the .ctors list
-     and calls each constuctor. crtend.o includes code in a .fini
-     section which goes through the .dtors list and calls each
-     destructor. crtbegin.o includes a special null pointer in its own
-     .ctors/.dtors sections which acts as a start indicator for those
-     lists. crtend.o also includes a special null pointer in its own
-     .ctors/.dtors sections which acts as an end indictor. The linker
-     commands below are setup so that crtbegin.o's .ctors/.dtors
-     sections are always first and crtend.o's .ctors/.dtors sections are
-     always last. This is the only way the list of functions will have
-     the begin and end indicators in the right place. */
-
-  /* ctors : Array of global constructor function pointers */
-  .ctors :
-  {
-    KEEP( *crtbegin.o(.ctors) )
-    KEEP( *(EXCLUDE_FILE(*crtend.o) .ctors) )
-    KEEP( *(SORT(.ctors.*)) )
-    KEEP( *(.ctors) )
-  }
-
-  /* dtors : Array of global destructor function pointers */
-  .dtors :
-  {
-    KEEP( *crtbegin.o(.dtors) )
-    KEEP( *(EXCLUDE_FILE(*crtend.o) .dtors) )
-    KEEP( *(SORT(.dtors.*)) )
-    KEEP( *(.dtors) )
-  }
-
-  /*--------------------------------------------------------------------*/
-  /* Other misc gcc segments (this was in idt32.ld)                     */
-  /*--------------------------------------------------------------------*/
-  /* I am not quite sure about these sections but it seems they are for
-     C++ exception handling. I think .jcr is for "Java Class
-     Registration" but it seems to end up in C++ binaries as well. */
-
-  .eh_frame_hdr     : { *(.eh_frame_hdr)     }
-  .eh_frame         : { KEEP( *(.eh_frame) ) }
-  .gcc_except_table : { *(.gcc_except_table) }
-  .jcr              : { KEEP (*(.jcr))       } 
 
   /*--------------------------------------------------------------------*/
   /* Initialized data segment                                           */

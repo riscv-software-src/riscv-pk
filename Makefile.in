@@ -91,7 +91,7 @@ COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
 #  - LIBS    : Library flags (eg. -l)
 
 LD            := $(CC)
-LDFLAGS       := @LDFLAGS@
+LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib
 LIBS          := @LIBS@
 LINK          := $(LD) $(LDFLAGS) -T $(src_dir)/pk/pk.ld
 

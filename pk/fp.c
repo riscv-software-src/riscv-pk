@@ -31,18 +31,19 @@ int emulate_fp(trapframe_t* tf)
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
 
-  #define RRS1 ((tf->insn >> 15) & 0x1F)
-  #define RRS2 ((tf->insn >> 20) & 0x1F)
-  #define RRS3 ((tf->insn >>  5) & 0x1F)
-  #define RRDR ( tf->insn        & 0x1F)
-  #define RRDI RRS2
-  #define RM   ((tf->insn >> 11) &  0x3) 
+  #define RRS1 ((tf->insn >>  5) & 0x1F)
+  #define RRS2 ((tf->insn >> 10) & 0x1F)
+  #define RRS3 ((tf->insn >> 15) & 0x1F)
+  #define RRD  ( tf->insn        & 0x1F)
+  #define RM   ((tf->insn >> 20) &  0x3) 
 
-  #define IMM (((int32_t)tf->insn << 20) >> 20)
+  int32_t imm = ((int32_t)tf->insn << 10) >> 20;
+  int32_t bimm = (tf->insn & 0x1f) | (((tf->insn >> 15) & 0x7f) << 5);
+  bimm = (bimm << 20) >> 20;
 
   #define XRS1 (tf->gpr[RRS1])
   #define XRS2 (tf->gpr[RRS2])
-  #define XRDR (tf->gpr[RRDR])
+  #define XRDR (tf->gpr[RRD])
 
   uint64_t frs1d = get_fp_reg(RRS1, 1);
   uint64_t frs2d = get_fp_reg(RRS2, 1);
@@ -51,7 +52,8 @@ int emulate_fp(trapframe_t* tf)
   uint32_t frs2s = get_fp_reg(RRS2, 0);
   uint32_t frs3s = get_fp_reg(RRS3, 0);
 
-  uint64_t effective_address = XRS1 + IMM;
+  uint64_t effective_address_load = XRS1 + imm;
+  uint64_t effective_address_store = XRS1 + bimm;
 
   softfloat_exceptionFlags = 0;
   softfloat_roundingMode = (fp_state.fsr >> 5) & 3;
@@ -60,23 +62,23 @@ int emulate_fp(trapframe_t* tf)
 
   if(IS_INSN(L_S))
   {
-    validate_address(tf, effective_address, 4, 0);
-    set_fp_reg(RRDI, 0, *(uint32_t*)effective_address);
+    validate_address(tf, effective_address_load, 4, 0);
+    set_fp_reg(RRD, 0, *(uint32_t*)effective_address_load);
   }
   else if(IS_INSN(L_D))
   {
-    validate_address(tf, effective_address, 8, 0);
-    set_fp_reg(RRDI, 1, *(uint64_t*)effective_address);
+    validate_address(tf, effective_address_load, 8, 0);
+    set_fp_reg(RRD, 1, *(uint64_t*)effective_address_load);
   }
   else if(IS_INSN(S_S))
   {
-    validate_address(tf, effective_address, 4, 1);
-    *(uint32_t*)effective_address = frs2s;
+    validate_address(tf, effective_address_store, 4, 1);
+    *(uint32_t*)effective_address_store = frs2s;
   }
   else if(IS_INSN(S_D))
   {
-    validate_address(tf, effective_address, 8, 1);
-    *(uint64_t*)effective_address = frs2d;
+    validate_address(tf, effective_address_store, 8, 1);
+    *(uint64_t*)effective_address_store = frs2d;
   }
   else if(IS_INSN(MFF_S))
     XRDR = frs2s;
@@ -87,23 +89,23 @@ int emulate_fp(trapframe_t* tf)
   else if(IS_INSN(MFFH_D))
     XRDR = (int64_t)frs2d >> 32;
   else if(IS_INSN(MTF_S))
-    set_fp_reg(RRDR, 0, XRS1);
+    set_fp_reg(RRD, 0, XRS1);
   else if(IS_INSN(MTF_D))
-    set_fp_reg(RRDR, 1, XRS1);
+    set_fp_reg(RRD, 1, XRS1);
   else if(IS_INSN(MTFLH_D))
-    set_fp_reg(RRDR, 1, (uint32_t)XRS1 | (XRS2 << 32));
+    set_fp_reg(RRD, 1, (uint32_t)XRS1 | (XRS2 << 32));
   else if(IS_INSN(SGNINJ_S))
-    set_fp_reg(RRDR, 0, (frs1s &~ (uint32_t)INT32_MIN) | (frs2s & (uint32_t)INT32_MIN));
+    set_fp_reg(RRD, 0, (frs1s &~ (uint32_t)INT32_MIN) | (frs2s & (uint32_t)INT32_MIN));
   else if(IS_INSN(SGNINJ_D))
-    set_fp_reg(RRDR, 1, (frs1d &~ INT64_MIN) | (frs2d & INT64_MIN));
+    set_fp_reg(RRD, 1, (frs1d &~ INT64_MIN) | (frs2d & INT64_MIN));
   else if(IS_INSN(SGNINJN_S))
-    set_fp_reg(RRDR, 0, (frs1s &~ (uint32_t)INT32_MIN) | ((~frs2s) & (uint32_t)INT32_MIN));
+    set_fp_reg(RRD, 0, (frs1s &~ (uint32_t)INT32_MIN) | ((~frs2s) & (uint32_t)INT32_MIN));
   else if(IS_INSN(SGNINJN_D))
-    set_fp_reg(RRDR, 1, (frs1d &~ INT64_MIN) | ((~frs2d) & INT64_MIN));
+    set_fp_reg(RRD, 1, (frs1d &~ INT64_MIN) | ((~frs2d) & INT64_MIN));
   else if(IS_INSN(SGNMUL_S))
-    set_fp_reg(RRDR, 0, frs1s ^ (frs2s & (uint32_t)INT32_MIN));
+    set_fp_reg(RRD, 0, frs1s ^ (frs2s & (uint32_t)INT32_MIN));
   else if(IS_INSN(SGNMUL_D))
-    set_fp_reg(RRDR, 1, frs1d ^ (frs2d & INT64_MIN));
+    set_fp_reg(RRD, 1, frs1d ^ (frs2d & INT64_MIN));
   else if(IS_INSN(C_EQ_S))
     XRDR = f32_eq(frs1s, frs2s);
   else if(IS_INSN(C_EQ_D))
@@ -117,61 +119,61 @@ int emulate_fp(trapframe_t* tf)
   else if(IS_INSN(C_LT_D))
     XRDR = f64_lt(frs1d, frs2d);
   else if(IS_INSN(CVT_S_W))
-    set_fp_reg(RRDR, 0, i32_to_f32(XRS1));
+    set_fp_reg(RRD, 0, i32_to_f32(XRS1));
   else if(IS_INSN(CVT_S_L))
-    set_fp_reg(RRDR, 0, i64_to_f32(XRS1));
+    set_fp_reg(RRD, 0, i64_to_f32(XRS1));
   else if(IS_INSN(CVT_S_D))
-    set_fp_reg(RRDR, 0, f64_to_f32(frs1d));
+    set_fp_reg(RRD, 0, f64_to_f32(frs1d));
   else if(IS_INSN(CVT_D_W))
-    set_fp_reg(RRDR, 1, i32_to_f64(XRS1));
+    set_fp_reg(RRD, 1, i32_to_f64(XRS1));
   else if(IS_INSN(CVT_D_L))
-    set_fp_reg(RRDR, 1, i64_to_f64(XRS1));
+    set_fp_reg(RRD, 1, i64_to_f64(XRS1));
   else if(IS_INSN(CVT_D_S))
-    set_fp_reg(RRDR, 1, f32_to_f64(frs1s));
+    set_fp_reg(RRD, 1, f32_to_f64(frs1s));
   else if(IS_INSN(CVTU_S_W))
-    set_fp_reg(RRDR, 0, ui32_to_f32(XRS1));
+    set_fp_reg(RRD, 0, ui32_to_f32(XRS1));
   else if(IS_INSN(CVTU_S_L))
-    set_fp_reg(RRDR, 0, ui64_to_f32(XRS1));
+    set_fp_reg(RRD, 0, ui64_to_f32(XRS1));
   else if(IS_INSN(CVTU_D_W))
-    set_fp_reg(RRDR, 1, ui32_to_f64(XRS1));
+    set_fp_reg(RRD, 1, ui32_to_f64(XRS1));
   else if(IS_INSN(CVTU_D_L))
-    set_fp_reg(RRDR, 1, ui64_to_f64(XRS1));
+    set_fp_reg(RRD, 1, ui64_to_f64(XRS1));
   else if(IS_INSN(ADD_S))
-    set_fp_reg(RRDR, 0, f32_add(frs1s, frs2s));
+    set_fp_reg(RRD, 0, f32_add(frs1s, frs2s));
   else if(IS_INSN(ADD_D))
-    set_fp_reg(RRDR, 1, f64_add(frs1d, frs2d));
+    set_fp_reg(RRD, 1, f64_add(frs1d, frs2d));
   else if(IS_INSN(SUB_S))
-    set_fp_reg(RRDR, 0, f32_sub(frs1s, frs2s));
+    set_fp_reg(RRD, 0, f32_sub(frs1s, frs2s));
   else if(IS_INSN(SUB_D))
-    set_fp_reg(RRDR, 1, f64_sub(frs1d, frs2d));
+    set_fp_reg(RRD, 1, f64_sub(frs1d, frs2d));
   else if(IS_INSN(MUL_S))
-    set_fp_reg(RRDR, 0, f32_mul(frs1s, frs2s));
+    set_fp_reg(RRD, 0, f32_mul(frs1s, frs2s));
   else if(IS_INSN(MUL_D))
-    set_fp_reg(RRDR, 1, f64_mul(frs1d, frs2d));
+    set_fp_reg(RRD, 1, f64_mul(frs1d, frs2d));
   else if(IS_INSN(MADD_S))
-    set_fp_reg(RRDR, 0, f32_mulAdd(frs1s, frs2s, frs3s));
+    set_fp_reg(RRD, 0, f32_mulAdd(frs1s, frs2s, frs3s));
   else if(IS_INSN(MADD_D))
-    set_fp_reg(RRDR, 1, f64_mulAdd(frs1d, frs2d, frs3d));
+    set_fp_reg(RRD, 1, f64_mulAdd(frs1d, frs2d, frs3d));
   else if(IS_INSN(MSUB_S))
-    set_fp_reg(RRDR, 0, f32_mulAdd(frs1s, frs2s, frs3s ^ (uint32_t)INT32_MIN));
+    set_fp_reg(RRD, 0, f32_mulAdd(frs1s, frs2s, frs3s ^ (uint32_t)INT32_MIN));
   else if(IS_INSN(MSUB_D))
-    set_fp_reg(RRDR, 1, f64_mulAdd(frs1d, frs2d, frs3d ^ INT64_MIN));
+    set_fp_reg(RRD, 1, f64_mulAdd(frs1d, frs2d, frs3d ^ INT64_MIN));
   else if(IS_INSN(NMADD_S))
-    set_fp_reg(RRDR, 0, f32_mulAdd(frs1s, frs2s, frs3s) ^ (uint32_t)INT32_MIN);
+    set_fp_reg(RRD, 0, f32_mulAdd(frs1s, frs2s, frs3s) ^ (uint32_t)INT32_MIN);
   else if(IS_INSN(NMADD_D))
-    set_fp_reg(RRDR, 1, f64_mulAdd(frs1d, frs2d, frs3d) ^ INT64_MIN);
+    set_fp_reg(RRD, 1, f64_mulAdd(frs1d, frs2d, frs3d) ^ INT64_MIN);
   else if(IS_INSN(NMSUB_S))
-    set_fp_reg(RRDR, 0, f32_mulAdd(frs1s, frs2s, frs3s ^ (uint32_t)INT32_MIN) ^ (uint32_t)INT32_MIN);
+    set_fp_reg(RRD, 0, f32_mulAdd(frs1s, frs2s, frs3s ^ (uint32_t)INT32_MIN) ^ (uint32_t)INT32_MIN);
   else if(IS_INSN(NMSUB_D))
-    set_fp_reg(RRDR, 1, f64_mulAdd(frs1d, frs2d, frs3d ^ INT64_MIN) ^ INT64_MIN);
+    set_fp_reg(RRD, 1, f64_mulAdd(frs1d, frs2d, frs3d ^ INT64_MIN) ^ INT64_MIN);
   else if(IS_INSN(DIV_S))
-    set_fp_reg(RRDR, 0, f32_div(frs1s, frs2s));
+    set_fp_reg(RRD, 0, f32_div(frs1s, frs2s));
   else if(IS_INSN(DIV_D))
-    set_fp_reg(RRDR, 1, f64_div(frs1d, frs2d));
+    set_fp_reg(RRD, 1, f64_div(frs1d, frs2d));
   else if(IS_INSN(SQRT_S))
-    set_fp_reg(RRDR, 0, f32_sqrt(frs1s));
+    set_fp_reg(RRD, 0, f32_sqrt(frs1s));
   else if(IS_INSN(SQRT_D))
-    set_fp_reg(RRDR, 1, f64_sqrt(frs1d));
+    set_fp_reg(RRD, 1, f64_sqrt(frs1d));
   else if(IS_INSN(CVT_W_S_RM))
   {
     softfloat_roundingMode = RM;

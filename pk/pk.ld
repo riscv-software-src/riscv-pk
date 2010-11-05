@@ -2,8 +2,6 @@ OUTPUT_ARCH( "mips:riscv" )
 
 ENTRY( __start )
 
-GROUP( -lc -lgcc -lgloss )
-
 SECTIONS
 {
 

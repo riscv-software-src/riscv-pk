@@ -13,12 +13,6 @@ typedef struct
   long insn;
 } trapframe_t;
 
-typedef struct
-{
-  uint64_t fpr[32];
-  uint32_t fsr;
-} fp_state_t;
-
 #define USER_MEM_SIZE 0x70000000
 #define USER_MAINVARS_SIZE 0x1000
 #define USER_START 0x10000

@@ -5,6 +5,7 @@ pk_subproject_deps = \
 pk_hdrs = \
 	pk.h \
 	pcr.h \
+	fp.h \
 	atomic.h \
 	file.h \
 	frontend.h \
@@ -17,9 +18,12 @@ pk_c_srcs = \
 	handlers.c \
 	frontend.c \
 	fp.c \
+	memset.c \
+	strlen.c \
 
 pk_asm_srcs = \
 	entry.S \
+	fp_asm.S \
 
 pk_test_srcs =
 

@@ -22,7 +22,7 @@ void __attribute__((section(".boottext"))) __start()
   #endif
 
   mtpcr(sr0 | SR_EF, PCR_SR);
-  have_fp = 0;//mfpcr(PCR_SR) & SR_EF;
+  have_fp = mfpcr(PCR_SR) & SR_EF;
   mtpcr(sr0, PCR_SR);
 
   extern void boot();

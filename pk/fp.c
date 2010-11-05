@@ -2,6 +2,7 @@
 #include "softfloat.h"
 #include "riscv-opc.h"
 #include "pk.h"
+#include "fp.h"
 #include <stdint.h>
 
 #define noisy 0
@@ -10,8 +11,6 @@ static void set_fp_reg(unsigned int which, unsigned int dp, uint64_t val);
 static uint64_t get_fp_reg(unsigned int which, unsigned int dp);
 
 static fp_state_t fp_state;
-static void get_fp_state();
-static void put_fp_state();
 
 static inline void
 validate_address(trapframe_t* tf, long addr, int size, int store)
@@ -24,9 +23,8 @@ validate_address(trapframe_t* tf, long addr, int size, int store)
 
 int emulate_fp(trapframe_t* tf)
 {
-  fp_state.fsr = mfcr(CR_FSR);
   if(have_fp)
-    get_fp_state();
+    fp_state.fsr = get_fp_state(fp_state.fpr);
 
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
@@ -45,9 +43,9 @@ int emulate_fp(trapframe_t* tf)
   #define XRS2 (tf->gpr[RRS2])
   #define XRDR (tf->gpr[RRD])
 
-  uint64_t frs1d = get_fp_reg(RRS1, 1);
-  uint64_t frs2d = get_fp_reg(RRS2, 1);
-  uint64_t frs3d = get_fp_reg(RRS3, 1);
+  uint64_t frs1d = fp_state.fpr[RRS1];
+  uint64_t frs2d = fp_state.fpr[RRS2];
+  uint64_t frs3d = fp_state.fpr[RRS3];
   uint32_t frs1s = get_fp_reg(RRS1, 0);
   uint32_t frs2s = get_fp_reg(RRS2, 0);
   uint32_t frs3s = get_fp_reg(RRS3, 0);
@@ -217,9 +215,8 @@ int emulate_fp(trapframe_t* tf)
   else
     return -1;
 
-  mtcr(fp_state.fsr, CR_FSR);
   if(have_fp)
-    put_fp_state();
+    put_fp_state(fp_state.fpr,fp_state.fsr);
 
   advance_pc(tf);
 
@@ -231,6 +228,8 @@ int emulate_fp(trapframe_t* tf)
 
 #define PUT_FP_REG(which, type, val) asm("mtf." STR(type) " $f" STR(which) ",%0" : : "r"(val))
 #define GET_FP_REG(which, type, val) asm("mff." STR(type) " %0,$f" STR(which) : "=r"(val))
+#define LOAD_FP_REG(which, type, val) asm("l." STR(type) " $f" STR(which) ",%0" : : "m"(val))
+#define STORE_FP_REG(which, type, val)  asm("s." STR(type) " $f" STR(which) ",%0" : "=m"(val) : : "memory")
 
 static void __attribute__((noinline))
 set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
@@ -248,11 +247,8 @@ set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
     // to set an SP value, move the SP value into the FPU
     // then move it back out as a DP value.  OK to clobber $f0
     // because we'll restore it later.
-    uint64_t tmp;
-    GET_FP_REG(0,d,tmp);
     PUT_FP_REG(0,s,val);
     GET_FP_REG(0,d,fp_state.fpr[which]);
-    PUT_FP_REG(0,d,tmp);
   }
 }
 
@@ -267,11 +263,8 @@ get_fp_reg(unsigned int which, unsigned int dp)
     // to get an SP value, move the DP value into the FPU
     // then move it back out as an SP value.  OK to clobber $f0
     // because we'll restore it later.
-    uint64_t tmp;
-    GET_FP_REG(0,d,tmp);
     PUT_FP_REG(0,d,fp_state.fpr[which]);
     GET_FP_REG(0,s,val);
-    PUT_FP_REG(0,d,tmp);
   }
 
   if(noisy)
@@ -283,83 +276,11 @@ get_fp_reg(unsigned int which, unsigned int dp)
   return val;
 }
 
-static void __attribute__((noinline)) get_fp_state()
-{
-  GET_FP_REG(0, d, fp_state.fpr[0]);
-  GET_FP_REG(1, d, fp_state.fpr[1]);
-  GET_FP_REG(2, d, fp_state.fpr[2]);
-  GET_FP_REG(3, d, fp_state.fpr[3]);
-  GET_FP_REG(4, d, fp_state.fpr[4]);
-  GET_FP_REG(5, d, fp_state.fpr[5]);
-  GET_FP_REG(6, d, fp_state.fpr[6]);
-  GET_FP_REG(7, d, fp_state.fpr[7]);
-  GET_FP_REG(8, d, fp_state.fpr[8]);
-  GET_FP_REG(9, d, fp_state.fpr[9]);
-  GET_FP_REG(10, d, fp_state.fpr[10]);
-  GET_FP_REG(11, d, fp_state.fpr[11]);
-  GET_FP_REG(12, d, fp_state.fpr[12]);
-  GET_FP_REG(13, d, fp_state.fpr[13]);
-  GET_FP_REG(14, d, fp_state.fpr[14]);
-  GET_FP_REG(15, d, fp_state.fpr[15]);
-  GET_FP_REG(16, d, fp_state.fpr[16]);
-  GET_FP_REG(17, d, fp_state.fpr[17]);
-  GET_FP_REG(18, d, fp_state.fpr[18]);
-  GET_FP_REG(19, d, fp_state.fpr[19]);
-  GET_FP_REG(20, d, fp_state.fpr[20]);
-  GET_FP_REG(21, d, fp_state.fpr[21]);
-  GET_FP_REG(22, d, fp_state.fpr[22]);
-  GET_FP_REG(23, d, fp_state.fpr[23]);
-  GET_FP_REG(24, d, fp_state.fpr[24]);
-  GET_FP_REG(25, d, fp_state.fpr[25]);
-  GET_FP_REG(26, d, fp_state.fpr[26]);
-  GET_FP_REG(27, d, fp_state.fpr[27]);
-  GET_FP_REG(28, d, fp_state.fpr[28]);
-  GET_FP_REG(29, d, fp_state.fpr[29]);
-  GET_FP_REG(30, d, fp_state.fpr[30]);
-  GET_FP_REG(31, d, fp_state.fpr[31]);
-}
-
-static void __attribute__((noinline)) put_fp_state()
-{
-  PUT_FP_REG(0, d, fp_state.fpr[0]);
-  PUT_FP_REG(1, d, fp_state.fpr[1]);
-  PUT_FP_REG(2, d, fp_state.fpr[2]);
-  PUT_FP_REG(3, d, fp_state.fpr[3]);
-  PUT_FP_REG(4, d, fp_state.fpr[4]);
-  PUT_FP_REG(5, d, fp_state.fpr[5]);
-  PUT_FP_REG(6, d, fp_state.fpr[6]);
-  PUT_FP_REG(7, d, fp_state.fpr[7]);
-  PUT_FP_REG(8, d, fp_state.fpr[8]);
-  PUT_FP_REG(9, d, fp_state.fpr[9]);
-  PUT_FP_REG(10, d, fp_state.fpr[10]);
-  PUT_FP_REG(11, d, fp_state.fpr[11]);
-  PUT_FP_REG(12, d, fp_state.fpr[12]);
-  PUT_FP_REG(13, d, fp_state.fpr[13]);
-  PUT_FP_REG(14, d, fp_state.fpr[14]);
-  PUT_FP_REG(15, d, fp_state.fpr[15]);
-  PUT_FP_REG(16, d, fp_state.fpr[16]);
-  PUT_FP_REG(17, d, fp_state.fpr[17]);
-  PUT_FP_REG(18, d, fp_state.fpr[18]);
-  PUT_FP_REG(19, d, fp_state.fpr[19]);
-  PUT_FP_REG(20, d, fp_state.fpr[20]);
-  PUT_FP_REG(21, d, fp_state.fpr[21]);
-  PUT_FP_REG(22, d, fp_state.fpr[22]);
-  PUT_FP_REG(23, d, fp_state.fpr[23]);
-  PUT_FP_REG(24, d, fp_state.fpr[24]);
-  PUT_FP_REG(25, d, fp_state.fpr[25]);
-  PUT_FP_REG(26, d, fp_state.fpr[26]);
-  PUT_FP_REG(27, d, fp_state.fpr[27]);
-  PUT_FP_REG(28, d, fp_state.fpr[28]);
-  PUT_FP_REG(29, d, fp_state.fpr[29]);
-  PUT_FP_REG(30, d, fp_state.fpr[30]);
-  PUT_FP_REG(31, d, fp_state.fpr[31]);
-}
-
 void init_fp_regs()
 {
   long sr = mfpcr(PCR_SR);
   mtpcr(sr | SR_EF, PCR_SR);
-  put_fp_state();
+  put_fp_state(fp_state.fpr,fp_state.fsr);
   mtpcr(sr, PCR_SR);
 }
 

@@ -145,6 +145,7 @@ static void mainvars_init()
 
 static void jump_usrstart()
 {
+  printk("strlen(\"\") = %d\n",strlen(""));
   trapframe_t tf;
   init_tf(&tf, USER_START, USER_MEM_SIZE-USER_MAINVARS_SIZE);
   pop_tf(&tf);

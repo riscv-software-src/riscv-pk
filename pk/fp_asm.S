@@ -40,6 +40,8 @@ get_fp_state:
 	s.d		$f30,240($a0)
 	s.d		$f31,248($a0)
 
+	ret
+
 	.end	get_fp_state
 
 	.globl	put_fp_state
@@ -80,5 +82,7 @@ put_fp_state:
 	l.d		$f31,248($a0)
 
 	mtcr	$a1, ASM_CR(CR_FSR)
+
+	ret
 
 	.end	put_fp_state

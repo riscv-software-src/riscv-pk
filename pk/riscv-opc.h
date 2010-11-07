@@ -11,7 +11,7 @@
 #define  MASK_REMUW 0xffff8000
 #define MATCH_NMADD_S 0xde000000
 #define  MASK_NMADD_S 0xfff00000
-#define MATCH_BLTU 0xe7800000
+#define MATCH_BLTU 0xc7800000
 #define  MASK_BLTU 0xffc00000
 #define MATCH_C_EQ_S 0xd40a8000
 #define  MASK_C_EQ_S 0xffff8000
@@ -51,13 +51,13 @@
 #define  MASK_MFPCR 0xffff83e0
 #define MATCH_CVTU_D_W 0xd5878000
 #define  MASK_CVTU_D_W 0xfffffc00
-#define MATCH_BNE 0xe6400000
+#define MATCH_BNE 0xc6400000
 #define  MASK_BNE 0xffc00000
 #define MATCH_MTPCR 0xd6408000
 #define  MASK_MTPCR 0xffff801f
 #define MATCH_ADD_S 0xd4000000
 #define  MASK_ADD_S 0xffff8000
-#define MATCH_BGEU 0xe7c00000
+#define MATCH_BGEU 0xc7c00000
 #define  MASK_BGEU 0xffc00000
 #define MATCH_DI 0xd6008000
 #define  MASK_DI 0xffffffe0
@@ -131,7 +131,7 @@
 #define  MASK_ERET 0xffffffff
 #define MATCH_SQRT_D_RM 0xd5c20000
 #define  MASK_SQRT_D_RM 0xffcffc00
-#define MATCH_BLT 0xe7000000
+#define MATCH_BLT 0xc7000000
 #define  MASK_BLT 0xffc00000
 #define MATCH_SGNINJN_D 0xd5830000
 #define  MASK_SGNINJN_D 0xffff8000
@@ -175,7 +175,7 @@
 #define  MASK_MUL_S_RM 0xffcf8000
 #define MATCH_SRA 0xebc30000
 #define  MASK_SRA 0xffff8000
-#define MATCH_BGE 0xe7400000
+#define MATCH_BGE 0xc7400000
 #define  MASK_BGE 0xffc00000
 #define MATCH_SRAIW 0xedc30000
 #define  MASK_SRAIW 0xffff8000
@@ -193,13 +193,13 @@
 #define  MASK_CVT_S_W_RM 0xffcffc00
 #define MATCH_SUBW 0xee008000
 #define  MASK_SUBW 0xffff8000
-#define MATCH_JALR_C 0xe4000000
+#define MATCH_JALR_C 0xc4000000
 #define  MASK_JALR_C 0xffc00000
 #define MATCH_CVTU_S_W 0xd4078000
 #define  MASK_CVTU_S_W 0xfffffc00
 #define MATCH_AMOW_MINU 0xf4830000
 #define  MASK_AMOW_MINU 0xffff8000
-#define MATCH_JALR_J 0xe4800000
+#define MATCH_JALR_J 0xc4800000
 #define  MASK_JALR_J 0xffc00000
 #define MATCH_S_D 0xd2c00000
 #define  MASK_S_D 0xffc00000
@@ -207,7 +207,7 @@
 #define  MASK_AMO_OR 0xffff8000
 #define MATCH_XORI 0xe9800000
 #define  MASK_XORI 0xffc00000
-#define MATCH_JALR_R 0xe4400000
+#define MATCH_JALR_R 0xc4400000
 #define  MASK_JALR_R 0xffc00000
 #define MATCH_NMADD_S_RM 0xde400000
 #define  MASK_NMADD_S_RM 0xffc00000
@@ -263,7 +263,7 @@
 #define  MASK_SUB_D 0xffff8000
 #define MATCH_CVT_S_L_RM 0xd4460000
 #define  MASK_CVT_S_L_RM 0xffcffc00
-#define MATCH_BEQ 0xe6000000
+#define MATCH_BEQ 0xc6000000
 #define  MASK_BEQ 0xffc00000
 #define MATCH_AND 0xea020000
 #define  MASK_AND 0xffff8000

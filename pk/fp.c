@@ -54,7 +54,7 @@ int emulate_fp(trapframe_t* tf)
   uint64_t effective_address_store = XRS1 + bimm;
 
   softfloat_exceptionFlags = 0;
-  softfloat_roundingMode = (fp_state.fsr >> 5) & 3;
+  softfloat_roundingMode = (RM & 4) ? (RM & 3) : ((fp_state.fsr >> 5) & 3);
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 
@@ -172,46 +172,22 @@ int emulate_fp(trapframe_t* tf)
     set_fp_reg(RRD, 0, f32_sqrt(frs1s));
   else if(IS_INSN(SQRT_D))
     set_fp_reg(RRD, 1, f64_sqrt(frs1d));
-  else if(IS_INSN(CVT_W_S_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVT_W_S))
     XRDR = f32_to_i32_r_minMag(frs1s,true);
-  }
-  else if(IS_INSN(CVT_W_D_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVT_W_D))
     XRDR = f64_to_i32_r_minMag(frs1d,true);
-  }
-  else if(IS_INSN(CVT_L_S_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVT_L_S))
     XRDR = f32_to_i64_r_minMag(frs1s,true);
-  }
-  else if(IS_INSN(CVT_L_D_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVT_L_D))
     XRDR = f64_to_i64_r_minMag(frs1d,true);
-  }
-  else if(IS_INSN(CVTU_W_S_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVTU_W_S))
     XRDR = f32_to_ui32_r_minMag(frs1s,true);
-  }
-  else if(IS_INSN(CVTU_W_D_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVTU_W_D))
     XRDR = f64_to_ui32_r_minMag(frs1d,true);
-  }
-  else if(IS_INSN(CVTU_L_S_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVTU_L_S))
     XRDR = f32_to_ui64_r_minMag(frs1s,true);
-  }
-  else if(IS_INSN(CVTU_L_D_RM))
-  {
-    softfloat_roundingMode = RM;
+  else if(IS_INSN(CVTU_L_D))
     XRDR = f64_to_ui64_r_minMag(frs1d,true);
-  }
   else
     return -1;
 

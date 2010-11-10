@@ -1,13 +1,18 @@
 #include <string.h>
-#include <stdlib.h>
+#include <limits.h>
+
+#if ULONG_MAX != 18446744073709551615UL && ULONG_MAX != 4294967295UL
+# error need sizeof(long) == 4 or sizeof(long) == 8
+#endif
 
 // from http://www-graphics.stanford.edu/~seander/bithacks.html
 static inline long hasZeroByte(long l)
 {
-  if(sizeof(long) == 4)
-    return (l - 0x01010101UL) & ~l & 0x80808080UL;
-  else if(sizeof(long) == 8)
-    return (l - 0x0101010101010101UL) & ~l & 0x8080808080808080UL;
+#if ULONG_MAX == 4294967295UL
+  return (l - 0x01010101UL) & ~l & 0x80808080UL;
+#else
+  return (l - 0x0101010101010101UL) & ~l & 0x8080808080808080UL;
+#endif
 }
 
 size_t strlen(const char* s)

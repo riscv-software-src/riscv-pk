@@ -87,7 +87,7 @@ void printk(const char* s, ...)
 
   char out[1024]; // XXX
   vsprintk(out,s,vl);
-  cons_write(out,strlen(out));
+  file_write(stderr,out,strlen(out));
 
   va_end(vl);
 }

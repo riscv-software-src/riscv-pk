@@ -20,6 +20,7 @@
 #define PCR_CAUSE    6
 #define PCR_TOHOST   16
 #define PCR_FROMHOST 17
+#define PCR_CONSOLE  18
 #define PCR_K0       24
 #define PCR_K1       25
 

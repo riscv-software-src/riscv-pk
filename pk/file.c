@@ -3,6 +3,7 @@
 #include "file.h"
 #include "pk.h"
 #include "frontend.h"
+#include "pcr.h"
 
 #define MAX_FDS 128
 file_t* fds[MAX_FDS];
@@ -112,13 +113,19 @@ int fd_close(int fd)
   return 0;
 }
 
-sysret_t file_read(file_t* f, void* buf, size_t size)
+sysret_t file_read(file_t* f, char* buf, size_t size)
 {
   return frontend_syscall(SYS_read,f->kfd,(long)buf,size,0);
 }
 
-sysret_t file_write(file_t* f, const void* buf, size_t size)
+sysret_t file_write(file_t* f, const char* buf, size_t size)
 {
+  if(f->kfd == 1 || f->kfd == 2)
+  {
+    for(size_t i = 0; i < size; i++)
+      mtpcr(buf[i],PCR_CONSOLE);
+  }
+
   return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);
 }
 

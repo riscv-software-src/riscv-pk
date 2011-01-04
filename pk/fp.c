@@ -29,14 +29,14 @@ int emulate_fp(trapframe_t* tf)
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
 
-  #define RRS1 ((tf->insn >>  5) & 0x1F)
-  #define RRS2 ((tf->insn >> 10) & 0x1F)
-  #define RRS3 ((tf->insn >> 15) & 0x1F)
-  #define RRD  ( tf->insn        & 0x1F)
-  #define RM   ((tf->insn >> 20) &  0x3) 
+  #define RRS1 ((tf->insn >> 22) & 0x1F)
+  #define RRS2 ((tf->insn >> 17) & 0x1F)
+  #define RRS3 ((tf->insn >> 12) & 0x1F)
+  #define RRD  ((tf->insn >> 27) & 0x1F)
+  #define RM   ((tf->insn >>  9) &  0x3) 
 
   int32_t imm = ((int32_t)tf->insn << 10) >> 20;
-  int32_t bimm = (tf->insn & 0x1f) | (((tf->insn >> 15) & 0x7f) << 5);
+  int32_t bimm = (((tf->insn >> 27) & 0x1f) << 7) | ((tf->insn >> 10) & 0x7f);
   bimm = (bimm << 20) >> 20;
 
   #define XRS1 (tf->gpr[RRS1])

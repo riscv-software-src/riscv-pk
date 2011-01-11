@@ -21,6 +21,9 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef PK_ENABLED
 
+/* Define if floating-point emulation is enabled */
+#undef PK_ENABLE_FP_EMULATION
+
 /* Define if the kernel runs in 64-bit mode */
 #undef PK_ENABLE_KERNEL_64BIT
 

@@ -638,6 +638,7 @@ enable_optional_subprojects
 enable_vm
 enable_kernel_64bit
 enable_user_64bit
+enable_fp_emulation
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1273,6 +1274,7 @@ Optional Features:
   --disable-vm            Disable virtual memory
   --disable-kernel-64bit  Disable 64-bit kernel operation
   --disable-user-64bit    Disable 64-bit user operation
+  --disable-fp-emulation  Disable floating-point emulation
 
 Some influential environment variables:
   CC          C compiler command
@@ -4015,6 +4017,19 @@ if test "x$enable_user_64bit" != "xno"; then :
 
 
 $as_echo "#define PK_ENABLE_USER_64BIT /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-fp-emulation was given.
+if test "${enable_fp_emulation+set}" = set; then :
+  enableval=$enable_fp_emulation;
+fi
+
+if test "x$enable_fp_emulation" != "xno"; then :
+
+
+$as_echo "#define PK_ENABLE_FP_EMULATION /**/" >>confdefs.h
 
 
 fi

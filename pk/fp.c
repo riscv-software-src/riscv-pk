@@ -1,16 +1,19 @@
+#include "pk.h"
 #include "pcr.h"
+#include "fp.h"
+
+static fp_state_t fp_state;
+
+#ifdef PK_ENABLE_FP_EMULATION
+
 #include "softfloat.h"
 #include "riscv-opc.h"
-#include "pk.h"
-#include "fp.h"
 #include <stdint.h>
 
 #define noisy 0
 
 static void set_fp_reg(unsigned int which, unsigned int dp, uint64_t val);
 static uint64_t get_fp_reg(unsigned int which, unsigned int dp);
-
-static fp_state_t fp_state;
 
 static inline void
 validate_address(trapframe_t* tf, long addr, int size, int store)
@@ -252,6 +255,8 @@ get_fp_reg(unsigned int which, unsigned int dp)
   return val;
 }
 
+#endif
+
 void init_fp_regs()
 {
   long sr = mfpcr(PCR_SR);
@@ -259,4 +264,3 @@ void init_fp_regs()
   put_fp_state(fp_state.fpr,fp_state.fsr);
   mtpcr(sr, PCR_SR);
 }
-

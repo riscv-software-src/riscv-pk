@@ -19,11 +19,15 @@ void handle_fp_disabled(trapframe_t* tf)
   }
   else
   {
+#ifdef PK_ENABLE_FP_EMULATION
     if(emulate_fp(tf) != 0)
     {
       dump_tf(tf);
       panic("FPU emulation failed!");
     }
+#else
+    panic("FPU emulation disabled! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
+#endif
   }
 }
 
@@ -41,8 +45,10 @@ void handle_privileged_instruction(trapframe_t* tf)
 
 void handle_illegal_instruction(trapframe_t* tf)
 {
+#ifdef PK_ENABLE_FP_EMULATION
   if(emulate_fp(tf) == 0)
     return;
+#endif
 
   dump_tf(tf);
   panic("An illegal instruction was executed!");

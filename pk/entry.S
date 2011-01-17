@@ -123,7 +123,7 @@ pop_tf:	# write the trap frame onto the stack
 trap_entry:
 	mtpcr	$ra,ASM_CR(PCR_K0)
 	mtpcr	$x2,ASM_CR(PCR_K1)
-	law		$x2,stack_top-320
+	la		$x2,stack_top-320
 	jal		save_tf
 	move	$sp,$x2
 	move	$a0,$x2

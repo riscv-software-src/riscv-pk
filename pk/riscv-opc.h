@@ -71,8 +71,6 @@
 #define  MASK_MUL 0x1ffff
 #define MATCH_AMOW_MIN 0x117a
 #define  MASK_AMOW_MIN 0x1ffff
-#define MATCH_NOR 0x1c75
-#define  MASK_NOR 0x1ffff
 #define MATCH_NMSUB_D 0x1ee
 #define  MASK_NMSUB_D 0x1ff
 #define MATCH_AMO_SWAP 0x5fa

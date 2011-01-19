@@ -131,8 +131,6 @@
 #define  MASK_ADDI 0x3ff
 #define MATCH_MULH 0x8f5
 #define  MASK_MULH 0x1ffff
-#define MATCH_MULHUW 0xcf7
-#define  MASK_MULHUW 0x1ffff
 #define MATCH_SGNINJN_S 0x606a
 #define  MASK_SGNINJN_S 0x1ffff
 #define MATCH_SRAI 0xff4
@@ -237,8 +235,6 @@
 #define  MASK_SQRT_D 0x3ff1ff
 #define MATCH_AMOW_ADD 0x17a
 #define  MASK_AMOW_ADD 0x1ffff
-#define MATCH_MULHW 0x8f7
-#define  MASK_MULHW 0x1ffff
 #define MATCH_MADD_S 0x6c
 #define  MASK_MADD_S 0x1ff
 #define MATCH_MULHU 0xcf5

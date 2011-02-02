@@ -257,8 +257,8 @@
 #define  MASK_RDNPC 0x7ffffff
 #define MATCH_FCVT_S_L 0xc053
 #define  MASK_FCVT_S_L 0x3ff1ff
-#define MATCH_SYNCI 0x383
-#define  MASK_SYNCI 0xf80003ff
+#define MATCH_SYNCI 0x97
+#define  MASK_SYNCI 0xffffffff
 #define MATCH_UNIMP 0x0
 #define  MASK_UNIMP 0xffffffff
 #define MATCH_FCVTU_L_D 0x90d3

@@ -5,7 +5,7 @@
 	.ent	get_fp_state
 get_fp_state:
 
-	mfcr	$v0, ASM_CR(CR_FSR)
+	mffsr	$v0
 
 	sf.d		$f0 ,  0($a0)
 	sf.d		$f1 ,  8($a0)
@@ -81,7 +81,7 @@ put_fp_state:
 	lf.d		$f30,240($a0)
 	lf.d		$f31,248($a0)
 
-	mtcr	$a1, ASM_CR(CR_FSR)
+	mtfsr	$a1
 
 	ret
 

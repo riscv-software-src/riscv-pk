@@ -88,7 +88,7 @@
 #define MATCH_SF_D 0x1a7
 #define  MASK_SF_D 0x3ff
 #define MATCH_MTF_D 0x1ced3
-#define  MASK_MTF_D 0x1ffff
+#define  MASK_MTF_D 0x3fffff
 #define MATCH_FCVT_L_D 0x80d3
 #define  MASK_FCVT_L_D 0x3ff1ff
 #define MATCH_FNMSUB_D 0xcb
@@ -139,6 +139,8 @@
 #define  MASK_ADDIW 0x3ff
 #define MATCH_AMOAND_W 0x943
 #define  MASK_AMOAND_W 0x1ffff
+#define MATCH_MTFLH_D 0x1eed3
+#define  MASK_MTFLH_D 0x1ffff
 #define MATCH_SRA 0x102b3
 #define  MASK_SRA 0x1ffff
 #define MATCH_L_BU 0x203

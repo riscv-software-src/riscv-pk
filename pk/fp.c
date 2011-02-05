@@ -27,7 +27,11 @@ validate_address(trapframe_t* tf, long addr, int size, int store)
 int emulate_fp(trapframe_t* tf)
 {
   if(have_fp)
+  {
+    if(!(mfpcr(PCR_SR) & SR_EF))
+      init_fp();
     fp_state.fsr = get_fp_state(fp_state.fpr);
+  }
 
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
@@ -257,10 +261,12 @@ get_fp_reg(unsigned int which, unsigned int dp)
 
 #endif
 
-void init_fp_regs()
+void init_fp(trapframe_t* tf)
 {
   long sr = mfpcr(PCR_SR);
   mtpcr(sr | SR_EF, PCR_SR);
+
   put_fp_state(fp_state.fpr,fp_state.fsr);
-  mtpcr(sr, PCR_SR);
+
+  tf->sr |= SR_EF;
 }

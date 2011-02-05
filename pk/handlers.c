@@ -13,10 +13,7 @@ void handle_breakpoint(trapframe_t* tf)
 void handle_fp_disabled(trapframe_t* tf)
 {
   if(have_fp)
-  {
-    init_fp_regs();
-    tf->sr |= SR_EF;
-  }
+    init_fp();
   else
   {
 #ifdef PK_ENABLE_FP_EMULATION

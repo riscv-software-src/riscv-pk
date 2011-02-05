@@ -28,6 +28,12 @@
 #define CR_TID       29
 
 #define TIMER_PERIOD 0x1000000
+#define TIMER_IRQ 7
+
+#define CAUSE_EXCCODE 0x000000FF
+#define CAUSE_IP      0x0000FF00
+#define CAUSE_EXCCODE_SHIFT 0
+#define CAUSE_IP_SHIFT      8
 
 #define ASM_CR(r)   _ASM_CR(r)
 #define _ASM_CR(r)  $cr##r

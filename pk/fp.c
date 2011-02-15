@@ -65,63 +65,57 @@ int emulate_fp(trapframe_t* tf)
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 
-  if(IS_INSN(LF_W))
+  if(IS_INSN(FLW))
   {
     validate_address(tf, effective_address_load, 4, 0);
     set_fp_reg(RRD, 0, *(uint32_t*)effective_address_load);
   }
-  else if(IS_INSN(LF_D))
+  else if(IS_INSN(FLD))
   {
     validate_address(tf, effective_address_load, 8, 0);
     set_fp_reg(RRD, 1, *(uint64_t*)effective_address_load);
   }
-  else if(IS_INSN(SF_W))
+  else if(IS_INSN(FSW))
   {
     validate_address(tf, effective_address_store, 4, 1);
     *(uint32_t*)effective_address_store = frs2s;
   }
-  else if(IS_INSN(SF_D))
+  else if(IS_INSN(FSD))
   {
     validate_address(tf, effective_address_store, 8, 1);
     *(uint64_t*)effective_address_store = frs2d;
   }
-  else if(IS_INSN(MFF_S))
+  else if(IS_INSN(MFTX_S))
     XRDR = frs2s;
-  else if(IS_INSN(MFF_D))
+  else if(IS_INSN(MFTX_D))
     XRDR = frs2d;
-  else if(IS_INSN(MFFL_D))
-    XRDR = (int32_t)frs2d;
-  else if(IS_INSN(MFFH_D))
-    XRDR = (int64_t)frs2d >> 32;
-  else if(IS_INSN(MTF_S))
+  else if(IS_INSN(MXTF_S))
     set_fp_reg(RRD, 0, XRS1);
-  else if(IS_INSN(MTF_D))
+  else if(IS_INSN(MXTF_D))
     set_fp_reg(RRD, 1, XRS1);
-  else if(IS_INSN(MTFLH_D))
-    set_fp_reg(RRD, 1, (uint32_t)XRS1 | (XRS2 << 32));
-  else if(IS_INSN(FSINJ_S))
+  else if(IS_INSN(FSGNJ_S))
     set_fp_reg(RRD, 0, (frs1s &~ (uint32_t)INT32_MIN) | (frs2s & (uint32_t)INT32_MIN));
-  else if(IS_INSN(FSINJ_D))
+  else if(IS_INSN(FSGNJ_D))
     set_fp_reg(RRD, 1, (frs1d &~ INT64_MIN) | (frs2d & INT64_MIN));
-  else if(IS_INSN(FSINJN_S))
+  else if(IS_INSN(FSGNJN_S))
     set_fp_reg(RRD, 0, (frs1s &~ (uint32_t)INT32_MIN) | ((~frs2s) & (uint32_t)INT32_MIN));
-  else if(IS_INSN(FSINJN_D))
+  else if(IS_INSN(FSGNJN_D))
     set_fp_reg(RRD, 1, (frs1d &~ INT64_MIN) | ((~frs2d) & INT64_MIN));
-  else if(IS_INSN(FSMUL_S))
+  else if(IS_INSN(FSGNJX_S))
     set_fp_reg(RRD, 0, frs1s ^ (frs2s & (uint32_t)INT32_MIN));
-  else if(IS_INSN(FSMUL_D))
+  else if(IS_INSN(FSGNJX_D))
     set_fp_reg(RRD, 1, frs1d ^ (frs2d & INT64_MIN));
-  else if(IS_INSN(FC_EQ_S))
+  else if(IS_INSN(FEQ_S))
     XRDR = f32_eq(frs1s, frs2s);
-  else if(IS_INSN(FC_EQ_D))
+  else if(IS_INSN(FEQ_D))
     XRDR = f64_eq(frs1d, frs2d);
-  else if(IS_INSN(FC_LE_S))
+  else if(IS_INSN(FLE_S))
     XRDR = f32_le(frs1s, frs2s);
-  else if(IS_INSN(FC_LE_D))
+  else if(IS_INSN(FLE_D))
     XRDR = f64_le(frs1d, frs2d);
-  else if(IS_INSN(FC_LT_S))
+  else if(IS_INSN(FLT_S))
     XRDR = f32_lt(frs1s, frs2s);
-  else if(IS_INSN(FC_LT_D))
+  else if(IS_INSN(FLT_D))
     XRDR = f64_lt(frs1d, frs2d);
   else if(IS_INSN(FCVT_S_W))
     set_fp_reg(RRD, 0, i32_to_f32(XRS1));
@@ -135,13 +129,13 @@ int emulate_fp(trapframe_t* tf)
     set_fp_reg(RRD, 1, i64_to_f64(XRS1));
   else if(IS_INSN(FCVT_D_S))
     set_fp_reg(RRD, 1, f32_to_f64(frs1s));
-  else if(IS_INSN(FCVTU_S_W))
+  else if(IS_INSN(FCVT_S_WU))
     set_fp_reg(RRD, 0, ui32_to_f32(XRS1));
-  else if(IS_INSN(FCVTU_S_L))
+  else if(IS_INSN(FCVT_S_LU))
     set_fp_reg(RRD, 0, ui64_to_f32(XRS1));
-  else if(IS_INSN(FCVTU_D_W))
+  else if(IS_INSN(FCVT_D_WU))
     set_fp_reg(RRD, 1, ui32_to_f64(XRS1));
-  else if(IS_INSN(FCVTU_D_L))
+  else if(IS_INSN(FCVT_D_LU))
     set_fp_reg(RRD, 1, ui64_to_f64(XRS1));
   else if(IS_INSN(FADD_S))
     set_fp_reg(RRD, 0, f32_add(frs1s, frs2s));
@@ -187,13 +181,13 @@ int emulate_fp(trapframe_t* tf)
     XRDR = f32_to_i64_r_minMag(frs1s,true);
   else if(IS_INSN(FCVT_L_D))
     XRDR = f64_to_i64_r_minMag(frs1d,true);
-  else if(IS_INSN(FCVTU_W_S))
+  else if(IS_INSN(FCVT_WU_S))
     XRDR = f32_to_ui32_r_minMag(frs1s,true);
-  else if(IS_INSN(FCVTU_W_D))
+  else if(IS_INSN(FCVT_WU_D))
     XRDR = f64_to_ui32_r_minMag(frs1d,true);
-  else if(IS_INSN(FCVTU_L_S))
+  else if(IS_INSN(FCVT_LU_S))
     XRDR = f32_to_ui64_r_minMag(frs1s,true);
-  else if(IS_INSN(FCVTU_L_D))
+  else if(IS_INSN(FCVT_LU_D))
     XRDR = f64_to_ui64_r_minMag(frs1d,true);
   else
     return -1;
@@ -209,10 +203,10 @@ int emulate_fp(trapframe_t* tf)
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
-#define PUT_FP_REG(which, type, val) asm("mtf." STR(type) " $f" STR(which) ",%0" : : "r"(val))
-#define GET_FP_REG(which, type, val) asm("mff." STR(type) " %0,$f" STR(which) : "=r"(val))
-#define LOAD_FP_REG(which, type, val) asm("l." STR(type) " $f" STR(which) ",%0" : : "m"(val))
-#define STORE_FP_REG(which, type, val)  asm("s." STR(type) " $f" STR(which) ",%0" : "=m"(val) : : "memory")
+#define PUT_FP_REG(which, type, val) asm("mxtf." STR(type) " $f" STR(which) ",%0" : : "r"(val))
+#define GET_FP_REG(which, type, val) asm("mftx." STR(type) " %0,$f" STR(which) : "=r"(val))
+#define LOAD_FP_REG(which, type, val) asm("fl" STR(type) " $f" STR(which) ",%0" : : "m"(val))
+#define STORE_FP_REG(which, type, val)  asm("fs" STR(type) " $f" STR(which) ",%0" : "=m"(val) : : "memory")
 
 static void __attribute__((noinline))
 set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
@@ -231,7 +225,7 @@ set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
     // then move it back out as a DP value.  OK to clobber $f0
     // because we'll restore it later.
     PUT_FP_REG(0,s,val);
-    GET_FP_REG(0,d,fp_state.fpr[which]);
+    STORE_FP_REG(0,d,fp_state.fpr[which]);
   }
 }
 
@@ -246,7 +240,7 @@ get_fp_reg(unsigned int which, unsigned int dp)
     // to get an SP value, move the DP value into the FPU
     // then move it back out as an SP value.  OK to clobber $f0
     // because we'll restore it later.
-    PUT_FP_REG(0,d,fp_state.fpr[which]);
+    LOAD_FP_REG(0,d,fp_state.fpr[which]);
     GET_FP_REG(0,s,val);
   }
 

@@ -1,12 +1,12 @@
 #include "pcr.h"
 
 #ifdef PK_ENABLE_KERNEL_64BIT
-# define STORE    s.d
-# define LOAD     l.d
+# define STORE    sd
+# define LOAD     ld
 # define REGBYTES 8
 #else
-# define STORE    s.w
-# define LOAD     l.w
+# define STORE    sw
+# define LOAD     lw
 # define REGBYTES 4
 #endif
 
@@ -62,7 +62,7 @@ save_tf:	# write the trap frame onto the stack
 
 	# get insn
 	and		$x4,$x4,~3
-	l.w		$x3,0($x4)
+	lw		$x3,0($x4)
 	STORE	$x3, 36*REGBYTES($x2)
 
 	ret

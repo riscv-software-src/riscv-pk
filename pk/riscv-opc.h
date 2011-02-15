@@ -39,8 +39,6 @@
 #define  MASK_DI 0x7ffffff
 #define MATCH_SLTIU 0x193
 #define  MASK_SLTIU 0x3ff
-#define MATCH_MFFL_D 0x19ed3
-#define  MASK_MFFL_D 0x7c1ffff
 #define MATCH_FADD_S 0x53
 #define  MASK_FADD_S 0x1f1ff
 #define MATCH_FCVT_S_W 0xe053
@@ -57,8 +55,6 @@
 #define  MASK_AMOMINU_W 0x1ffff
 #define MATCH_DIVUW 0x6bb
 #define  MASK_DIVUW 0x1ffff
-#define MATCH_MFFH_D 0x1aed3
-#define  MASK_MFFH_D 0x7c1ffff
 #define MATCH_SRLW 0x2bb
 #define  MASK_SRLW 0x1ffff
 #define MATCH_DIV 0x633
@@ -139,8 +135,6 @@
 #define  MASK_ADDIW 0x3ff
 #define MATCH_AMOAND_W 0x943
 #define  MASK_AMOAND_W 0x1ffff
-#define MATCH_MTFLH_D 0x1eed3
-#define  MASK_MTFLH_D 0x1ffff
 #define MATCH_SRA 0x102b3
 #define  MASK_SRA 0x1ffff
 #define MATCH_L_BU 0x203

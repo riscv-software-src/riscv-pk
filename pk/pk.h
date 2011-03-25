@@ -35,7 +35,6 @@ void dump_tf(trapframe_t*);
 
 void unhandled_trap(trapframe_t*);
 void handle_syscall(trapframe_t*);
-void handle_breakpoint(trapframe_t*);
 void handle_misaligned_ldst(trapframe_t*);
 void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);

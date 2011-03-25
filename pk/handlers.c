@@ -38,6 +38,12 @@ static void handle_illegal_instruction(trapframe_t* tf)
   panic("An illegal instruction was executed!");
 }
 
+static void handle_breakpoint(trapframe_t* tf)
+{
+  dump_tf(tf);
+  printk("Breakpoint!\n");
+}
+
 static void handle_misaligned_fetch(trapframe_t* tf)
 {
   dump_tf(tf);
@@ -100,8 +106,9 @@ void handle_trap(trapframe_t* tf)
     handle_illegal_instruction,
     handle_privileged_instruction,
     handle_fp_disabled,
-    handle_syscall,
     handle_interrupt,
+    handle_syscall,
+    handle_breakpoint,
     handle_misaligned_ldst,
     handle_fault_load,
     handle_fault_store,

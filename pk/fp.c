@@ -57,8 +57,8 @@ int emulate_fp(trapframe_t* tf)
   uint32_t frs2s = get_fp_reg(RRS2, 0);
   uint32_t frs3s = get_fp_reg(RRS3, 0);
 
-  uint64_t effective_address_load = XRS1 + imm;
-  uint64_t effective_address_store = XRS1 + bimm;
+  long effective_address_load = XRS1 + imm;
+  long effective_address_store = XRS1 + bimm;
 
   softfloat_exceptionFlags = 0;
   softfloat_roundingMode = (RM & 4) ? (RM & 3) : ((fp_state.fsr >> 5) & 3);

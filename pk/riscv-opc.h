@@ -101,8 +101,6 @@
 #define  MASK_BLT 0x3ff
 #define MATCH_MTFSR 0x1f053
 #define  MASK_MTFSR 0x3fffff
-#define MATCH_FMAXMAG_D 0x1b0d3
-#define  MASK_FMAXMAG_D 0x1ffff
 #define MATCH_REM 0x733
 #define  MASK_REM 0x1ffff
 #define MATCH_SRLIW 0x29b
@@ -241,8 +239,6 @@
 #define  MASK_LBU 0x3ff
 #define MATCH_SYSCALL 0x77
 #define  MASK_SYSCALL 0xffffffff
-#define MATCH_FMINMAG_D 0x1a0d3
-#define  MASK_FMINMAG_D 0x1ffff
 #define MATCH_FSGNJ_S 0x5053
 #define  MASK_FSGNJ_S 0x1ffff
 #define MATCH_FSGNJ_D 0x50d3
@@ -289,8 +285,6 @@
 #define  MASK_DIVU 0x1ffff
 #define MATCH_AMOSWAP_W 0x543
 #define  MASK_AMOSWAP_W 0x1ffff
-#define MATCH_FMAXMAG_S 0x1b053
-#define  MASK_FMAXMAG_S 0x1ffff
 #define MATCH_FADD_S 0x53
 #define  MASK_FADD_S 0x1f1ff
 #define MATCH_FSD 0x1a7
@@ -309,7 +303,5 @@
 #define  MASK_SB 0x3ff
 #define MATCH_FMSUB_D 0xc7
 #define  MASK_FMSUB_D 0x1ff
-#define MATCH_FMINMAG_S 0x1a053
-#define  MASK_FMINMAG_S 0x1ffff
 #define MATCH_SD 0x1a3
 #define  MASK_SD 0x3ff

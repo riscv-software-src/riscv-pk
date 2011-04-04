@@ -7,6 +7,8 @@
 #define  MASK_BLTU 0x3ff
 #define MATCH_FCVT_LU_S 0x9053
 #define  MASK_FCVT_LU_S 0x3ff1ff
+#define MATCH_FENCE_L_CV 0x32f
+#define  MASK_FENCE_L_CV 0x3ff
 #define MATCH_FMIN_S 0x18053
 #define  MASK_FMIN_S 0x1ffff
 #define MATCH_SLLIW 0x9b
@@ -25,6 +27,8 @@
 #define  MASK_ADD 0x1ffff
 #define MATCH_FCVT_D_S 0x100d3
 #define  MASK_FCVT_D_S 0x3fffff
+#define MATCH_FENCE_G_V 0x2af
+#define  MASK_FENCE_G_V 0x3ff
 #define MATCH_MFPCR 0x17b
 #define  MASK_MFPCR 0x7c1ffff
 #define MATCH_FMAX_D 0x190d3
@@ -187,6 +191,8 @@
 #define  MASK_LWU 0x3ff
 #define MATCH_FNMADD_D 0xcf
 #define  MASK_FNMADD_D 0x1ff
+#define MATCH_FENCE_G_CV 0x3af
+#define  MASK_FENCE_G_CV 0x3ff
 #define MATCH_AMOADD_D 0x1ab
 #define  MASK_AMOADD_D 0x1ffff
 #define MATCH_AMOMAX_W 0x152b
@@ -271,6 +277,8 @@
 #define  MASK_FSGNJN_S 0x1ffff
 #define MATCH_AMOSWAP_D 0x5ab
 #define  MASK_AMOSWAP_D 0x1ffff
+#define MATCH_FENCE_L_V 0x22f
+#define  MASK_FENCE_L_V 0x3ff
 #define MATCH_FSQRT_D 0x40d3
 #define  MASK_FSQRT_D 0x3ff1ff
 #define MATCH_FDIV_D 0x30d3

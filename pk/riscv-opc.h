@@ -88,7 +88,7 @@
 #define MATCH_LHST_V 0x108b
 #define  MASK_LHST_V 0x1ffff
 #define MATCH_UTIDX 0x1f7
-#define  MASK_UTIDX 0xffffffff
+#define  MASK_UTIDX 0x7ffffff
 #define MATCH_SRLI 0x293
 #define  MASK_SRLI 0x3f03ff
 #define MATCH_LDSEGST_V 0x18f

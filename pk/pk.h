@@ -29,7 +29,7 @@ int emulate_fp(trapframe_t*);
 void init_fp();
 
 void printk(const char* s, ...);
-void init_tf(trapframe_t*, long pc, long sp);
+void init_tf(trapframe_t*, long pc, long sp, int user64);
 void pop_tf(trapframe_t*);
 void dump_tf(trapframe_t*);
 
@@ -41,6 +41,8 @@ void handle_fault_store(trapframe_t*);
 void boot();
 
 void sys_exit(int code) __attribute__((noreturn));
+
+long load_elf(const char* fn, int* user64);
 
 static inline void advance_pc(trapframe_t* tf)
 {

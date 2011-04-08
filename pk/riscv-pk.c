@@ -16,9 +16,6 @@ void __attribute__((section(".boottext"))) __start()
   register long sr0 = SR_S | SR_PS | SR_ET | SR_IM;
   #ifdef PK_ENABLE_KERNEL_64BIT
     sr0 |= SR_SX;
-    #ifdef PK_ENABLE_USER_64BIT
-      sr0 |= SR_UX;
-    #endif
   #endif
 
   mtpcr(sr0 | SR_EF, PCR_SR);

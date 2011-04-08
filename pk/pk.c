@@ -122,12 +122,15 @@ void dump_tf(trapframe_t* tf)
          (uint32_t)tf->insn);
 }
 
-void init_tf(trapframe_t* tf, long pc, long sp)
+void init_tf(trapframe_t* tf, long pc, long sp, int user64)
 {
   memset(tf,0,sizeof(*tf));
-  tf->sr = mfpcr(PCR_SR) & ~(SR_PS | SR_ET);
-  tf->gpr[30] = USER_MEM_SIZE-USER_MAINVARS_SIZE;
-  tf->epc = USER_START;
+  #ifndef PK_ENABLE_KERNEL_64BIT
+    kassert(!user64);
+  #endif
+  tf->sr = mfpcr(PCR_SR) & ~(SR_PS | SR_ET) | (user64 ? SR_UX : 0);
+  tf->gpr[30] = sp;
+  tf->epc = pc;
 }
 
 static void bss_init()
@@ -135,18 +138,30 @@ static void bss_init()
   // front-end server zeroes the bss automagically
 }
 
-static void mainvars_init()
+struct args
 {
+  uint64_t argc;
+  uint64_t argv[];
+};
+
+static struct args* mainvars_init()
+{
+  void* loc = (void*)USER_MEM_SIZE-USER_MAINVARS_SIZE;
+
   sysret_t r = frontend_syscall(SYS_getmainvars,
     USER_MEM_SIZE-USER_MAINVARS_SIZE, USER_MAINVARS_SIZE, 0, 0);
-
   kassert(r.result == 0);
+
+  return (struct args*)loc;
 }
 
-static void jump_usrstart()
+static void jump_usrstart(const char* fn)
 {
   trapframe_t tf;
-  init_tf(&tf, USER_START, USER_MEM_SIZE-USER_MAINVARS_SIZE);
+
+  int user64;
+  long start = load_elf(fn, &user64);
+  init_tf(&tf, start, USER_MEM_SIZE-USER_MAINVARS_SIZE, user64);
   pop_tf(&tf);
 }
 
@@ -154,6 +169,7 @@ void boot()
 {
   bss_init();
   file_init();
-  mainvars_init();
-  jump_usrstart();
+
+  struct args* args = mainvars_init();
+  jump_usrstart((void*)(long)args->argv[0]);
 }

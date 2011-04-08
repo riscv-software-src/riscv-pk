@@ -16,7 +16,7 @@ static void file_incref(file_t* f)
   atomic_add(&f->refcnt,1);
 }
 
-static void file_decref(file_t* f)
+void file_decref(file_t* f)
 {
   if(atomic_add(&f->refcnt,-1) == 2)
   {
@@ -118,6 +118,11 @@ sysret_t file_read(file_t* f, char* buf, size_t size)
   return frontend_syscall(SYS_read,f->kfd,(long)buf,size,0);
 }
 
+sysret_t file_pread(file_t* f, char* buf, size_t size, off_t offset)
+{
+  return frontend_syscall(SYS_pread,f->kfd,(long)buf,size,offset);
+}
+
 sysret_t file_write(file_t* f, const char* buf, size_t size)
 {
   if(f->kfd == 1 || f->kfd == 2)
@@ -127,6 +132,11 @@ sysret_t file_write(file_t* f, const char* buf, size_t size)
   }
 
   return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);
+}
+
+sysret_t file_pwrite(file_t* f, const char* buf, size_t size, off_t offset)
+{
+  return frontend_syscall(SYS_pwrite,f->kfd,(long)buf,size,offset);
 }
 
 sysret_t file_stat(file_t* f, struct stat* s)

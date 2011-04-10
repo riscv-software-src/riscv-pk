@@ -27,7 +27,7 @@ extern "C" {
 extern int have_fp;
 extern int have_vector;
 int emulate_fp(trapframe_t*);
-void init_fp();
+void init_fp(trapframe_t* tf);
 
 void printk(const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp, int user64);

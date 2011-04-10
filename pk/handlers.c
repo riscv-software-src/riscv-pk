@@ -7,7 +7,7 @@ int have_vector = 1;
 static void handle_fp_disabled(trapframe_t* tf)
 {
   if(have_fp)
-    init_fp();
+    init_fp(tf);
   else
   {
 #ifdef PK_ENABLE_FP_EMULATION

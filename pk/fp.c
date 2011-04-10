@@ -29,7 +29,7 @@ int emulate_fp(trapframe_t* tf)
   if(have_fp)
   {
     if(!(mfpcr(PCR_SR) & SR_EF))
-      init_fp();
+      init_fp(tf);
     fp_state.fsr = get_fp_state(fp_state.fpr);
   }
 

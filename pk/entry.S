@@ -131,7 +131,6 @@ trap_entry:
 	move	$a0,$x2
 	ei
 	jal		handle_trap
-	unimp
 	.end	trap_entry
 
 	.bss

@@ -127,7 +127,7 @@ void init_tf(trapframe_t* tf, long pc, long sp, int user64)
   memset(tf,0,sizeof(*tf));
   if(sizeof(void*) != 8)
     kassert(!user64);
-  tf->sr = (mfpcr(PCR_SR) & (SR_IM | SR_SX)) | SR_S | SR_UC | SR_UC;
+  tf->sr = (mfpcr(PCR_SR) & (SR_IM | SR_SX)) | SR_S | SR_EC;
   if(user64)
     tf->sr |= SR_UX;
   tf->gpr[30] = sp;

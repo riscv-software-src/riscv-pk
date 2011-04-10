@@ -13,7 +13,7 @@ void __attribute__((section(".boottext"))) __start()
   mtpcr(0,PCR_COUNT);
   mtpcr(0,PCR_COMPARE);
 
-  register long sr0 = SR_S | SR_PS | SR_ET | SR_IM | SR_SC;
+  register long sr0 = SR_S | SR_PS | SR_ET | SR_IM | SR_EC;
   if(sizeof(void*) == 8)
     sr0 |= SR_SX;
 

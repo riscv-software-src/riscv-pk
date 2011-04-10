@@ -636,8 +636,6 @@ enable_option_checking
 enable_stow
 enable_optional_subprojects
 enable_vm
-enable_kernel_64bit
-enable_user_64bit
 enable_fp_emulation
 '
       ac_precious_vars='build_alias
@@ -1272,8 +1270,6 @@ Optional Features:
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
-  --disable-kernel-64bit  Disable 64-bit kernel operation
-  --disable-user-64bit    Disable 64-bit user operation
   --disable-fp-emulation  Disable floating-point emulation
 
 Some influential environment variables:
@@ -3986,39 +3982,6 @@ if test "x$enable_vm" != "xno"; then :
 
 
 $as_echo "#define PK_ENABLE_VM /**/" >>confdefs.h
-
-
-fi
-
-# Check whether --enable-kernel-64bit was given.
-if test "${enable_kernel_64bit+set}" = set; then :
-  enableval=$enable_kernel_64bit;
-fi
-
-if test "x$enable_kernel_64bit" != "xno"; then :
-
-
-$as_echo "#define PK_ENABLE_KERNEL_64BIT /**/" >>confdefs.h
-
-
-else
-
-  CFLAGS="$CFLAGS -mabi=32"
-
-  LDFLAGS="$LDFLAGS -mabi=32"
-
-
-fi
-
-# Check whether --enable-user-64bit was given.
-if test "${enable_user_64bit+set}" = set; then :
-  enableval=$enable_user_64bit;
-fi
-
-if test "x$enable_user_64bit" != "xno"; then :
-
-
-$as_echo "#define PK_ENABLE_USER_64BIT /**/" >>confdefs.h
 
 
 fi

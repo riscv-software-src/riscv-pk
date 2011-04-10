@@ -4,7 +4,7 @@
 void __attribute__((section(".boottext"))) __start()
 {
   extern char stack_top;
-  asm("move $sp,%0" : : "r"(&stack_top-64));
+  asm volatile("move $sp,%0" : : "r"(&stack_top-64) : "memory");
 
   extern char trap_entry;
   register void* te = &trap_entry;
@@ -13,10 +13,9 @@ void __attribute__((section(".boottext"))) __start()
   mtpcr(0,PCR_COUNT);
   mtpcr(0,PCR_COMPARE);
 
-  register long sr0 = SR_S | SR_PS | SR_ET | SR_IM;
-  #ifdef PK_ENABLE_KERNEL_64BIT
+  register long sr0 = SR_S | SR_PS | SR_ET | SR_IM | SR_SC;
+  if(sizeof(void*) == 8)
     sr0 |= SR_SX;
-  #endif
 
   mtpcr(sr0 | SR_EF, PCR_SR);
   have_fp = mfpcr(PCR_SR) & SR_EF;

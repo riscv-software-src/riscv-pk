@@ -1,6 +1,6 @@
 #include "pcr.h"
 
-#ifdef PK_ENABLE_KERNEL_64BIT
+#ifdef __riscv64
 # define STORE    sd
 # define LOAD     ld
 # define REGBYTES 8
@@ -61,9 +61,11 @@ save_tf:	# write the trap frame onto the stack
 	STORE	$x3,35*REGBYTES($x2)
 
 	# get insn
-	and		$x4,$x4,~3
-	lw		$x3,0($x4)
-	STORE	$x3, 36*REGBYTES($x2)
+	and		$x4,$x4,~1
+	lh		$x3,0($x4)
+	lh		$x4,2($x4)
+	sh		$x3,  36*REGBYTES($x2)
+	sh		$x4,2+36*REGBYTES($x2)
 
 	ret
 	.end	save_tf

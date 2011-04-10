@@ -43,8 +43,6 @@
 #define  MASK_FENCE_G_V 0x3ff
 #define MATCH_MFPCR 0x17b
 #define  MASK_MFPCR 0x7c1ffff
-#define MATCH_LHUSEG_V 0x228b
-#define  MASK_LHUSEG_V 0x1ffff
 #define MATCH_FMAX_D 0x190d3
 #define  MASK_FMAX_D 0x1ffff
 #define MATCH_SBSEG_V 0x280b
@@ -357,6 +355,8 @@
 #define  MASK_SYSCALL 0xffffffff
 #define MATCH_FSGNJ_S 0x5053
 #define  MASK_FSGNJ_S 0x1ffff
+#define MATCH_C_ADDI 0x0
+#define  MASK_C_ADDI 0x1f
 #define MATCH_SHSEGST_V 0x88f
 #define  MASK_SHSEGST_V 0xfff
 #define MATCH_FLWSEGST_V 0x50f
@@ -387,8 +387,8 @@
 #define  MASK_FMOV_US 0x1ffff
 #define MATCH_FCVT_LU_D 0x90d3
 #define  MASK_FCVT_LU_D 0x3ff1ff
-#define MATCH_UNIMP 0x0
-#define  MASK_UNIMP 0xffffffff
+#define MATCH_LHUSEG_V 0x228b
+#define  MASK_LHUSEG_V 0x1ffff
 #define MATCH_FSUB_D 0x10d3
 #define  MASK_FSUB_D 0x1f1ff
 #define MATCH_FMADD_S 0x43

@@ -125,10 +125,11 @@ void dump_tf(trapframe_t* tf)
 void init_tf(trapframe_t* tf, long pc, long sp, int user64)
 {
   memset(tf,0,sizeof(*tf));
-  #ifndef PK_ENABLE_KERNEL_64BIT
+  if(sizeof(void*) != 8)
     kassert(!user64);
-  #endif
-  tf->sr = mfpcr(PCR_SR) & ~(SR_PS | SR_ET) | (user64 ? SR_UX : 0);
+  tf->sr = (mfpcr(PCR_SR) & (SR_IM | SR_SX)) | SR_S | SR_UC | SR_UC;
+  if(user64)
+    tf->sr |= SR_UX;
   tf->gpr[30] = sp;
   tf->epc = pc;
 }

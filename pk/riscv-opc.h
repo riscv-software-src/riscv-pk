@@ -57,6 +57,8 @@
 #define  MASK_LBU_V 0x3fffff
 #define MATCH_BGEU 0x3e3
 #define  MASK_BGEU 0x3ff
+#define MATCH_C_LI 0x1
+#define  MASK_C_LI 0x1f
 #define MATCH_DI 0xfb
 #define  MASK_DI 0x7ffffff
 #define MATCH_SLTIU 0x193

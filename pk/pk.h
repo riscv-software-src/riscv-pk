@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 extern int have_fp;
+extern int have_vector;
 int emulate_fp(trapframe_t*);
 void init_fp();
 

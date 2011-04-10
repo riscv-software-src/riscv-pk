@@ -2,6 +2,7 @@
 #include "pk.h"
 
 int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
+int have_vector = 1;
 
 static void handle_fp_disabled(trapframe_t* tf)
 {
@@ -19,6 +20,14 @@ static void handle_fp_disabled(trapframe_t* tf)
     panic("FPU emulation disabled! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
 #endif
   }
+}
+
+static void handle_vector_disabled(trapframe_t* tf)
+{
+  if (have_vector)
+    tf->sr |= SR_EV;
+  else
+    panic("No vector hardware! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
 }
 
 static void handle_privileged_instruction(trapframe_t* tf)
@@ -112,6 +121,7 @@ void handle_trap(trapframe_t* tf)
     handle_misaligned_ldst,
     handle_fault_load,
     handle_fault_store,
+    handle_vector_disabled,
   };
 
   int exccode = (tf->cause & CAUSE_EXCCODE) >> CAUSE_EXCCODE_SHIFT;

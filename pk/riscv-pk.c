@@ -21,6 +21,10 @@ void __attribute__((section(".boottext"))) __start()
   have_fp = mfpcr(PCR_SR) & SR_EF;
   mtpcr(sr0, PCR_SR);
 
+  mtpcr(sr0 | SR_EV, PCR_SR);
+  have_vector = mfpcr(PCR_SR) & SR_EV;
+  mtpcr(sr0, PCR_SR);
+
   extern void boot();
   register void (*boot_p)() = &boot;
   asm("" : "=r"(boot_p) : "0"(boot_p));

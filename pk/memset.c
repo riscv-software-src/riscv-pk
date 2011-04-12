@@ -7,8 +7,12 @@
 
 void* memset(void* m, int ch, size_t s)
 {
-  size_t i;
+  size_t i = 0;
   char* mem = (char*)m;
+
+  if(s < 8*sizeof(long))
+    goto small;
+
   if((long)m & (sizeof(long)-1))
   {
     size_t n = sizeof(long) - ((long)m & (sizeof(long)-1));
@@ -39,6 +43,7 @@ void* memset(void* m, int ch, size_t s)
     lmem[i+7] = l;
   }
 
+small:
   for( ; i < s/sizeof(long); i++)
     lmem[i] = l;
 

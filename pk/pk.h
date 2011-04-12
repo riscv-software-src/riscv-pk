@@ -1,6 +1,12 @@
 #ifndef _PK_H
 #define _PK_H
 
+#define USER_MEM_SIZE 0x70000000
+#define USER_MAINVARS_SIZE 0x1000
+#define USER_START 0x10000
+
+#ifndef __ASSEMBLER__
+
 #include <stdint.h>
 
 typedef struct
@@ -12,10 +18,6 @@ typedef struct
   long cause;
   long insn;
 } trapframe_t;
-
-#define USER_MEM_SIZE 0x70000000
-#define USER_MAINVARS_SIZE 0x1000
-#define USER_START 0x10000
 
 #define panic(s,...) do { printk(s"\n", ##__VA_ARGS__); sys_exit(-1); } while(0)
 #define kassert(cond) do { if(!(cond)) panic("assertion failed: "#cond); } while(0)
@@ -36,7 +38,8 @@ void dump_tf(trapframe_t*);
 
 void unhandled_trap(trapframe_t*);
 void handle_syscall(trapframe_t*);
-void handle_misaligned_ldst(trapframe_t*);
+void handle_misaligned_load(trapframe_t*);
+void handle_misaligned_store(trapframe_t*);
 void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);
 void boot();
@@ -52,6 +55,8 @@ static inline void advance_pc(trapframe_t* tf)
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif

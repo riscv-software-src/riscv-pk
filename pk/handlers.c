@@ -59,10 +59,17 @@ static void handle_misaligned_fetch(trapframe_t* tf)
   panic("Misaligned instruction access!");
 }
 
-void handle_misaligned_ldst(trapframe_t* tf)
+void handle_misaligned_load(trapframe_t* tf)
+{
+  // TODO emulate misaligned loads and stores
+  dump_tf(tf);
+  panic("Misaligned load!");
+}
+
+void handle_misaligned_store(trapframe_t* tf)
 {
   dump_tf(tf);
-  panic("Misaligned data access!");
+  panic("Misaligned store!");
 }
 
 static void handle_fault_fetch(trapframe_t* tf)
@@ -109,19 +116,21 @@ static void handle_interrupt(trapframe_t* tf)
 void handle_trap(trapframe_t* tf)
 {
   typedef void (*trap_handler)(trapframe_t*);
-  const static trap_handler trap_handlers[] = {
-    handle_misaligned_fetch,
-    handle_fault_fetch,
-    handle_illegal_instruction,
-    handle_privileged_instruction,
-    handle_fp_disabled,
-    handle_interrupt,
-    handle_syscall,
-    handle_breakpoint,
-    handle_misaligned_ldst,
-    handle_fault_load,
-    handle_fault_store,
-    handle_vector_disabled,
+
+  const static trap_handler trap_handlers[NUM_CAUSES] = {
+    [CAUSE_MISALIGNED_FETCH] = handle_misaligned_fetch,
+    [CAUSE_FAULT_FETCH] = handle_fault_fetch,
+    [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
+    [CAUSE_PRIVILEGED_INSTRUCTION] = handle_privileged_instruction,
+    [CAUSE_FP_DISABLED] = handle_fp_disabled,
+    [CAUSE_INTERRUPT] = handle_interrupt,
+    [CAUSE_SYSCALL] = handle_syscall,
+    [CAUSE_BREAKPOINT] = handle_breakpoint,
+    [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
+    [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,
+    [CAUSE_FAULT_LOAD] = handle_fault_load,
+    [CAUSE_FAULT_STORE] = handle_fault_store,
+    [CAUSE_VECTOR_DISABLED] = handle_vector_disabled,
   };
 
   int exccode = (tf->cause & CAUSE_EXCCODE) >> CAUSE_EXCCODE_SHIFT;

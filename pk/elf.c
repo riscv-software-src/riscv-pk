@@ -9,7 +9,7 @@ long load_elf(const char* fn, int* user64)
 {
   sysret_t ret = file_open(fn, strlen(fn)+1, O_RDONLY, 0);
   file_t* file = (file_t*)ret.result;
-  if(file == NULL)
+  if(ret.result == -1)
     panic("couldn't open %s!", fn);
 
   char buf[2048]; // XXX

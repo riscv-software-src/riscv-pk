@@ -75,6 +75,8 @@
 #define  MASK_BREAK 0xffffffff
 #define MATCH_LBST_V 0x100b
 #define  MASK_LBST_V 0x1ffff
+#define MATCH_CFLUSH 0x2fb
+#define  MASK_CFLUSH 0xffffffff
 #define MATCH_FCVT_S_W 0xe053
 #define  MASK_FCVT_S_W 0x3ff1ff
 #define MATCH_LDSEG_V 0x218b

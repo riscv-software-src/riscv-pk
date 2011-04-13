@@ -9,6 +9,14 @@ void* memset(void* m, int ch, size_t s)
 {
   size_t i = 0;
   char* mem = (char*)m;
+  long* lmem = (long*)mem;
+
+  long l = ch & 0xFF;
+  l = l | (l << 8);
+  l = l | (l << 16);
+  #if ULONG_MAX == 18446744073709551615UL
+  l = l | (l << 32);
+  #endif
 
   if(s < 8*sizeof(long))
     goto small;
@@ -23,14 +31,6 @@ void* memset(void* m, int ch, size_t s)
     s -= n;
   }
 
-  long l = ch & 0xFF;
-  l = l | (l << 8);
-  l = l | (l << 16);
-  #if ULONG_MAX == 18446744073709551615UL
-  l = l | (l << 32);
-  #endif
-
-  long* lmem = (long*)mem;
   for(i = 0; i < s/sizeof(long) - 7; i += 8)
   {
     lmem[i+0] = l;

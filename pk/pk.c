@@ -162,6 +162,7 @@ static void jump_usrstart(const char* fn)
 
   int user64;
   long start = load_elf(fn, &user64);
+  asm volatile("cflush; fence");
   init_tf(&tf, start, USER_MEM_SIZE-USER_MAINVARS_SIZE, user64);
   pop_tf(&tf);
 }

@@ -7,9 +7,9 @@
 
 void* memset(void* m, int ch, size_t s)
 {
-  size_t i = 0;
+  size_t i;
   char* mem = (char*)m;
-  long* lmem = (long*)mem;
+  long* lmem;
 
   long l = ch & 0xFF;
   l = l | (l << 8);
@@ -18,18 +18,9 @@ void* memset(void* m, int ch, size_t s)
   l = l | (l << 32);
   #endif
 
-  if(s < 8*sizeof(long))
-    goto small;
-
-  if((long)m & (sizeof(long)-1))
-  {
-    size_t n = sizeof(long) - ((long)m & (sizeof(long)-1));
-    for(i = 0; i < n; i++)
-      mem[i] = ch;
-
-    mem += n;
-    s -= n;
-  }
+  while((long)mem & (sizeof(long)-1))
+    *mem++ = ch, s--;
+  lmem = (long*)mem;
 
   for(i = 0; i < s/sizeof(long) - 7; i += 8)
   {
@@ -43,7 +34,6 @@ void* memset(void* m, int ch, size_t s)
     lmem[i+7] = l;
   }
 
-small:
   for( ; i < s/sizeof(long); i++)
     lmem[i] = l;
 

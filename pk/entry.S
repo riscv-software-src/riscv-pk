@@ -132,7 +132,6 @@ trap_entry:
   jal   save_tf
   move  $sp,$x2
   move  $a0,$x2
-  ei
   jal    handle_trap
   .end  trap_entry
 

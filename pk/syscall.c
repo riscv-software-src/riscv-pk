@@ -92,7 +92,7 @@ sysret_t sys_unlink(const char* name, size_t len)
   return frontend_syscall(SYS_unlink,(long)name,len,0,0);
 }
 
-void handle_syscall(trapframe_t* tf)
+sysret_t syscall(long a0, long a1, long a2, long a3, long n)
 {
   const static void* syscall_table[] = {
     [SYS_exit] = sys_exit,
@@ -108,22 +108,8 @@ void handle_syscall(trapframe_t* tf)
     [SYS_unlink] = sys_unlink,
   };
 
-  syscall_t p;
-  unsigned long n = tf->gpr[2];
-  if(n >= sizeof(syscall_table)/sizeof(void*) || !syscall_table[n])
-  {
-    dump_tf(tf);
+  if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])
     panic("bad syscall #%ld!",n);
-  }
-  else
-    p = (syscall_t)syscall_table[n];
 
-  sysret_t ret = p(tf->gpr[4],tf->gpr[5],tf->gpr[6],tf->gpr[7],n);
-  tf->gpr[2] = ret.result;
-  tf->gpr[3] = ret.result == -1 ? ret.err : 0;
-
-  //printk("syscall %d (%x,%x,%x,%x) from %x == %d\n",n,tf->gpr[4],tf->gpr[5],tf->gpr[6],tf->gpr[7],tf->gpr[31],tf->gpr[2]);
-
-  advance_pc(tf);
-  pop_tf(tf);
+  return ((syscall_t)syscall_table[n])(a0, a1, a2, a3, n);
 }

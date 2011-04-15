@@ -71,6 +71,9 @@
           asm volatile ("mfcr %0,$cr%1" : "=r"(__tmp) : "i"(reg)); \
           __tmp; })
 
+#define irq_disable() asm volatile("di")
+#define irq_enable() asm volatile("ei")
+
 #endif
 
 #endif

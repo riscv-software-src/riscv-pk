@@ -6,20 +6,10 @@ int have_vector = 1;
 
 static void handle_fp_disabled(trapframe_t* tf)
 {
-  if(have_fp)
-    init_fp(tf);
-  else
-  {
-#ifdef PK_ENABLE_FP_EMULATION
-    if(emulate_fp(tf) != 0)
-    {
-      dump_tf(tf);
-      panic("FPU emulation failed!");
-    }
-#else
-    panic("FPU emulation disabled! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
-#endif
-  }
+  irq_enable();
+
+  kassert(have_fp);
+  init_fp(tf);
 }
 
 static void handle_vector_disabled(trapframe_t* tf)
@@ -39,8 +29,13 @@ static void handle_privileged_instruction(trapframe_t* tf)
 static void handle_illegal_instruction(trapframe_t* tf)
 {
 #ifdef PK_ENABLE_FP_EMULATION
+  irq_enable();
+
   if(emulate_fp(tf) == 0)
+  {
+    advance_pc(tf);
     return;
+  }
 #endif
 
   dump_tf(tf);
@@ -113,6 +108,19 @@ static void handle_interrupt(trapframe_t* tf)
   }
 }
 
+static void handle_syscall(trapframe_t* tf)
+{
+  irq_enable();
+
+  long n = tf->gpr[2];
+  sysret_t ret = syscall(tf->gpr[4], tf->gpr[5], tf->gpr[6], tf->gpr[7], n);
+
+  tf->gpr[2] = ret.result;
+  tf->gpr[3] = ret.result == -1 ? ret.err : 0;
+
+  advance_pc(tf);
+}
+
 void handle_trap(trapframe_t* tf)
 {
   typedef void (*trap_handler)(trapframe_t*);
@@ -134,7 +142,7 @@ void handle_trap(trapframe_t* tf)
   };
 
   int exccode = (tf->cause & CAUSE_EXCCODE) >> CAUSE_EXCCODE_SHIFT;
-  kassert(exccode < sizeof(trap_handlers)/sizeof(trap_handlers[0]));
+  kassert(exccode < ARRAY_SIZE(trap_handlers));
 
   trap_handlers[exccode](tf);
 

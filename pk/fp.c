@@ -195,8 +195,6 @@ int emulate_fp(trapframe_t* tf)
   if(have_fp)
     put_fp_state(fp_state.fpr,fp_state.fsr);
 
-  advance_pc(tf);
-
   return 0;
 }
 

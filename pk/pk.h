@@ -8,6 +8,7 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include <machine/syscall.h>
 
 typedef struct
 {
@@ -37,7 +38,6 @@ void pop_tf(trapframe_t*);
 void dump_tf(trapframe_t*);
 
 void unhandled_trap(trapframe_t*);
-void handle_syscall(trapframe_t*);
 void handle_misaligned_load(trapframe_t*);
 void handle_misaligned_store(trapframe_t*);
 void handle_fault_load(trapframe_t*);
@@ -45,13 +45,17 @@ void handle_fault_store(trapframe_t*);
 void boot();
 
 void sys_exit(int code) __attribute__((noreturn));
+sysret_t syscall(long a0, long a1, long a2, long a3, long n);
 
 long load_elf(const char* fn, int* user64);
 
 static inline void advance_pc(trapframe_t* tf)
 {
-  tf->epc += 4;
+  int rvc = (tf->insn & 0x3) < 0x3;
+  tf->epc += rvc ? 2 : 4;
 }
+
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 
 #ifdef __cplusplus
 }

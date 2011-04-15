@@ -145,13 +145,10 @@ struct args
   uint64_t argv[];
 };
 
-static struct args* mainvars_init()
+static struct args* mainvars_init(long loc)
 {
-  long loc = (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT) - USER_MAINVARS_SIZE;
-
   sysret_t r = frontend_syscall(SYS_getmainvars, loc, USER_MAINVARS_SIZE, 0, 0);
   kassert(r.result == 0);
-
   return (struct args*)loc;
 }
 
@@ -162,6 +159,7 @@ static void jump_usrstart(const char* fn, long sp)
   int user64;
   long start = load_elf(fn, &user64);
   asm volatile("cflush; fence");
+
   init_tf(&tf, start, sp, user64);
   pop_tf(&tf);
 }
@@ -171,6 +169,11 @@ void boot()
   bss_init();
   file_init();
 
-  struct args* args = mainvars_init();
-  jump_usrstart((char*)(long)args->argv[0], (long)args);
+  long stack_top = (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT);
+  if(stack_top >= 0x80000000)
+    stack_top = 0x80000000;
+  stack_top -= USER_MAINVARS_SIZE;
+
+  struct args* args = mainvars_init(stack_top);
+  jump_usrstart((char*)(long)args->argv[0], stack_top);
 }

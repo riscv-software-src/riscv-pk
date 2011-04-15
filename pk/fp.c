@@ -20,7 +20,7 @@ validate_address(trapframe_t* tf, long addr, int size, int store)
 {
   if(addr & (size-1))
     store ? handle_misaligned_store(tf) : handle_misaligned_load(tf);
-  if(addr >= USER_MEM_SIZE)
+  if(addr < USER_START)
     store ? handle_fault_store(tf) : handle_fault_load(tf);
 }
 

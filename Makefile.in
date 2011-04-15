@@ -232,14 +232,14 @@ $(2)_junk += $$($(2)_test_outs)
 
 # Build programs
 
-$(2)_prog_objs      := $$(patsubst %.c, %.o, $$($(2)_prog_srcs))
+$(2)_prog_objs      := $$(patsubst %.S, %.o, $$($(2)_prog_srcs))
 $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
-$(2)_prog_exes      := $$(patsubst %.c, %, $$($(2)_prog_srcs))
+$(2)_prog_exes      := $$(patsubst %.S, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
 $(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
 $(2)_prog_libarg    := -L. $$(patsubst %, -l%, $$($(2)_prog_libs))
 
-$$($(2)_prog_objs) : %.o : %.c
+$$($(2)_prog_objs) : %.o : %.S
 	$(COMPILE) -c $$<
 
 $$($(2)_prog_exes) : % : %.o $$($(2)_prog_libnames)
@@ -250,11 +250,11 @@ $(2)_junk += $$($(2)_prog_objs) $$($(2)_prog_deps) $$($(2)_prog_exes)
 
 # Build programs which will be installed
 
-$(2)_install_prog_objs := $$(patsubst %.c, %.o, $$($(2)_install_prog_srcs))
+$(2)_install_prog_objs := $$(patsubst %.S, %.o, $$($(2)_install_prog_srcs))
 $(2)_install_prog_deps := $$(patsubst %.o, %.d, $$($(2)_install_prog_objs))
-$(2)_install_prog_exes := $$(patsubst %.c, %, $$($(2)_install_prog_srcs))
+$(2)_install_prog_exes := $$(patsubst %.S, %, $$($(2)_install_prog_srcs))
 
-$$($(2)_install_prog_objs) : %.o : %.c
+$$($(2)_install_prog_objs) : %.o : %.S
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)

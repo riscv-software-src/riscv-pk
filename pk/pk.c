@@ -147,23 +147,22 @@ struct args
 
 static struct args* mainvars_init()
 {
-  void* loc = (void*)USER_MEM_SIZE-USER_MAINVARS_SIZE;
+  long loc = (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT) - USER_MAINVARS_SIZE;
 
-  sysret_t r = frontend_syscall(SYS_getmainvars,
-    USER_MEM_SIZE-USER_MAINVARS_SIZE, USER_MAINVARS_SIZE, 0, 0);
+  sysret_t r = frontend_syscall(SYS_getmainvars, loc, USER_MAINVARS_SIZE, 0, 0);
   kassert(r.result == 0);
 
   return (struct args*)loc;
 }
 
-static void jump_usrstart(const char* fn)
+static void jump_usrstart(const char* fn, long sp)
 {
   trapframe_t tf;
 
   int user64;
   long start = load_elf(fn, &user64);
   asm volatile("cflush; fence");
-  init_tf(&tf, start, USER_MEM_SIZE-USER_MAINVARS_SIZE, user64);
+  init_tf(&tf, start, sp, user64);
   pop_tf(&tf);
 }
 
@@ -173,5 +172,5 @@ void boot()
   file_init();
 
   struct args* args = mainvars_init();
-  jump_usrstart((void*)(long)args->argv[0]);
+  jump_usrstart((char*)(long)args->argv[0], (long)args);
 }

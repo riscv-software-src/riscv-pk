@@ -11,14 +11,13 @@ SECTIONS
 
   /* Begining of code and text segment */
   . = 0x00000000;
-  .boottext :
-  {
-    riscv-pk.o(.boottext)
-  }
-
-  . = 0x70000000;
   _ftext = .;
   PROVIDE( eprol = . );
+
+  .text :
+  {
+    riscv-pk.o(.text)
+  }
 
   /* text: Program code section */
   .text : 

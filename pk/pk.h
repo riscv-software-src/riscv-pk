@@ -1,7 +1,6 @@
 #ifndef _PK_H
 #define _PK_H
 
-#define USER_MEM_SIZE 0x70000000
 #define USER_MAINVARS_SIZE 0x1000
 #define USER_START 0x10000
 

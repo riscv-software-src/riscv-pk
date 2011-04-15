@@ -30,4 +30,4 @@ pk_asm_srcs = \
 pk_test_srcs =
 
 pk_install_prog_srcs = \
-	riscv-pk.c \
+	riscv-pk.S \

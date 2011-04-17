@@ -14,9 +14,10 @@ __start:
   mtpcr $t0, ASM_CR(PCR_EVEC)
 
   mtpcr $x0, ASM_CR(PCR_COUNT)
-  mtpcr $x0, ASM_CR(PCR_COMPARE)
+  li    $t0, TIMER_PERIOD
+  mtpcr $t0, ASM_CR(PCR_COMPARE)
 
-  li $t0, SR_S | SR_PS | SR_ET | SR_IM | SR_EC | SR_SX
+  li $t0, SR_S | SR_PS | SR_ET | SR_EC | SR_SX
   or $t1, $t0, SR_EF | SR_EV
   mtpcr $t1, ASM_CR(PCR_SR)
   mfpcr $t1, ASM_CR(PCR_SR)

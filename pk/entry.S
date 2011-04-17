@@ -128,8 +128,15 @@ pop_tf:  # write the trap frame onto the stack
 trap_entry:
   mtpcr $ra,ASM_CR(PCR_K0)
   mtpcr $x2,ASM_CR(PCR_K1)
+
+  # when coming from kernel, continue below its stack
+  mfpcr $ra,ASM_CR(PCR_SR)
+  and   $ra,$ra,SR_PS
+  add   $x2, $sp, -320
+  bnez  $ra, 1f
   la    $x2,stack_top-320
-  jal   save_tf
+
+1:jal   save_tf
   move  $sp,$x2
   move  $a0,$x2
   jal    handle_trap

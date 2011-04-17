@@ -101,10 +101,13 @@ static void handle_interrupt(trapframe_t* tf)
 
   for(int i = 0; interrupts; interrupts >>= 1, i++)
   {
-    if(i == TIMER_IRQ)
-      handle_timer_interrupt(tf);
-    else
-      handle_bad_interrupt(tf,i);
+    if(interrupts & 1)
+    {
+      if(i == TIMER_IRQ)
+        handle_timer_interrupt(tf);
+      else
+        handle_bad_interrupt(tf,i);
+    }
   }
 }
 

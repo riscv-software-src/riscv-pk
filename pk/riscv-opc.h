@@ -55,6 +55,8 @@
 #define  MASK_MTPCR 0xf801ffff
 #define MATCH_FCVT_S_D 0x11053
 #define  MASK_FCVT_S_D 0x3ff1ff
+#define MATCH_C_BNE 0x11
+#define  MASK_C_BNE 0x1f
 #define MATCH_LBU_V 0x20b
 #define  MASK_LBU_V 0x3fffff
 #define MATCH_BGEU 0x3e3
@@ -281,6 +283,8 @@
 #define  MASK_JAL 0x7f
 #define MATCH_LWU 0x303
 #define  MASK_LWU 0x3ff
+#define MATCH_C_BEQ 0x10
+#define  MASK_C_BEQ 0x1f
 #define MATCH_FLDST_V 0x158b
 #define  MASK_FLDST_V 0x1ffff
 #define MATCH_FNMADD_D 0xcf

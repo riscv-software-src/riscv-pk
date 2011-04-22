@@ -146,5 +146,5 @@ sysret_t file_stat(file_t* f, struct stat* s)
 
 sysret_t file_lseek(file_t* f, size_t ptr, int dir)
 {
-  return frontend_syscall(SYS_fstat,f->kfd,ptr,dir,0);
+  return frontend_syscall(SYS_lseek,f->kfd,ptr,dir,0);
 }

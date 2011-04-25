@@ -421,6 +421,8 @@
 #define  MASK_C_SUB3 0x31f
 #define MATCH_C_LD0 0x8012
 #define  MASK_C_LD0 0x801f
+#define MATCH_C_ADDIW 0x1d
+#define  MASK_C_ADDIW 0x1f
 #define MATCH_FSGNJ_D 0x50d3
 #define  MASK_FSGNJ_D 0x1ffff
 #define MATCH_C_SUB 0x801a

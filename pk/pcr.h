@@ -60,14 +60,14 @@
 
 #ifndef __ASSEMBLER__
 
-#define mtpcr(val,reg) ({ long __tmp = (long)(val); \
+#define mtpcr(reg,val) ({ long __tmp = (long)(val); \
           asm volatile ("mtpcr %0,$cr%1"::"r"(__tmp),"i"(reg)); })
 
 #define mfpcr(reg) ({ long __tmp; \
           asm volatile ("mfpcr %0,$cr%1" : "=r"(__tmp) : "i"(reg)); \
           __tmp; })
 
-#define mtcr(val,reg) ({ long __tmp = (long)(val); \
+#define mtcr(reg,val) ({ long __tmp = (long)(val); \
           asm volatile ("mtcr %0,$cr%1"::"r"(__tmp),"i"(reg)); })
 
 #define mfcr(reg) ({ long __tmp; \

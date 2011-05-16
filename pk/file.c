@@ -128,7 +128,7 @@ sysret_t file_write(file_t* f, const char* buf, size_t size)
   if(f->kfd == 1 || f->kfd == 2)
   {
     for(size_t i = 0; i < size; i++)
-      mtpcr(buf[i],PCR_CONSOLE);
+      mtpcr(PCR_CONSOLE,buf[i]);
   }
 
   return frontend_syscall(SYS_write,f->kfd,(long)buf,size,0);

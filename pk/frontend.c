@@ -19,7 +19,7 @@ sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
 
   asm volatile ("cflush; fence");
 
-  mtpcr(magic_mem,PCR_TOHOST);
+  mtpcr(PCR_TOHOST, magic_mem);
   while(mfpcr(PCR_FROMHOST) == 0);
 
   sysret_t ret = {magic_mem[0],magic_mem[1]};

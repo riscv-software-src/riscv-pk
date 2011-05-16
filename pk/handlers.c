@@ -4,14 +4,6 @@
 int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
 int have_vector = 1;
 
-static void handle_fp_disabled(trapframe_t* tf)
-{
-  irq_enable();
-
-  kassert(have_fp);
-  init_fp(tf);
-}
-
 static void handle_vector_disabled(trapframe_t* tf)
 {
   if (have_vector)
@@ -40,6 +32,16 @@ static void handle_illegal_instruction(trapframe_t* tf)
 
   dump_tf(tf);
   panic("An illegal instruction was executed!");
+}
+
+static void handle_fp_disabled(trapframe_t* tf)
+{
+  irq_enable();
+
+  if(have_fp && !(mfpcr(PCR_SR) & SR_EF))
+    init_fp(tf);
+  else
+    handle_illegal_instruction(tf);
 }
 
 static void handle_breakpoint(trapframe_t* tf)
@@ -92,7 +94,7 @@ static void handle_bad_interrupt(trapframe_t* tf, int interrupt)
 
 static void handle_timer_interrupt(trapframe_t* tf)
 {
-  mtpcr(mfpcr(PCR_COMPARE)+TIMER_PERIOD,PCR_COMPARE);
+  mtpcr(PCR_COMPARE, mfpcr(PCR_COMPARE)+TIMER_PERIOD);
 }
 
 static void handle_interrupt(trapframe_t* tf)

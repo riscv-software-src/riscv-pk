@@ -256,7 +256,7 @@ get_fp_reg(unsigned int which, unsigned int dp)
 void init_fp(trapframe_t* tf)
 {
   long sr = mfpcr(PCR_SR);
-  mtpcr(sr | SR_EF, PCR_SR);
+  mtpcr(PCR_SR, sr | SR_EF);
 
   put_fp_state(fp_state.fpr,fp_state.fsr);
 

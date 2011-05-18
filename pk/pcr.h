@@ -53,7 +53,9 @@
 #define CAUSE_FAULT_LOAD 10
 #define CAUSE_FAULT_STORE 11
 #define CAUSE_VECTOR_DISABLED 12
-#define NUM_CAUSES 13
+#define CAUSE_VECTOR_BANK 13
+#define CAUSE_VECTOR_ILLEGAL_INSTRUCTION 14
+#define NUM_CAUSES 15
 
 #define ASM_CR(r)   _ASM_CR(r)
 #define _ASM_CR(r)  $cr##r

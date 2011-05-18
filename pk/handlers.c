@@ -12,6 +12,18 @@ static void handle_vector_disabled(trapframe_t* tf)
     panic("No vector hardware! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
 }
 
+static void handle_vector_bank(trapframe_t* tf)
+{
+  dump_tf(tf);
+  panic("Not enought banks were enabled to execute a vector instruction!");
+}
+
+static void handle_vector_illegal_instruction(trapframe_t* tf)
+{
+  dump_tf(tf);
+  panic("An illegal vector instruction was executed!");
+}
+
 static void handle_privileged_instruction(trapframe_t* tf)
 {
   dump_tf(tf);
@@ -144,6 +156,8 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_FAULT_LOAD] = handle_fault_load,
     [CAUSE_FAULT_STORE] = handle_fault_store,
     [CAUSE_VECTOR_DISABLED] = handle_vector_disabled,
+    [CAUSE_VECTOR_BANK] = handle_vector_bank,
+    [CAUSE_VECTOR_ILLEGAL_INSTRUCTION] = handle_vector_illegal_instruction,
   };
 
   int exccode = (tf->cause & CAUSE_EXCCODE) >> CAUSE_EXCCODE_SHIFT;

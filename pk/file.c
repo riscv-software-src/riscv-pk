@@ -5,9 +5,9 @@
 #include "frontend.h"
 #include "pcr.h"
 
-#define MAX_FDS 128
+#define MAX_FDS 32
 file_t* fds[MAX_FDS];
-#define MAX_FILES 128
+#define MAX_FILES 32
 file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
 
@@ -69,15 +69,15 @@ void file_init()
   stdin = file_get_free();
   stdout = file_get_free();
   stderr = file_get_free();
-  kassert(stdin && stdout && stderr);
 
   stdin->kfd = 0;
   stdout->kfd = 1;
   stderr->kfd = 2;
 
-  kassert(file_dup(stdin) == 0);
-  kassert(file_dup(stdout) == 1);
-  kassert(file_dup(stderr) == 2);
+  // create user FDs 0, 1, and 2
+  file_dup(stdin);
+  file_dup(stdout);
+  file_dup(stderr);
 }
 
 file_t* file_get(int fd)

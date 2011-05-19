@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include "pk.h"
+#include "pcr.h"
 #include "file.h"
 #include "frontend.h"
 
@@ -92,6 +93,13 @@ sysret_t sys_unlink(const char* name, size_t len)
   return frontend_syscall(SYS_unlink,(long)name,len,0,0);
 }
 
+sysret_t sys_brk(size_t pos)
+{
+  if(pos > (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT))
+    return (sysret_t){-1, ENOMEM};
+  return (sysret_t){0,0};
+}
+
 sysret_t syscall(long a0, long a1, long a2, long a3, long n)
 {
   const static void* syscall_table[] = {
@@ -106,6 +114,7 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long n)
     [SYS_lstat] = sys_lstat,
     [SYS_link] = sys_link,
     [SYS_unlink] = sys_unlink,
+    [SYS_brk] = sys_brk,
   };
 
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])

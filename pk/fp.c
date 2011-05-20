@@ -40,7 +40,7 @@ int emulate_fp(trapframe_t* tf)
   #define RRS2 ((tf->insn >> 17) & 0x1F)
   #define RRS3 ((tf->insn >> 12) & 0x1F)
   #define RRD  ((tf->insn >> 27) & 0x1F)
-  #define RM   ((tf->insn >>  9) &  0x3) 
+  #define RM   ((tf->insn >>  9) &  0x7)
 
   int32_t imm = ((int32_t)tf->insn << 10) >> 20;
   int32_t bimm = (((tf->insn >> 27) & 0x1f) << 7) | ((tf->insn >> 10) & 0x7f);
@@ -61,7 +61,7 @@ int emulate_fp(trapframe_t* tf)
   long effective_address_store = XRS1 + bimm;
 
   softfloat_exceptionFlags = 0;
-  softfloat_roundingMode = (RM & 4) ? (RM & 3) : ((fp_state.fsr >> 5) & 3);
+  softfloat_roundingMode = (RM == 7) ? ((fp_state.fsr >> 5) & 7) : RM;
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 

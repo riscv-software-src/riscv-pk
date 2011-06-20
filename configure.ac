@@ -74,6 +74,8 @@ AC_HEADER_STDC
 AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99"])
 AC_SUBST([LIBS],  ["-lgcc"])
 
+AX_DEFAULT_CONFIGURE_ARG([--host=riscv])
+
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
 #-------------------------------------------------------------------------

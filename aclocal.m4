@@ -343,3 +343,19 @@ AC_DEFUN([MCPPBS_GROUP],
   ])
 
 ])
+
+#-------------------------------------------------------------------------
+# AX_DEFAULT_CONFIGURE_ARG
+#-------------------------------------------------------------------------
+# Simple little macro which adds a configure commane line option to an
+# internal autoconf shell variable. Not sure how safe this is, but it
+# seems to work fine.
+#
+# Author : Christopher Batten
+# Date   : August 20, 2009
+
+AC_DEFUN([AX_DEFAULT_CONFIGURE_ARG],
+[
+  AC_MSG_NOTICE([adding default configure arg: $1])
+  ac_configure_args="$1 ${ac_configure_args}"
+])

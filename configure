@@ -3912,6 +3912,12 @@ CFLAGS="-Wall -Os -std=gnu99"
 LIBS="-lgcc"
 
 
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: adding default configure arg: --host=riscv" >&5
+$as_echo "$as_me: adding default configure arg: --host=riscv" >&6;}
+  ac_configure_args="--host=riscv ${ac_configure_args}"
+
+
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
 #-------------------------------------------------------------------------

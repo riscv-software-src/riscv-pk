@@ -93,9 +93,9 @@ int emulate_fp(trapframe_t* tf)
     *(uint64_t*)effective_address_store = frs2d;
   }
   else if(IS_INSN(MFTX_S))
-    XRDR = frs2s;
+    XRDR = frs1s;
   else if(IS_INSN(MFTX_D))
-    XRDR = frs2d;
+    XRDR = frs1d;
   else if(IS_INSN(MXTF_S))
     DO_WRITEBACK(0, XRS1);
   else if(IS_INSN(MXTF_D))

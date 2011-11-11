@@ -164,14 +164,20 @@ static void jump_usrstart(const char* fn, long sp)
   pop_tf(&tf);
 }
 
+uint32_t mem_mb;
+
 void boot()
 {
   bss_init();
   file_init();
 
-  long stack_top = (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT);
-  if(stack_top >= 0x80000000)
-    stack_top = 0x80000000;
+  // word 0 of memory contains # of MB of memory
+  mem_mb = *(uint32_t*)0;
+
+  unsigned long stack_top = 0x80000000;
+  if (mem_mb < stack_top / (1024 * 1024))
+    stack_top = mem_mb * (1024 * 1024);
+
   stack_top -= USER_MAINVARS_SIZE;
 
   struct args* args = mainvars_init(stack_top);

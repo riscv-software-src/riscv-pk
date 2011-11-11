@@ -124,13 +124,13 @@
 #define MATCH_VSSEGSTB 0x80f
 #define  MASK_VSSEGSTB 0xfff
 #define MATCH_MFTX_D 0x1c0d3
-#define  MASK_MFTX_D 0x7c1ffff
+#define  MASK_MFTX_D 0x3fffff
 #define MATCH_DIV 0x633
 #define  MASK_DIV 0x1ffff
 #define MATCH_C_LD 0x9
 #define  MASK_C_LD 0x1f
 #define MATCH_MFTX_S 0x1c053
-#define  MASK_MFTX_S 0x7c1ffff
+#define  MASK_MFTX_S 0x3fffff
 #define MATCH_VSSEGSTH 0x88f
 #define  MASK_VSSEGSTH 0xfff
 #define MATCH_VVCFGIVL 0xf3
@@ -154,7 +154,7 @@
 #define MATCH_VSB 0xf
 #define  MASK_VSB 0x3fffff
 #define MATCH_MFFSR 0x1d053
-#define  MASK_MFFSR 0x7ffffff
+#define  MASK_MFFSR 0x3fffff
 #define MATCH_FDIV_S 0x3053
 #define  MASK_FDIV_S 0x1f1ff
 #define MATCH_VLSTBU 0x120b

@@ -95,7 +95,7 @@ sysret_t sys_unlink(const char* name, size_t len)
 
 sysret_t sys_brk(size_t pos)
 {
-  if(pos > (mfpcr(PCR_MEMSIZE) << MEMSIZE_SHIFT))
+  if(pos / (1024 * 1024) >= mem_mb)
     return (sysret_t){-1, ENOMEM};
   return (sysret_t){0,0};
 }

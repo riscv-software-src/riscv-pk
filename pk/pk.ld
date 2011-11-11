@@ -1,6 +1,6 @@
-OUTPUT_ARCH( "mips:riscv" )
+OUTPUT_ARCH( "riscv" )
 
-ENTRY( __start )
+ENTRY( _start )
 
 SECTIONS
 {
@@ -10,7 +10,7 @@ SECTIONS
   /*--------------------------------------------------------------------*/
 
   /* Begining of code and text segment */
-  . = 0x00000000;
+  . = 0x00002000;
   _ftext = .;
   PROVIDE( eprol = . );
 
@@ -56,18 +56,6 @@ SECTIONS
     *(.gnu.linkonce.d.*)
   }
 
-  /* lit4: Single precision floating point constants created by gas */
-  .lit4 : 
-  {
-    *(.lit4)
-  }
-
-  /* lit8: Double precision floating point constants created by gas */
-  .lit8 : 
-  {
-    *(.lit8)
-  }
-
   /* End of initialized data segment */
   . = ALIGN(4);
   PROVIDE( edata = . );
@@ -83,14 +71,6 @@ SECTIONS
 
   /* sbss: Uninitialized writeable small data section */
   . = .;
-  _sbss_start = .;
-  .sbss : 
-  {
-    *(.sbss)
-    *(.sbss.*)
-    *(.gnu.linkonce.sb.*)
-    *(.scommon)
-  }
 
   /* bss: Uninitialized writeable data section */
   . = .;

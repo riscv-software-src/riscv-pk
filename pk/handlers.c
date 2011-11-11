@@ -99,30 +99,9 @@ void handle_fault_store(trapframe_t* tf)
   panic("Faulting store!");
 }
 
-static void handle_bad_interrupt(trapframe_t* tf, int interrupt)
-{
-  panic("Bad interrupt %d!",interrupt);
-}
-
 static void handle_timer_interrupt(trapframe_t* tf)
 {
-  mtpcr(PCR_COMPARE, mfpcr(PCR_COMPARE)+TIMER_PERIOD);
-}
-
-static void handle_interrupt(trapframe_t* tf)
-{
-  int interrupts = (tf->cause & CAUSE_IP) >> CAUSE_IP_SHIFT;
-
-  for(int i = 0; interrupts; interrupts >>= 1, i++)
-  {
-    if(interrupts & 1)
-    {
-      if(i == TIMER_IRQ)
-        handle_timer_interrupt(tf);
-      else
-        handle_bad_interrupt(tf,i);
-    }
-  }
+  panic("Timer interrupt!");
 }
 
 static void handle_syscall(trapframe_t* tf)
@@ -148,7 +127,6 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
     [CAUSE_PRIVILEGED_INSTRUCTION] = handle_privileged_instruction,
     [CAUSE_FP_DISABLED] = handle_fp_disabled,
-    [CAUSE_INTERRUPT] = handle_interrupt,
     [CAUSE_SYSCALL] = handle_syscall,
     [CAUSE_BREAKPOINT] = handle_breakpoint,
     [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
@@ -158,12 +136,12 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_VECTOR_DISABLED] = handle_vector_disabled,
     [CAUSE_VECTOR_BANK] = handle_vector_bank,
     [CAUSE_VECTOR_ILLEGAL_INSTRUCTION] = handle_vector_illegal_instruction,
+    [CAUSE_IRQ0 + TIMER_IRQ] = handle_timer_interrupt,
   };
 
-  int exccode = (tf->cause & CAUSE_EXCCODE) >> CAUSE_EXCCODE_SHIFT;
-  kassert(exccode < ARRAY_SIZE(trap_handlers));
+  kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);
 
-  trap_handlers[exccode](tf);
+  trap_handlers[tf->cause](tf);
 
   pop_tf(tf);
 }

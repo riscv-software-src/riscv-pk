@@ -543,3 +543,15 @@
 #define  MASK_VFSSEGD 0x1ffff
 #define MATCH_SD 0x1a3
 #define  MASK_SD 0x3ff
+#define MATCH_VENQCMD 0x1007b
+#define  MASK_VENQCMD 0xf83fffff
+#define MATCH_VENQIMM1 0x100fb
+#define  MASK_VENQIMM1 0xf83fffff
+#define MATCH_VENQIMM2 0x1017b
+#define  MASK_VENQIMM2 0xf83fffff
+#define MATCH_VENQCNT 0x101fb
+#define  MASK_VENQCNT 0xf83fffff
+#define MATCH_VWAITXCPT 0x1807b
+#define  MASK_VWAITXCPT 0xffffffff
+#define MATCH_VWAITKILL 0x180fb
+#define  MASK_VWAITKILL 0xffffffff

@@ -77,8 +77,8 @@
 #define  MASK_SLTIU 0x3ff
 #define MATCH_MTPCR 0x1fb
 #define  MASK_MTPCR 0xf801ffff
-#define MATCH_VLB 0xb
-#define  MASK_VLB 0x3fffff
+#define MATCH_VXCPTWAIT 0x1817b
+#define  MASK_VXCPTWAIT 0xffffffff
 #define MATCH_STOP 0x177
 #define  MASK_STOP 0xffffffff
 #define MATCH_VLD 0x18b
@@ -97,6 +97,8 @@
 #define  MASK_MUL 0x1ffff
 #define MATCH_C_LW 0xa
 #define  MASK_C_LW 0x1f
+#define MATCH_VXCPTEVAC 0x1807b
+#define  MASK_VXCPTEVAC 0xf83fffff
 #define MATCH_VLW 0x10b
 #define  MASK_VLW 0x3fffff
 #define MATCH_VSSEGSTW 0x90f
@@ -173,6 +175,8 @@
 #define  MASK_FENCE_I 0x3ff
 #define MATCH_VLSEGBU 0x220b
 #define  MASK_VLSEGBU 0x1ffff
+#define MATCH_VLSEGSTB 0x80b
+#define  MASK_VLSEGSTB 0xfff
 #define MATCH_FNMSUB_D 0xcb
 #define  MASK_FNMSUB_D 0x1ff
 #define MATCH_ADDW 0x3b
@@ -213,8 +217,6 @@
 #define  MASK_MULH 0x1ffff
 #define MATCH_FMUL_S 0x2053
 #define  MASK_FMUL_S 0x1f1ff
-#define MATCH_VWAITXCPT 0x1807b
-#define  MASK_VWAITXCPT 0xffffffff
 #define MATCH_VLSEGSTHU 0xa8b
 #define  MASK_VLSEGSTHU 0xfff
 #define MATCH_SRAI 0x10293
@@ -365,6 +367,8 @@
 #define  MASK_FCVT_W_D 0x3ff1ff
 #define MATCH_FMOVZ 0xaf7
 #define  MASK_FMOVZ 0x1ffff
+#define MATCH_FEQ_D 0x150d3
+#define  MASK_FEQ_D 0x1ffff
 #define MATCH_C_OR3 0x21c
 #define  MASK_C_OR3 0x31f
 #define MATCH_VMVV 0x73
@@ -431,8 +435,8 @@
 #define  MASK_C_SUB3 0x31f
 #define MATCH_VSH 0x8f
 #define  MASK_VSH 0x3fffff
-#define MATCH_VLSEGSTB 0x80b
-#define  MASK_VLSEGSTB 0xfff
+#define MATCH_VLB 0xb
+#define  MASK_VLB 0x3fffff
 #define MATCH_VLSEGSTD 0x98b
 #define  MASK_VLSEGSTD 0xfff
 #define MATCH_VFLSEGD 0x258b
@@ -461,6 +465,8 @@
 #define  MASK_FCVT_S_WU 0x3ff1ff
 #define MATCH_RDNPC 0x26b
 #define  MASK_RDNPC 0x7ffffff
+#define MATCH_VXCPTHOLD 0x181fb
+#define  MASK_VXCPTHOLD 0xffffffff
 #define MATCH_FCVT_S_L 0xc053
 #define  MASK_FCVT_S_L 0x3ff1ff
 #define MATCH_VFLSEGSTD 0xd8b
@@ -481,8 +487,8 @@
 #define  MASK_VSSEGH 0x1ffff
 #define MATCH_FSQRT_S 0x4053
 #define  MASK_FSQRT_S 0x3ff1ff
-#define MATCH_FEQ_D 0x150d3
-#define  MASK_FEQ_D 0x1ffff
+#define MATCH_VXCPTKILL 0x180fb
+#define  MASK_VXCPTKILL 0xffffffff
 #define MATCH_C_SRAI 0x1019
 #define  MASK_C_SRAI 0x1c1f
 #define MATCH_AMOMIN_W 0x112b

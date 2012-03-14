@@ -15,10 +15,14 @@
 #define  MASK_BLTU 0x3ff
 #define MATCH_VLSEGSTWU 0xb0b
 #define  MASK_VLSEGSTWU 0xfff
+#define MATCH_VVCFG 0x473
+#define  MASK_VVCFG 0xf801ffff
 #define MATCH_MOVZ 0x2f7
 #define  MASK_MOVZ 0x1ffff
 #define MATCH_FCVT_LU_S 0x9053
 #define  MASK_FCVT_LU_S 0x3ff1ff
+#define MATCH_C_LD 0x9
+#define  MASK_C_LD 0x1f
 #define MATCH_FENCE_L_CV 0x32f
 #define  MASK_FENCE_L_CV 0x3ff
 #define MATCH_C_SRLI32 0xc19
@@ -129,8 +133,8 @@
 #define  MASK_MFTX_D 0x3fffff
 #define MATCH_DIV 0x633
 #define  MASK_DIV 0x1ffff
-#define MATCH_C_LD 0x9
-#define  MASK_C_LD 0x1f
+#define MATCH_VTCFG 0xc73
+#define  MASK_VTCFG 0xf801ffff
 #define MATCH_MFTX_S 0x1c053
 #define  MASK_MFTX_S 0x3fffff
 #define MATCH_VSSEGSTH 0x88f

@@ -48,7 +48,7 @@ static void handle_illegal_instruction(trapframe_t* tf)
 
 static void handle_fp_disabled(trapframe_t* tf)
 {
-  irq_enable();
+  setpcr(PCR_SR, SR_ET);
 
   if(have_fp && !(mfpcr(PCR_SR) & SR_EF))
     init_fp(tf);
@@ -106,7 +106,7 @@ static void handle_timer_interrupt(trapframe_t* tf)
 
 static void handle_syscall(trapframe_t* tf)
 {
-  irq_enable();
+  setpcr(PCR_SR, SR_ET);
 
   long n = tf->gpr[2];
   sysret_t ret = syscall(tf->gpr[4], tf->gpr[5], tf->gpr[6], tf->gpr[7], n);
@@ -121,7 +121,7 @@ void handle_trap(trapframe_t* tf)
 {
   typedef void (*trap_handler)(trapframe_t*);
 
-  const static trap_handler trap_handlers[NUM_CAUSES] = {
+  const static trap_handler trap_handlers[] = {
     [CAUSE_MISALIGNED_FETCH] = handle_misaligned_fetch,
     [CAUSE_FAULT_FETCH] = handle_fault_fetch,
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
@@ -136,7 +136,6 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_VECTOR_DISABLED] = handle_vector_disabled,
     [CAUSE_VECTOR_BANK] = handle_vector_bank,
     [CAUSE_VECTOR_ILLEGAL_INSTRUCTION] = handle_vector_illegal_instruction,
-    [CAUSE_IRQ0 + TIMER_IRQ] = handle_timer_interrupt,
   };
 
   kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);

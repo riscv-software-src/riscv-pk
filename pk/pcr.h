@@ -1,18 +1,18 @@
-#ifndef _RISCV_COP0_H
-#define _RISCV_COP0_H
+#ifndef _RISCV_PCR_H
+#define _RISCV_PCR_H
 
-#define SR_ET    0x0000000000000001
-#define SR_EF    0x0000000000000002
-#define SR_EV    0x0000000000000004
-#define SR_EC    0x0000000000000008
-#define SR_PS    0x0000000000000010
-#define SR_S     0x0000000000000020
-#define SR_UX    0x0000000000000040
-#define SR_SX    0x0000000000000080
-#define SR_IM    0x000000000000FF00
-#define SR_VM    0x0000000000010000
-
-#define SR_IM_SHIFT 8
+#define SR_ET    0x00000001
+#define SR_EF    0x00000002
+#define SR_EV    0x00000004
+#define SR_EC    0x00000008
+#define SR_PS    0x00000010
+#define SR_S     0x00000020
+#define SR_U64   0x00000040
+#define SR_S64   0x00000080
+#define SR_VM    0x00000100
+#define SR_IM    0x00FF0000
+#define SR_ZERO  ~(SR_ET|SR_EF|SR_EV|SR_EC|SR_PS|SR_S|SR_U64|SR_S64|SR_VM|SR_IM)
+#define SR_IM_SHIFT 16
 
 #define PCR_SR       0
 #define PCR_EPC      1
@@ -25,14 +25,17 @@
 #define PCR_SEND_IPI 8
 #define PCR_CLR_IPI  9
 #define PCR_COREID   10
+#define PCR_IMPL     11
 #define PCR_K0       12
 #define PCR_K1       13
-#define PCR_TOHOST   16
-#define PCR_FROMHOST 17
-#define PCR_CONSOLE  18
+#define PCR_VECBANK  18
+#define PCR_VECCFG   19
+#define PCR_RESET    29
+#define PCR_TOHOST   30
+#define PCR_FROMHOST 31
 
-#define IPI_IRQ   5
-#define TIMER_IRQ 7
+#define IRQ_IPI   5
+#define IRQ_TIMER 7
 
 #define CAUSE_MISALIGNED_FETCH 0
 #define CAUSE_FAULT_FETCH 1
@@ -47,31 +50,40 @@
 #define CAUSE_FAULT_STORE 11
 #define CAUSE_VECTOR_DISABLED 12
 #define CAUSE_VECTOR_BANK 13
-#define CAUSE_VECTOR_ILLEGAL_INSTRUCTION 14
-#define CAUSE_IRQ0 16
-#define CAUSE_IRQ1 17
-#define CAUSE_IRQ2 18
-#define CAUSE_IRQ3 19
-#define CAUSE_IRQ4 20
-#define CAUSE_IRQ5 21
-#define CAUSE_IRQ6 22
-#define CAUSE_IRQ7 23
-#define NUM_CAUSES 24
+
+#define CAUSE_VECTOR_MISALIGNED_FETCH 24
+#define CAUSE_VECTOR_FAULT_FETCH 25
+#define CAUSE_VECTOR_ILLEGAL_INSTRUCTION 26
+#define CAUSE_VECTOR_ILLEGAL_COMMAND 27
+#define CAUSE_VECTOR_MISALIGNED_LOAD 28
+#define CAUSE_VECTOR_MISALIGNED_STORE 29
+#define CAUSE_VECTOR_FAULT_LOAD 30
+#define CAUSE_VECTOR_FAULT_STORE 31
+
+#ifdef __riscv
 
 #define ASM_CR(r)   _ASM_CR(r)
 #define _ASM_CR(r)  cr##r
 
 #ifndef __ASSEMBLER__
 
-#define mtpcr(reg,val) ({ long __tmp = (long)(val); \
-          asm volatile ("mtpcr %0,cr%1"::"r"(__tmp),"i"(reg)); })
+#define mtpcr(reg,val) ({ long __tmp = (long)(val), __tmp2; \
+          asm volatile ("mtpcr %0,%1,cr%2" : "=r"(__tmp2) : "r"(__tmp),"i"(reg)); \
+          __tmp2; })
 
 #define mfpcr(reg) ({ long __tmp; \
           asm volatile ("mfpcr %0,cr%1" : "=r"(__tmp) : "i"(reg)); \
           __tmp; })
 
-#define irq_disable() asm volatile("di")
-#define irq_enable() asm volatile("ei")
+#define setpcr(reg,val) ({ long __tmp; \
+          asm volatile ("setpcr %0,cr%2,%1" : "=r"(__tmp) : "i"(val), "i"(reg)); \
+          __tmp; })
+
+#define clearpcr(reg,val) ({ long __tmp; \
+          asm volatile ("clearpcr %0,cr%2,%1" : "=r"(__tmp) : "i"(val), "i"(reg)); \
+          __tmp; })
+
+#endif
 
 #endif
 

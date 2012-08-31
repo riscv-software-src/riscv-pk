@@ -83,7 +83,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
 
 CC            := @CC@
-CFLAGS        := @CFLAGS@
+CFLAGS        := @CFLAGS@ $(CFLAGS)
 COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
                  $(sprojs_include)
 # Linker
@@ -91,7 +91,7 @@ COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
 #  - LIBS    : Library flags (eg. -l)
 
 LD            := $(CC)
-LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib
+LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib $(LDFLAGS)
 LIBS          := @LIBS@
 LINK          := $(LD) $(LDFLAGS) -T $(src_dir)/pk/pk.ld
 

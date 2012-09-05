@@ -1,5 +1,6 @@
 #include "pcr.h"
 #include "pk.h"
+#include "config.h"
 
 int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
 int have_vector = 1;
@@ -33,8 +34,6 @@ static void handle_privileged_instruction(trapframe_t* tf)
 static void handle_illegal_instruction(trapframe_t* tf)
 {
 #ifdef PK_ENABLE_FP_EMULATION
-  irq_enable();
-
   if(emulate_fp(tf) == 0)
   {
     advance_pc(tf);

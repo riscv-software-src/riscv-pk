@@ -83,7 +83,7 @@ AX_DEFAULT_CONFIGURE_ARG([--host=riscv])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ pk, softfloat, softfloat_riscv ])
+MCPPBS_SUBPROJECTS([ pk, softfloat, softfloat_riscv, softint ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups

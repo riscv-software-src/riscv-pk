@@ -32,6 +32,8 @@ extern uint32_t mem_mb;
 int emulate_fp(trapframe_t*);
 void init_fp(trapframe_t* tf);
 
+int emulate_int(trapframe_t*);
+
 void printk(const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp, int user64);
 void pop_tf(trapframe_t*);

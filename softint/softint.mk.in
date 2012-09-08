@@ -1,0 +1,13 @@
+softint_subproject_deps = 
+
+softint_hdrs = \
+	softint.h \
+
+softint_c_srcs = \
+	divu.c                     \
+	mul.c							 	\
+	remu.c                     \
+
+softint_test_srcs =
+
+softint_install_prog_srcs =

@@ -1,6 +1,7 @@
 pk_subproject_deps = \
 	softfloat_riscv \
 	softfloat \
+	softint \
 
 pk_hdrs = \
 	pk.h \
@@ -19,6 +20,7 @@ pk_c_srcs = \
 	handlers.c \
 	frontend.c \
 	fp.c \
+	int.c \
 	memset.c \
 	strlen.c \
 	elf.c \

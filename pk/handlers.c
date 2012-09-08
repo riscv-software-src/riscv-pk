@@ -4,7 +4,7 @@
 
 int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
 int have_vector = 1;
-
+  
 static void handle_vector_disabled(trapframe_t* tf)
 {
   if (have_vector)
@@ -40,6 +40,12 @@ static void handle_illegal_instruction(trapframe_t* tf)
     return;
   }
 #endif
+
+  if(emulate_int(tf) == 0)
+  {
+    advance_pc(tf);
+    return;
+  }
 
   dump_tf(tf);
   panic("An illegal instruction was executed!");

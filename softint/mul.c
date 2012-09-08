@@ -7,7 +7,7 @@ long softint_mul( long x, long y )
   int i;
   long result = 0;
 
-  for (i = 0; i < sizeof(long); i++) {
+  for (i = 0; i < (sizeof(long) << 3); i++) {
     if ((x & 0x1) == 1)
       result = result + y;
 

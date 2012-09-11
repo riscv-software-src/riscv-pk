@@ -11,8 +11,8 @@ extern "C" {
 | Integer Operations.
 *----------------------------------------------------------------------------*/
 
-long softint_divu( long, long );
-long softint_remu( long, long );
+long softint_mul( long, long );
+long softint_udivrem( long, long, int );
 
 
 #ifdef __cplusplus

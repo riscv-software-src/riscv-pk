@@ -46,7 +46,7 @@ int emulate_int(trapframe_t* tf)
       num_negative++;
     }
 
-    unsigned long res = softint_divu(xrs1, xrs2);
+    unsigned long res = softint_udivrem(xrs1, xrs2, 0);
     if (num_negative == 1)
       XRD = -res;
     else
@@ -56,7 +56,7 @@ int emulate_int(trapframe_t* tf)
   {
     if(noisy)
       printk("emulating divu\n");
-    XRD = softint_divu( xrs1, xrs2);
+    XRD = softint_udivrem( xrs1, xrs2, 0);
   }
   else if(IS_INSN(MUL))
   {
@@ -72,13 +72,13 @@ int emulate_int(trapframe_t* tf)
     if ((signed long) xrs1 < 0) {xrs1 = -xrs1;}
     if ((signed long) xrs2 < 0) {xrs2 = -xrs2;}
 
-    XRD = softint_remu(xrs1, xrs2);
+    XRD = softint_udivrem(xrs1, xrs2, 1);
   }
   else if(IS_INSN(REMU))
   {
     if(noisy)
       printk("emulating remu\n");
-    XRD = softint_remu(xrs1, xrs2);
+    XRD = softint_udivrem(xrs1, xrs2, 1);
   }
   else
     return -1;

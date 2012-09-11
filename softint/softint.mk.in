@@ -4,9 +4,8 @@ softint_hdrs = \
 	softint.h \
 
 softint_c_srcs = \
-	divu.c                     \
+	udivrem.c                  \
 	mul.c							 	\
-	remu.c                     \
 
 softint_test_srcs =
 

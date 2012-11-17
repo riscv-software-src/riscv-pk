@@ -21,6 +21,9 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef PK_ENABLED
 
+/* Define if atomics are supported */
+#undef PK_ENABLE_ATOMICS
+
 /* Define if floating-point emulation is enabled */
 #undef PK_ENABLE_FP_EMULATION
 

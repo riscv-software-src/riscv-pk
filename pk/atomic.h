@@ -1,25 +1,13 @@
 #ifndef _RISCV_ATOMIC_H
 #define _RISCV_ATOMIC_H
 
-typedef struct { long val; } atomic_t;
+#include "config.h"
+
+typedef struct { volatile long val; } atomic_t;
 typedef struct { atomic_t lock; } spinlock_t;
 #define SPINLOCK_INIT {{0}}
 
-static inline long atomic_add(atomic_t* a, long inc)
-{
-  //return __sync_fetch_and_add(&a->val, inc);
-  long ret = a->val;
-  a->val++;
-  return ret;
-}
-
-static inline long atomic_swap(atomic_t* a, long val)
-{
-  //return __sync_lock_test_and_set(&a->val, val);
-  long reg = a->val;
-  a->val = val;
-  return reg;
-}
+#define mb() __sync_synchronize()
 
 static inline void atomic_set(atomic_t* a, long val)
 {
@@ -31,14 +19,41 @@ static inline long atomic_read(atomic_t* a)
   return a->val;
 }
 
+static inline long atomic_add(atomic_t* a, long inc)
+{
+#ifdef PK_ENABLE_ATOMICS
+  return __sync_fetch_and_add(&a->val, inc);
+#else
+  long ret = atomic_read(a);
+  atomic_set(a, ret + inc);
+  return ret;
+#endif
+}
+
+static inline long atomic_swap(atomic_t* a, long val)
+{
+#ifdef PK_ENABLE_ATOMICS
+  return __sync_lock_test_and_set(&a->val, val);
+#else
+  long ret = atomic_read(a);
+  atomic_set(a, val);
+  return ret;
+#endif
+}
+
 static inline void spinlock_lock(spinlock_t* lock)
 {
-  while(atomic_read(&lock->lock))
-    while(atomic_swap(&lock->lock,-1));
+  do
+  {
+    while (atomic_read(&lock->lock))
+      ;
+  } while (atomic_swap(&lock->lock, -1));
+  mb();
 }
 
 static inline void spinlock_unlock(spinlock_t* lock)
 {
+  mb();
   atomic_set(&lock->lock,0);
 }
 

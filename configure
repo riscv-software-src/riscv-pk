@@ -648,6 +648,7 @@ enable_stow
 enable_optional_subprojects
 enable_vm
 enable_fp_emulation
+enable_atomics
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1283,6 +1284,7 @@ Optional Features:
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
   --disable-fp-emulation  Disable floating-point emulation
+  --disable-atomics       Emulate atomic ops nonatomically
 
 Some influential environment variables:
   CC          C compiler command
@@ -4043,6 +4045,19 @@ if test "x$enable_fp_emulation" != "xno"; then :
 
 
 $as_echo "#define PK_ENABLE_FP_EMULATION /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-atomics was given.
+if test "${enable_atomics+set}" = set; then :
+  enableval=$enable_atomics;
+fi
+
+if test "x$enable_atomics" != "xno"; then :
+
+
+$as_echo "#define PK_ENABLE_ATOMICS /**/" >>confdefs.h
 
 
 fi

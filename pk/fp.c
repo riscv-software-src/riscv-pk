@@ -1,6 +1,7 @@
 #include "pk.h"
 #include "pcr.h"
 #include "fp.h"
+#include "config.h"
 
 static fp_state_t fp_state;
 
@@ -211,10 +212,10 @@ int emulate_fp(trapframe_t* tf)
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
-#define PUT_FP_REG(which, type, val) asm("mxtf." STR(type) " $f" STR(which) ",%0" : : "r"(val))
-#define GET_FP_REG(which, type, val) asm("mftx." STR(type) " %0,$f" STR(which) : "=r"(val))
-#define LOAD_FP_REG(which, type, val) asm("fl" STR(type) " $f" STR(which) ",%0" : : "m"(val))
-#define STORE_FP_REG(which, type, val)  asm("fs" STR(type) " $f" STR(which) ",%0" : "=m"(val) : : "memory")
+#define PUT_FP_REG(which, type, val) asm("mxtf." STR(type) " f" STR(which) ",%0" : : "r"(val))
+#define GET_FP_REG(which, type, val) asm("mftx." STR(type) " %0,f" STR(which) : "=r"(val))
+#define LOAD_FP_REG(which, type, val) asm("fl" STR(type) " f" STR(which) ",%0" : : "m"(val))
+#define STORE_FP_REG(which, type, val)  asm("fs" STR(type) " f" STR(which) ",%0" : "=m"(val) : : "memory")
 
 static void __attribute__((noinline))
 set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)

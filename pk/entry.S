@@ -79,6 +79,10 @@ pop_tf:  # write the trap frame onto the stack
   # restore gprs
   LOAD  t0,32*REGBYTES(a0)  # restore sr (should disable interrupts)
   mtpcr  t0,ASM_CR(PCR_SR)
+  and t0,t0,SR_EV
+  beqz t0, 1f
+  vxcptkill
+1:
 
   LOAD  x1,1*REGBYTES(a0)
   mtpcr  x1,ASM_CR(PCR_K0)
@@ -133,10 +137,10 @@ trap_entry:
   mfpcr ra,ASM_CR(PCR_SR)
   and   ra,ra,SR_PS
   add   x2, sp, -320
-  bnez  ra, 1f
+  bnez  ra, 2f
   la    x2,stack_top-320
 
-1:jal   save_tf
+2:jal   save_tf
   move  sp,x2
   move  a0,x2
   jal    handle_trap

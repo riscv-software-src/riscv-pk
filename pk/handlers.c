@@ -104,11 +104,6 @@ void handle_fault_store(trapframe_t* tf)
   panic("Faulting store!");
 }
 
-static void handle_timer_interrupt(trapframe_t* tf)
-{
-  panic("Timer interrupt!");
-}
-
 static void handle_syscall(trapframe_t* tf)
 {
   setpcr(PCR_SR, SR_ET);

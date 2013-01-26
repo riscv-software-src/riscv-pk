@@ -14,7 +14,7 @@ pk_hdrs = \
 	elf.h \
 
 pk_c_srcs = \
-	pk.c \
+	init.c \
 	file.c \
 	syscall.c \
 	handlers.c \
@@ -32,4 +32,4 @@ pk_asm_srcs = \
 pk_test_srcs =
 
 pk_install_prog_srcs = \
-	riscv-pk.S \
+	pk.S \

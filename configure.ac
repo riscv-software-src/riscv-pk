@@ -71,7 +71,7 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99"])
+AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused"])
 AC_SUBST([LIBS],  ["-lgcc"])
 
 AX_DEFAULT_CONFIGURE_ARG([--host=riscv])

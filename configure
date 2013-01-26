@@ -3951,7 +3951,7 @@ fi
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-CFLAGS="-Wall -Os -std=gnu99"
+CFLAGS="-Wall -Os -std=gnu99 -Wno-unused"
 
 LIBS="-lgcc"
 

@@ -16,7 +16,7 @@ SECTIONS
 
   .text :
   {
-    riscv-pk.o(.text)
+    pk.o(.text)
   }
 
   /* text: Program code section */

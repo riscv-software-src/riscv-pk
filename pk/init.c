@@ -145,11 +145,17 @@ struct args
   uint64_t argv[];
 };
 
-static struct args* mainvars_init(long loc)
+static struct args* stack_init(unsigned long* stack_top)
 {
-  sysret_t r = frontend_syscall(SYS_getmainvars, loc, USER_MAINVARS_SIZE, 0, 0);
+  *stack_top -= USER_MAINVARS_SIZE;
+
+  struct args* args = (struct args*)(*stack_top - sizeof(args->argc));
+  sysret_t r = frontend_syscall(SYS_getmainvars, (long)args, USER_MAINVARS_SIZE, 0, 0);
   kassert(r.result == 0);
-  return (struct args*)loc;
+  
+  // chop off argv[0]
+  args->argv[0] = args->argc-1;
+  return (struct args*)args->argv;
 }
 
 static void jump_usrstart(const char* fn, long sp)
@@ -158,7 +164,7 @@ static void jump_usrstart(const char* fn, long sp)
 
   int user64;
   long start = load_elf(fn, &user64);
-  asm volatile("cflush; fence");
+  __clear_cache(0, 0);
 
   init_tf(&tf, start, sp, user64);
   pop_tf(&tf);
@@ -178,8 +184,6 @@ void boot()
   if (mem_mb < stack_top / (1024 * 1024))
     stack_top = mem_mb * (1024 * 1024);
 
-  stack_top -= USER_MAINVARS_SIZE;
-
-  struct args* args = mainvars_init(stack_top);
+  struct args* args = stack_init(&stack_top);
   jump_usrstart((char*)(long)args->argv[0], stack_top);
 }

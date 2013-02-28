@@ -2,7 +2,6 @@
 
 	.text
 	.globl	get_fp_state
-	.ent	get_fp_state
 get_fp_state:
 
 	mffsr	v0
@@ -42,10 +41,7 @@ get_fp_state:
 
 	ret
 
-	.end	get_fp_state
-
 	.globl	put_fp_state
-	.ent	put_fp_state
 put_fp_state:
 
 	fld		f0 ,  0(a0)
@@ -84,5 +80,3 @@ put_fp_state:
 	mtfsr	a1
 
 	ret
-
-	.end	put_fp_state

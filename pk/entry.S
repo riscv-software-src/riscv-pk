@@ -11,7 +11,6 @@
 #endif
 
   .text
-  .ent  save_tf
 save_tf:  # write the trap frame onto the stack
 
   # save gprs
@@ -71,10 +70,8 @@ save_tf:  # write the trap frame onto the stack
   sh    x4,2+36*REGBYTES(x2)
 1:
   ret
-  .end  save_tf
 
   .globl  pop_tf
-  .ent  pop_tf
 pop_tf:  # write the trap frame onto the stack
   # restore gprs
   LOAD  t0,32*REGBYTES(a0)  # restore sr (should disable interrupts)
@@ -121,10 +118,8 @@ pop_tf:  # write the trap frame onto the stack
   mfpcr x1,ASM_CR(PCR_K0)
   mfpcr x2,ASM_CR(PCR_K1)
   eret
-  .end  pop_tf
 
   .global  trap_entry
-  .ent  trap_entry
 trap_entry:
   mtpcr ra,ASM_CR(PCR_K0)
   mtpcr x2,ASM_CR(PCR_K1)
@@ -140,7 +135,6 @@ trap_entry:
   move  sp,x2
   move  a0,x2
   jal    handle_trap
-  .end  trap_entry
 
   .bss
   .global stack_bot

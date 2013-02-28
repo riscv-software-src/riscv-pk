@@ -3,7 +3,6 @@
 
 .section .text,"ax",@progbits
 .globl _start
-.ent _start
 _start:
 
   lui sp, %hi(stack_top)
@@ -34,5 +33,3 @@ _start:
   lui t0, %hi(boot)
   jalr.j t0, %lo(boot)
   #j boot
-
-.end _start

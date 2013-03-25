@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _PK_H
 #define _PK_H
 

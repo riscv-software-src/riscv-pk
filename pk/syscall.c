@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <machine/syscall.h>
 #include <string.h>
 #include <errno.h>

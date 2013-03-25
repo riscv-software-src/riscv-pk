@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "pcr.h"
 #include "pk.h"
 #include "config.h"

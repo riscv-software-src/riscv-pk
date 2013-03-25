@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _FP_H
 #define _FP_H
 

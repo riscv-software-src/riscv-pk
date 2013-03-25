@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 // See LICENSE for details.
 
 #ifndef _ELF_H

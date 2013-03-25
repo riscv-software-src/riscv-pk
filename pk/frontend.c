@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "pk.h"
 #include "atomic.h"
 #include "frontend.h"

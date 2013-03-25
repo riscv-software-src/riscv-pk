@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _FILE_H
 #define _FILE_H
 

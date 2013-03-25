@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <limits.h>
 #include <string.h>
 

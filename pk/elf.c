@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <elf.h>

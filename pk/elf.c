@@ -43,15 +43,17 @@ long load_elf(const char* fn, int* user64)
   } while(0)
 
   long entry;
-  if(eh64->e_ident[EI_CLASS] == ELFCLASS32)
+  *user64 = 0;
+  if (IS_ELF32(*eh64))
   {
     Elf32_Ehdr* eh;
     Elf32_Phdr* ph;
     LOAD_ELF;
     entry = eh->e_entry;
   }
-  else if(eh64->e_ident[EI_CLASS] == ELFCLASS64)
+  else if (IS_ELF64(*eh64))
   {
+    *user64 = 1;
     Elf64_Ehdr* eh;
     Elf64_Phdr* ph;
     LOAD_ELF;
@@ -59,8 +61,6 @@ long load_elf(const char* fn, int* user64)
   }
   else
     goto fail;
-
-  *user64 = eh64->e_ident[EI_CLASS] == ELFCLASS64;
 
   file_decref(file);
 

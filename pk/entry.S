@@ -76,13 +76,14 @@ save_tf:  # write the trap frame onto the stack
   .globl  pop_tf
 pop_tf:  # write the trap frame onto the stack
   # restore gprs
-  LOAD  t0,32*REGBYTES(a0)  # restore sr (should disable interrupts)
-  mtpcr  t0,ASM_CR(PCR_SR)
+  LOAD  a1,32*REGBYTES(a0)
+  LOAD  a2,1*REGBYTES(a0)
+  LOAD  a3,2*REGBYTES(a0)
 
-  LOAD  x1,1*REGBYTES(a0)
-  mtpcr  x1,ASM_CR(PCR_K0)
-  LOAD  x1,2*REGBYTES(a0)
-  mtpcr x1,ASM_CR(PCR_K1)
+  mtpcr  a1,ASM_CR(PCR_SR) # restore sr (disable interrupts)
+  mtpcr  a2,ASM_CR(PCR_K0)
+  mtpcr a3,ASM_CR(PCR_K1)
+
   move  x1,a0
   LOAD  x3,3*REGBYTES(x1)
   LOAD  x4,4*REGBYTES(x1)

@@ -10,28 +10,28 @@ _start:
   lui sp, %hi(stack_top)
   add sp, sp, %lo(stack_top)
 
-  lui t0, %hi(trap_entry)
-  add t0, t0, %lo(trap_entry)
-  mtpcr t0, ASM_CR(PCR_EVEC)
+  lui a0, %hi(trap_entry)
+  add a0, a0, %lo(trap_entry)
+  mtpcr a0, ASM_CR(PCR_EVEC)
 
 #ifdef __riscv64
-  li t0, SR_S | SR_PS | SR_ET | SR_EC | SR_S64
+  li a0, SR_S | SR_PS | SR_ET | SR_EC | SR_S64
 #else
-  li t0, SR_S | SR_PS | SR_ET | SR_EC
+  li a0, SR_S | SR_PS | SR_ET | SR_EC
 #endif
-  or t1, t0, SR_EF | SR_EV
-  mtpcr t1, ASM_CR(PCR_SR)
-  mfpcr t1, ASM_CR(PCR_SR)
-  mtpcr t0, ASM_CR(PCR_SR)
+  or a1, a0, SR_EF | SR_EV
+  mtpcr a1, ASM_CR(PCR_SR)
+  mfpcr a1, ASM_CR(PCR_SR)
+  mtpcr a0, ASM_CR(PCR_SR)
   
-  and t2, t1, SR_EF
-  lui t0, %hi(have_fp)
-  sw  t2, %lo(have_fp)(t0)
+  and a2, a1, SR_EF
+  lui a0, %hi(have_fp)
+  sw  a2, %lo(have_fp)(a0)
   
-  and t2, t1, SR_EV
-  lui t0, %hi(have_vector)
-  sw  t2, %lo(have_vector)(t0)
+  and a2, a1, SR_EV
+  lui a0, %hi(have_vector)
+  sw  a2, %lo(have_vector)(a0)
 
-  lui t0, %hi(boot)
-  jalr.j t0, %lo(boot)
+  lui a0, %hi(boot)
+  jalr.j a0, %lo(boot)
   #j boot

@@ -110,11 +110,11 @@ static void handle_syscall(trapframe_t* tf)
 {
   setpcr(PCR_SR, SR_ET);
 
-  long n = tf->gpr[2];
-  sysret_t ret = syscall(tf->gpr[4], tf->gpr[5], tf->gpr[6], tf->gpr[7], n);
+  long n = tf->gpr[16];
+  sysret_t ret = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21], n);
 
-  tf->gpr[2] = ret.result;
-  tf->gpr[3] = ret.result == -1 ? ret.err : 0;
+  tf->gpr[16] = ret.result;
+  tf->gpr[17] = ret.result == -1 ? ret.err : 0;
 
   advance_pc(tf);
 }

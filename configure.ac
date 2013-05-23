@@ -73,6 +73,7 @@ AC_HEADER_STDC
 
 AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused"])
 AC_SUBST([LIBS],  ["-lgcc"])
+AC_SUBST([LIBS],  ["-lc"])
 
 AX_DEFAULT_CONFIGURE_ARG([--host=riscv])
 

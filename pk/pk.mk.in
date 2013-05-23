@@ -21,8 +21,6 @@ pk_c_srcs = \
 	frontend.c \
 	fp.c \
 	int.c \
-	memset.c \
-	strlen.c \
 	elf.c \
 
 pk_asm_srcs = \

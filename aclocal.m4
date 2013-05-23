@@ -120,7 +120,7 @@ AC_DEFUN([MCPPBS_PROG_RUN],
 [
   AS_IF([ test "${build}" != "${host}" ],
   [
-    AC_CHECK_TOOLS([RUN],[isa-run run],[no])
+    AC_CHECK_TOOLS([RUN],[spike],[no])
     AS_IF([ test ${RUN} = "no" ],
     [
       AC_MSG_ERROR([Cannot find simulator for target ${target_alias}])

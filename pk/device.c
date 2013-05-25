@@ -70,3 +70,28 @@ void disk_test()
     }
   }
 }
+
+void rfb_test()
+{
+  char buf[64] __attribute__((aligned(64)));
+
+  int bpp = 16;
+  int width = 32;
+  int height = 32;
+  uint16_t fb[width * height] __attribute__((aligned(64)));
+
+  for (int dev = 0; dev < 256; dev++)
+  { 
+    tohost_sync(dev, 0xFF, (uintptr_t)buf << 8 | 0xFF);
+    if (strcmp(buf, "rfb") == 0)
+    {
+
+      tohost_sync(dev, 0, width | height << 16 | (uint64_t)bpp << 32);
+      tohost_sync(dev, 1, (uintptr_t)fb);
+
+      for (int pixel = 0; ; )
+        for (int i = 0, value = 0; i < width * height; i++, pixel++)
+          fb[i] = pixel;
+    }
+  }
+}

@@ -3953,9 +3953,7 @@ fi
 
 CFLAGS="-Wall -Os -std=gnu99 -Wno-unused"
 
-LIBS="-lgcc"
-
-LIBS="-lc"
+LIBS="-lc -lgcc"
 
 
 

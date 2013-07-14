@@ -21,10 +21,6 @@ static uint64_t get_fp_reg(unsigned int which, unsigned int dp);
 static inline void
 validate_address(trapframe_t* tf, long addr, int size, int store)
 {
-  if(addr & (size-1))
-    store ? handle_misaligned_store(tf) : handle_misaligned_load(tf);
-  if(addr < USER_START)
-    store ? handle_fault_store(tf) : handle_fault_load(tf);
 }
 
 int emulate_fp(trapframe_t* tf)

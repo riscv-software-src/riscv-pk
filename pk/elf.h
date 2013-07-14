@@ -1,7 +1,5 @@
 // See LICENSE for license details.
 
-// See LICENSE for details.
-
 #ifndef _ELF_H
 #define _ELF_H
 
@@ -16,6 +14,13 @@
 
 #define SHT_PROGBITS 1
 #define SHT_NOBITS   8
+
+#define AT_NULL   0
+#define AT_PHDR   3
+#define AT_PHENT  4
+#define AT_PHNUM  5
+#define AT_PAGESZ 6
+#define AT_ENTRY  9
 
 typedef struct {
   uint8_t  e_ident[16];

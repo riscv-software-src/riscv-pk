@@ -140,6 +140,7 @@ trap_entry:
   jal    handle_trap
 
   .bss
+  .align 4
   .global stack_bot
   .global stack_top
 stack_bot:

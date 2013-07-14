@@ -12,6 +12,7 @@ pk_hdrs = \
 	frontend.h \
 	riscv-opc.h \
 	elf.h \
+	vm.h \
 
 pk_c_srcs = \
 	init.c \
@@ -22,6 +23,8 @@ pk_c_srcs = \
 	fp.c \
 	int.c \
 	elf.c \
+	console.c \
+	vm.c \
 
 pk_asm_srcs = \
 	entry.S \

@@ -64,6 +64,16 @@
 
 #ifdef __riscv
 
+#ifdef __riscv64
+# define RISCV_PGLEVELS 3
+# define RISCV_PGSHIFT 13
+#else
+# define RISCV_PGLEVELS 2
+# define RISCV_PGSHIFT 12
+#endif
+#define RISCV_PGLEVEL_BITS 10
+#define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
+
 #define ASM_CR(r)   _ASM_CR(r)
 #define _ASM_CR(r)  cr##r
 
@@ -83,6 +93,10 @@
 
 #define clearpcr(reg,val) ({ long __tmp; \
           asm volatile ("clearpcr %0,cr%2,%1" : "=r"(__tmp) : "i"(val), "i"(reg)); \
+          __tmp; })
+
+#define rdcycle() ({ unsigned long __tmp; \
+          asm volatile ("rdcycle %0" : "=r"(__tmp)); \
           __tmp; })
 
 #endif

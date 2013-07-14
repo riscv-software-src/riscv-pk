@@ -3,6 +3,8 @@
 #include "pcr.h"
 #include "pk.h"
 #include "config.h"
+#include "syscall.h"
+#include "vm.h"
 
 int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
 int have_vector = 1;
@@ -55,8 +57,6 @@ static void handle_illegal_instruction(trapframe_t* tf)
 
 static void handle_fp_disabled(trapframe_t* tf)
 {
-  setpcr(PCR_SR, SR_ET);
-
   if(have_fp && !(mfpcr(PCR_SR) & SR_EF))
     init_fp(tf);
   else
@@ -88,39 +88,46 @@ void handle_misaligned_store(trapframe_t* tf)
   panic("Misaligned store!");
 }
 
-static void handle_fault_fetch(trapframe_t* tf)
+static void segfault(trapframe_t* tf, uintptr_t addr, const char* type)
 {
   dump_tf(tf);
-  panic("Faulting instruction access!");
+  const char* who = (tf->sr & SR_PS) ? "Kernel" : "User";
+  panic("%s %s segfault @ %p", who, type, addr);
+}
+
+static void handle_fault_fetch(trapframe_t* tf)
+{
+  if (handle_page_fault(tf->epc, PROT_EXEC) != 0)
+    segfault(tf, tf->epc, "fetch");
 }
 
 void handle_fault_load(trapframe_t* tf)
 {
-  dump_tf(tf);
-  panic("Faulting load!");
+  if (handle_page_fault(tf->badvaddr, PROT_READ) != 0)
+    segfault(tf, tf->badvaddr, "load");
 }
 
 void handle_fault_store(trapframe_t* tf)
 {
-  dump_tf(tf);
-  panic("Faulting store!");
+  if (handle_page_fault(tf->badvaddr, PROT_WRITE) != 0)
+    segfault(tf, tf->badvaddr, "store");
 }
 
 static void handle_syscall(trapframe_t* tf)
 {
-  setpcr(PCR_SR, SR_ET);
-
-  long n = tf->gpr[16];
-  sysret_t ret = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21], n);
+  sysret_t ret = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21],
+                         tf->gpr[22], tf->gpr[23], tf->gpr[16]);
 
   tf->gpr[16] = ret.result;
-  tf->gpr[17] = ret.result == -1 ? ret.err : 0;
+  tf->gpr[21] = ret.err;
 
   advance_pc(tf);
 }
 
 void handle_trap(trapframe_t* tf)
 {
+  setpcr(PCR_SR, SR_ET);
+
   typedef void (*trap_handler)(trapframe_t*);
 
   const static trap_handler trap_handlers[] = {

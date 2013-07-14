@@ -1,72 +1,74 @@
 // See LICENSE for license details.
 
+#include "file.h"
+#include "pk.h"
+#include "pcr.h"
+#include "vm.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <elf.h>
 #include <string.h>
-#include "file.h"
-#include "pk.h"
 
-long load_elf(const char* fn, int* user64)
+void load_elf(const char* fn, elf_info* info)
 {
-  sysret_t ret = file_open(fn, strlen(fn)+1, O_RDONLY, 0);
+  sysret_t ret = file_open(fn, O_RDONLY, 0);
   file_t* file = (file_t*)ret.result;
-  if(ret.result == -1)
+  if (ret.result == -1)
     goto fail;
 
-  char buf[2048]; // XXX
-  int header_size = file_read(file, buf, sizeof(buf)).result;
-  const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
-  if(header_size < (int)sizeof(Elf64_Ehdr) ||
-     !(eh64->e_ident[0] == '\177' && eh64->e_ident[1] == 'E' &&
-       eh64->e_ident[2] == 'L'    && eh64->e_ident[3] == 'F'))
+  Elf64_Ehdr eh64;
+  ssize_t ehdr_size = file_pread(file, &eh64, sizeof(eh64), 0).result;
+  if (ehdr_size < (ssize_t)sizeof(eh64) ||
+      !(eh64.e_ident[0] == '\177' && eh64.e_ident[1] == 'E' &&
+        eh64.e_ident[2] == 'L'    && eh64.e_ident[3] == 'F'))
     goto fail;
 
   #define LOAD_ELF do { \
-    eh = (typeof(eh))buf; \
-    kassert(header_size >= eh->e_phoff + eh->e_phnum*sizeof(*ph)); \
-    ph = (typeof(ph))(buf+eh->e_phoff); \
+    eh = (typeof(eh))&eh64; \
+    size_t phdr_size = eh->e_phnum*sizeof(*ph); \
+    if (info->phdr_top - phdr_size < info->stack_bottom) \
+      goto fail; \
+    info->phdr = info->phdr_top - phdr_size; \
+    ssize_t ret = file_pread(file, (void*)info->phdr, phdr_size, eh->e_phoff).result; \
+    if (ret < (ssize_t)phdr_size) goto fail; \
+    info->entry = eh->e_entry; \
+    info->phnum = eh->e_phnum; \
+    info->phent = sizeof(*ph); \
+    ph = (typeof(ph))info->phdr; \
     for(int i = 0; i < eh->e_phnum; i++, ph++) { \
       if(ph->p_type == SHT_PROGBITS && ph->p_memsz) { \
-        extern char _end; \
-        if((char*)(long)ph->p_vaddr < &_end) \
-        { \
-          long diff = &_end - (char*)(long)ph->p_vaddr; \
-          ph->p_vaddr += diff; \
-          ph->p_offset += diff; \
-          ph->p_memsz = diff >= ph->p_memsz ? 0 : ph->p_memsz - diff; \
-          ph->p_filesz = diff >= ph->p_filesz ? 0 : ph->p_filesz - diff; \
-        } \
-        if(file_pread(file, (char*)(long)ph->p_vaddr, ph->p_filesz, ph->p_offset).result != ph->p_filesz) \
+        info->brk_min = MAX(info->brk_min, ph->p_vaddr + ph->p_memsz); \
+        size_t vaddr = ROUNDDOWN(ph->p_vaddr, RISCV_PGSIZE), prepad = ph->p_vaddr - vaddr; \
+        size_t memsz = ph->p_memsz + prepad, filesz = ph->p_filesz + prepad; \
+        size_t offset = ph->p_offset - prepad; \
+        if (__do_mmap(vaddr, filesz, -1, MAP_FIXED|MAP_PRIVATE, file, offset) != vaddr) \
           goto fail; \
-        memset((char*)(long)ph->p_vaddr+ph->p_filesz, 0, ph->p_memsz-ph->p_filesz); \
+        size_t mapped = ROUNDUP(filesz, RISCV_PGSIZE); \
+        if (memsz > mapped) \
+          if (__do_mmap(vaddr + mapped, memsz - mapped, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) != vaddr + mapped) \
+            goto fail; \
       } \
     } \
   } while(0)
 
-  long entry;
-  *user64 = 0;
-  if (IS_ELF32(*eh64))
+  info->elf64 = IS_ELF64(eh64);
+  if (info->elf64)
+  {
+    Elf64_Ehdr* eh;
+    Elf64_Phdr* ph;
+    LOAD_ELF;
+  }
+  else if (IS_ELF32(eh64))
   {
     Elf32_Ehdr* eh;
     Elf32_Phdr* ph;
     LOAD_ELF;
-    entry = eh->e_entry;
-  }
-  else if (IS_ELF64(*eh64))
-  {
-    *user64 = 1;
-    Elf64_Ehdr* eh;
-    Elf64_Phdr* ph;
-    LOAD_ELF;
-    entry = eh->e_entry;
   }
   else
     goto fail;
 
   file_decref(file);
-
-  return entry;
+  return;
 
 fail:
     panic("couldn't open ELF program: %s!", fn);

@@ -43,6 +43,18 @@ static inline long atomic_swap(atomic_t* a, long val)
 #endif
 }
 
+static inline long atomic_cas(atomic_t* a, long compare, long swap)
+{
+#ifdef PK_ENABLE_ATOMICS
+  return __sync_val_compare_and_swap(&a->val, compare, swap);
+#else
+  long ret = atomic_read(a);
+  if (ret == compare)
+    atomic_set(a, swap);
+  return ret;
+#endif
+}
+
 static inline void spinlock_lock(spinlock_t* lock)
 {
   do

@@ -3,13 +3,10 @@
 #ifndef _PK_H
 #define _PK_H
 
-#define USER_MAINVARS_SIZE 0x1000
-#define USER_START 0x10000
-
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
-#include <machine/syscall.h>
+#include <string.h>
 
 typedef struct
 {
@@ -21,8 +18,15 @@ typedef struct
   long insn;
 } trapframe_t;
 
-#define panic(s,...) do { printk(s"\n", ##__VA_ARGS__); sys_exit(-1); } while(0)
-#define kassert(cond) do { if(!(cond)) panic("assertion failed: "#cond); } while(0)
+#define panic(s,...) do { do_panic(s"\n", ##__VA_ARGS__); } while(0)
+#define kassert(cond) do { if(!(cond)) kassert_fail(""#cond); } while(0)
+void do_panic(const char* s, ...) __attribute__((noreturn));
+void kassert_fail(const char* s) __attribute__((noreturn));
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define CLAMP(a, lo, hi) MIN(MAX(a, lo), hi)
+#define ROUNDUP(a, b) ((((a)-1)/(b)+1)*(b))
+#define ROUNDDOWN(a, b) ((a)/(b)*(b))
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,10 +52,25 @@ void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);
 void boot();
 
-void sys_exit(int code) __attribute__((noreturn));
-sysret_t syscall(long a0, long a1, long a2, long a3, long n);
+typedef struct {
+  int elf64;
+  int phent;
+  int phnum;
+  size_t user_min;
+  size_t entry;
+  size_t brk_min;
+  size_t brk;
+  size_t brk_max;
+  size_t mmap_max;
+  size_t stack_bottom;
+  size_t phdr;
+  size_t phdr_top;
+  size_t stack_top;
+} elf_info;
 
-long load_elf(const char* fn, int* user64);
+extern elf_info current;
+
+void load_elf(const char* fn, elf_info* info);
 
 static inline void advance_pc(trapframe_t* tf)
 {

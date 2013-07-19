@@ -174,6 +174,5 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     panic("bad syscall #%ld!",n);
 
   sysret_t r = ((syscall_t)syscall_table[n])(a0, a1, a2, a3, a4, a5, n);
-  printk("syscall %d %x %x %x = %x\n", n, a0, a1, a2, r.result);
   return r;
 }

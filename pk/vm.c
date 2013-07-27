@@ -63,24 +63,14 @@ static void __vmr_decref(vmr_t* v, size_t dec)
   }
 }
 
-static int pte_valid(pte_t pte)
-{
-  return pte & 2;
-}
-
 static size_t pte_ppn(pte_t pte)
 {
   return pte >> RISCV_PGSHIFT;
 }
 
-static int ptd_valid(pte_t pte)
-{
-  return pte & 1;
-}
-
 static pte_t ptd_create(uintptr_t ppn)
 {
-  return ppn << RISCV_PGSHIFT | 1;
+  return ppn << RISCV_PGSHIFT | PTE_T | PTE_V;
 }
 
 static uintptr_t ppn(uintptr_t addr)
@@ -94,20 +84,11 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static int prot2perm[] = {
-  [0] = 0,
-  [PROT_READ] = 4,
-  [PROT_WRITE] = 2,
-  [PROT_WRITE|PROT_READ] = 6,
-  [PROT_EXEC] = 1,
-  [PROT_EXEC|PROT_READ] = 5,
-  [PROT_EXEC|PROT_WRITE] = 3,
-  [PROT_EXEC|PROT_WRITE|PROT_READ] = 7
-};
-
 static pte_t super_pte_create(uintptr_t ppn, int kprot, int uprot, int level)
 {
-  int perm = prot2perm[kprot&7] << 7 | prot2perm[uprot&7] << 4 | 2;
+  kprot &= (PROT_READ | PROT_WRITE | PROT_EXEC);
+  uprot &= (PROT_READ | PROT_WRITE | PROT_EXEC);
+  int perm = (kprot * PTE_SR) | (uprot * PTE_UR) | PTE_V;
   return (ppn << (RISCV_PGLEVEL_BITS*level + RISCV_PGSHIFT)) | perm;
 }
 
@@ -124,8 +105,7 @@ static __attribute__((always_inline)) pte_t* __walk_internal(uintptr_t addr, int
   for (unsigned i = RISCV_PGLEVELS-1; i > 0; i--)
   {
     size_t idx = pt_idx(addr, i);
-    kassert(!pte_valid(t[idx]));
-    if (!ptd_valid(t[idx]))
+    if (!(t[idx] & PTE_V))
     {
       if (!create)
         return 0;
@@ -134,6 +114,8 @@ static __attribute__((always_inline)) pte_t* __walk_internal(uintptr_t addr, int
         return 0;
       t[idx] = ptd_create(ppn(page));
     }
+    else
+      kassert(t[idx] & PTE_T);
     t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
   return &t[pt_idx(addr, 0)];
@@ -186,7 +168,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
 
   if (pte == 0 || *pte == 0)
     return -1;
-  else if (!pte_valid(*pte))
+  else if (!(*pte & PTE_V))
   {
     kassert(vaddr < current.stack_top && vaddr >= current.user_min);
     uintptr_t ppn = vpn;

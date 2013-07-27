@@ -126,7 +126,7 @@ static void handle_syscall(trapframe_t* tf)
 
 void handle_trap(trapframe_t* tf)
 {
-  setpcr(PCR_SR, SR_ET);
+  setpcr(PCR_SR, SR_EI);
 
   typedef void (*trap_handler)(trapframe_t*);
 

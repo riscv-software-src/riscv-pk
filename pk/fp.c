@@ -91,13 +91,13 @@ int emulate_fp(trapframe_t* tf)
     validate_address(tf, effective_address_store, 8, 1);
     *(uint64_t*)effective_address_store = frs2d;
   }
-  else if(IS_INSN(MFTX_S))
+  else if(IS_INSN(FMV_X_S))
     XRDR = frs1s;
-  else if(IS_INSN(MFTX_D))
+  else if(IS_INSN(FMV_X_D))
     XRDR = frs1d;
-  else if(IS_INSN(MXTF_S))
+  else if(IS_INSN(FMV_S_X))
     DO_WRITEBACK(0, XRS1);
-  else if(IS_INSN(MXTF_D))
+  else if(IS_INSN(FMV_D_X))
     DO_WRITEBACK(1, XRS1);
   else if(IS_INSN(FSGNJ_S))
     DO_WRITEBACK(0, (frs1s &~ (uint32_t)INT32_MIN) | (frs2s & (uint32_t)INT32_MIN));
@@ -210,8 +210,8 @@ int emulate_fp(trapframe_t* tf)
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
-#define PUT_FP_REG(which, type, val) asm("mxtf." STR(type) " f" STR(which) ",%0" : : "r"(val))
-#define GET_FP_REG(which, type, val) asm("mftx." STR(type) " %0,f" STR(which) : "=r"(val))
+#define PUT_FP_REG(which, type, val) asm("fmv." STR(type) ".x f" STR(which) ",%0" : : "r"(val))
+#define GET_FP_REG(which, type, val) asm("fmv.x." STR(type) " %0,f" STR(which) : "=r"(val))
 #define LOAD_FP_REG(which, type, val) asm("fl" STR(type) " f" STR(which) ",%0" : : "m"(val))
 #define STORE_FP_REG(which, type, val)  asm("fs" STR(type) " f" STR(which) ",%0" : "=m"(val) : : "memory")
 

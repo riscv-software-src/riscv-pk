@@ -156,7 +156,7 @@ static uintptr_t __vm_alloc(size_t npage)
 
 static void flush_tlb()
 {
-  mtpcr(PCR_PTBR, mfpcr(PCR_PTBR));
+  mtpcr(PCR_FATC, 0);
 }
 
 static int __handle_page_fault(uintptr_t vaddr, int prot)

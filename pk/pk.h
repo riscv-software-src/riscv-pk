@@ -72,10 +72,9 @@ extern elf_info current;
 
 void load_elf(const char* fn, elf_info* info);
 
-static inline void advance_pc(trapframe_t* tf)
+static inline int insn_len(long insn)
 {
-  int rvc = (tf->insn & 0x3) < 0x3;
-  tf->epc += rvc ? 2 : 4;
+  return (insn & 0x3) < 0x3 ? 2 : 4;
 }
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))

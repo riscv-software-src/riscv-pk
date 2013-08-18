@@ -12,13 +12,13 @@ _start:
 
   lui a0, %hi(trap_entry)
   add a0, a0, %lo(trap_entry)
-  mtpcr a0, ASM_CR(PCR_EVEC)
+  mtpcr a0, evec
 
   li a0, SR_S | SR_PS | SR_EI | SR_S64
   or a1, a0, SR_EF | SR_EV
-  mtpcr a1, ASM_CR(PCR_SR)
-  mfpcr a1, ASM_CR(PCR_SR)
-  mtpcr a0, ASM_CR(PCR_SR)
+  mtpcr a1, status
+  mfpcr a1, status
+  mtpcr a0, status
   
   and a2, a1, SR_EF
   lui a0, %hi(have_fp)

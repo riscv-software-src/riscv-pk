@@ -14,7 +14,10 @@ static void handle_vector_disabled(trapframe_t* tf)
   if (have_vector)
     tf->sr |= SR_EV;
   else
-    panic("No vector hardware! pc %lx, insn %x",tf->epc,(uint32_t)tf->insn);
+  { 
+    dump_tf(tf);
+    panic("No vector hardware!");
+  }
 }
 
 static void handle_vector_bank(trapframe_t* tf)
@@ -37,17 +40,24 @@ static void handle_privileged_instruction(trapframe_t* tf)
 
 static void handle_illegal_instruction(trapframe_t* tf)
 {
+  tf->insn = *(uint16_t*)tf->epc;
+  int len = insn_len(tf->insn);
+  if (len == 4)
+    tf->insn |= ((uint32_t)*(uint16_t*)(tf->epc + 2) << 16);
+  else
+    kassert(len == 2);
+
 #ifdef PK_ENABLE_FP_EMULATION
-  if(emulate_fp(tf) == 0)
+  if (emulate_fp(tf) == 0)
   {
-    advance_pc(tf);
+    tf->epc += len;
     return;
   }
 #endif
 
-  if(emulate_int(tf) == 0)
+  if (emulate_int(tf) == 0)
   {
-    advance_pc(tf);
+    tf->epc += len;
     return;
   }
 
@@ -121,7 +131,7 @@ static void handle_syscall(trapframe_t* tf)
   tf->gpr[16] = ret.result;
   tf->gpr[21] = ret.err;
 
-  advance_pc(tf);
+  tf->epc += 4;
 }
 
 void handle_trap(trapframe_t* tf)

@@ -44,30 +44,24 @@
   STORE  x30,30*REGBYTES(x2)
   STORE  x31,31*REGBYTES(x2)
 
-  mfpcr  x3,ASM_CR(PCR_K0)
-  STORE  x3,1*REGBYTES(x2)          # x1 is in PCR_K0
-  mfpcr  x3,ASM_CR(PCR_K1)
-  STORE  x3,2*REGBYTES(x2)          # x2 is in PCR_K1
 
   # get sr, epc, badvaddr, cause
-  mfpcr  x3,ASM_CR(PCR_SR)          # sr
-  STORE  x3,32*REGBYTES(x2)
-  mfpcr  x4,ASM_CR(PCR_EPC)          # epc
-  STORE  x4,33*REGBYTES(x2)
-  mfpcr  x3,ASM_CR(PCR_BADVADDR)      # badvaddr
-  STORE  x3,34*REGBYTES(x2)
-  mfpcr  x3,ASM_CR(PCR_CAUSE)        # cause
-  STORE  x3,35*REGBYTES(x2)
+  mfpcr  x3,sup0    # x1
+  mfpcr  x4,sup1    # x2
+  mfpcr  x5,status
+  mfpcr  x6,epc
+  mfpcr  x7,badvaddr
+  mfpcr  x8,cause
+  STORE  x3,1*REGBYTES(x2)
+  STORE  x4,2*REGBYTES(x2)
+  STORE  x5,32*REGBYTES(x2)
+  STORE  x6,33*REGBYTES(x2)
+  STORE  x7,34*REGBYTES(x2)
+  STORE  x8,35*REGBYTES(x2)
 
   # get faulting insn, if it wasn't a fetch-related trap
-  li    x5, CAUSE_MISALIGNED_FETCH
-  li    x6, CAUSE_FAULT_FETCH
-  beq   x3, x5, 1f
-  beq   x3, x6, 1f
-  lh    x3,0(x4)
-  lh    x4,2(x4)
-  sh    x3,  36*REGBYTES(x2)
-  sh    x4,2+36*REGBYTES(x2)
+  li x5,-1
+  sd x5,36*REGBYTES(x2)
 1:
   .endm
 
@@ -79,9 +73,9 @@ pop_tf:  # write the trap frame onto the stack
   LOAD  a2,1*REGBYTES(a0)
   LOAD  a3,2*REGBYTES(a0)
 
-  mtpcr  a1,ASM_CR(PCR_SR) # restore sr (disable interrupts)
-  mtpcr  a2,ASM_CR(PCR_K0)
-  mtpcr a3,ASM_CR(PCR_K1)
+  mtpcr  a1,status # restore sr (disable interrupts)
+  mtpcr  a2,sup0
+  mtpcr  a3,sup1
 
   move  x1,a0
   LOAD  x3,3*REGBYTES(x1)
@@ -116,21 +110,21 @@ pop_tf:  # write the trap frame onto the stack
 
   # gtfo!
   LOAD  x2,33*REGBYTES(x1)
-  mtpcr x2,ASM_CR(PCR_EPC)
-  mfpcr x1,ASM_CR(PCR_K0)
-  mfpcr x2,ASM_CR(PCR_K1)
+  mfpcr x1,sup0
+  mtpcr x2,epc
+  mfpcr x2,sup1
   eret
 
   .global  trap_entry
 trap_entry:
-  mtpcr ra,ASM_CR(PCR_K0)
-  mtpcr x2,ASM_CR(PCR_K1)
+  mtpcr x1,sup0
+  mtpcr x2,sup1
 
   # when coming from kernel, continue below its stack
-  mfpcr ra,ASM_CR(PCR_SR)
-  and   ra,ra,SR_PS
+  mfpcr x1,status
+  and   x1,x1,SR_PS
   add   x2, sp, -320
-  bnez  ra, 1f
+  bnez  x1, 1f
   la    x2,stack_top-320
 
 1:save_tf

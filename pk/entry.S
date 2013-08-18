@@ -12,9 +12,7 @@
 # define REGBYTES 4
 #endif
 
-  .text
-save_tf:  # write the trap frame onto the stack
-
+  .macro save_tf
   # save gprs
   STORE  x3,3*REGBYTES(x2)
   STORE  x4,4*REGBYTES(x2)
@@ -71,8 +69,9 @@ save_tf:  # write the trap frame onto the stack
   sh    x3,  36*REGBYTES(x2)
   sh    x4,2+36*REGBYTES(x2)
 1:
-  ret
+  .endm
 
+  .text
   .globl  pop_tf
 pop_tf:  # write the trap frame onto the stack
   # restore gprs
@@ -134,7 +133,7 @@ trap_entry:
   bnez  ra, 1f
   la    x2,stack_top-320
 
-1:jal   save_tf
+1:save_tf
   move  sp,x2
   move  a0,x2
   jal    handle_trap

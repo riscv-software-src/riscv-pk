@@ -6,7 +6,7 @@
 	.globl	get_fp_state
 get_fp_state:
 
-	mffsr	v0
+	frsr	v0
 
 	fsd		f0 ,  0(a0)
 	fsd		f1 ,  8(a0)
@@ -79,6 +79,6 @@ put_fp_state:
 	fld		f30,240(a0)
 	fld		f31,248(a0)
 
-	mtfsr	a1
+	fssr	a1
 
 	ret

@@ -45,6 +45,7 @@ static void user_init()
   // load program named by argv[0]
   current.phdr_top = stack_top;
   load_elf((char*)args->argv[0], &current);
+  stack_top = current.phdr;
 
   struct {
     long key;

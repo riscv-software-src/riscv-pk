@@ -23,6 +23,20 @@ void init_tf(trapframe_t* tf, long pc, long sp, int user64)
   tf->epc = pc;
 }
 
+static void handle_option(const char* s)
+{
+  switch (s[1])
+  {
+    case 's':
+      current.t0 = rdcycle();
+      break;
+
+    default:
+      panic("unrecognized option: `%c'", s[1]);
+      break;
+  }
+}
+
 static void user_init()
 {
   struct args {
@@ -37,14 +51,17 @@ static void user_init()
   sysret_t r = frontend_syscall(SYS_getmainvars, (long)args, argc_argv_size, 0, 0);
   kassert(r.result == 0);
 
-  // argv[0] is the proxy kernel itself.  skip it.
-  args->argv[0] = args->argc - 1;
-  args = (struct args*)args->argv;
+  // argv[0] is the proxy kernel itself.  skip it and any flags.
+  unsigned a0 = 1;
+  for ( ; a0 < args->argc && *(char*)(uintptr_t)args->argv[a0] == '-'; a0++)
+    handle_option((const char*)(uintptr_t)args->argv[a0]);
+  args->argv[a0-1] = args->argc - a0;
+  args = (struct args*)&args->argv[a0-1];
   stack_top = (uintptr_t)args;
 
   // load program named by argv[0]
   current.phdr_top = stack_top;
-  load_elf((char*)args->argv[0], &current);
+  load_elf((char*)(uintptr_t)args->argv[0], &current);
   stack_top = current.phdr;
 
   struct {
@@ -94,6 +111,7 @@ static void user_init()
 
 void boot()
 {
+  memset(&current, 0, sizeof(current));
   file_init();
   vm_init();
   user_init();

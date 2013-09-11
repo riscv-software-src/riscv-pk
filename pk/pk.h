@@ -66,6 +66,7 @@ typedef struct {
   size_t phdr;
   size_t phdr_top;
   size_t stack_top;
+  size_t t0;
 } elf_info;
 
 extern elf_info current;

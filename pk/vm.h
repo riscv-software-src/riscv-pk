@@ -15,12 +15,15 @@
 #define MAP_FIXED 0x10
 #define MAP_ANONYMOUS 0x20
 #define MAP_POPULATE 0x8000
+#define MREMAP_FIXED 0x2
 
 void vm_init();
 int handle_page_fault(uintptr_t vaddr, int prot);
 void populate_mapping(const void* start, size_t size, int prot);
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* file, off_t offset);
 sysret_t do_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset);
+sysret_t do_munmap(uintptr_t addr, size_t length);
+sysret_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags);
 sysret_t do_brk(uintptr_t addr);
 
 #endif

@@ -175,6 +175,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
 
     vmr_t* v = (vmr_t*)*pte;
     *pte = pte_create(ppn, PROT_READ|PROT_WRITE, 0);
+    flush_tlb();
     if (v->file)
     {
       size_t flen = MIN(RISCV_PGSIZE, v->length - (vaddr - v->addr));
@@ -203,6 +204,22 @@ int handle_page_fault(uintptr_t vaddr, int prot)
   return ret;
 }
 
+static void __do_munmap(uintptr_t addr, size_t len)
+{
+  for (uintptr_t a = addr; a < addr + len; a += RISCV_PGSIZE)
+  {
+    pte_t* pte = __walk(a);
+    if (pte == 0 || *pte == 0)
+      continue;
+
+    if (!(*pte & PTE_V))
+      __vmr_decref((vmr_t*)*pte, 1);
+
+    *pte = 0;
+  }
+  flush_tlb(); // TODO: shootdown
+}
+
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* f, off_t offset)
 {
   size_t npage = (length-1)/RISCV_PGSIZE+1;
@@ -225,7 +242,7 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
     kassert(pte);
 
     if (*pte)
-      kassert(*pte == 0); // TODO __do_munmap
+      __do_munmap(addr, RISCV_PGSIZE);
 
     *pte = (pte_t)v;
   }
@@ -242,6 +259,19 @@ fail_vma:
   __vmr_decref(v, npage);
 fail_vmr:
   return (uintptr_t)-1;
+}
+
+sysret_t do_munmap(uintptr_t addr, size_t length)
+{
+  if ((addr & (RISCV_PGSIZE-1)) || addr < current.user_min ||
+      addr + length > current.stack_top || addr + length < addr)
+    return (sysret_t){-1, EINVAL};
+
+  spinlock_lock(&vm_lock);
+    __do_munmap(addr, length);
+  spinlock_unlock(&vm_lock);
+
+  return (sysret_t){0, 0};
 }
 
 sysret_t do_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
@@ -276,7 +306,7 @@ size_t __do_brk(size_t addr)
 
   size_t newbrk_page = ROUNDUP(newbrk, RISCV_PGSIZE);
   if (current.brk > newbrk_page)
-    kassert(0); // TODO __do_munmap
+    __do_munmap(newbrk_page, current.brk - newbrk_page);
   else if (current.brk < newbrk_page)
     kassert(__do_mmap(current.brk, newbrk_page - current.brk, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) == current.brk);
   current.brk = newbrk_page;
@@ -291,6 +321,34 @@ sysret_t do_brk(size_t addr)
   spinlock_unlock(&vm_lock);
   
   return (sysret_t){addr, 0};
+}
+
+sysret_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
+{
+  uintptr_t res = -1;
+  if (((addr | old_size | new_size) & (RISCV_PGSIZE-1)) ||
+      (flags & MREMAP_FIXED))
+    return (sysret_t){-1, EINVAL};
+
+  spinlock_lock(&vm_lock);
+    for (size_t i = 0; i < MAX_VMR; i++)
+    {
+      if (vmrs[i].refcnt && addr == vmrs[i].addr && old_size == vmrs[i].length)
+      {
+        size_t old_npage = (vmrs[i].length-1)/RISCV_PGSIZE+1;
+        size_t new_npage = (new_size-1)/RISCV_PGSIZE+1;
+        if (new_size < old_size)
+          __do_munmap(addr + new_size, old_size - new_size);
+        else if (new_size > old_size)
+          __do_mmap(addr + old_size, new_size - old_size, vmrs[i].prot, 0,
+                    vmrs[i].file, vmrs[i].offset + new_size - old_size);
+        __vmr_decref(&vmrs[i], old_npage - new_npage);
+        res = addr;
+      }
+    }
+  spinlock_unlock(&vm_lock);
+ 
+  return (sysret_t){res, 0};
 }
 
 static void __map_kernel_range(uintptr_t paddr, size_t len, int prot)

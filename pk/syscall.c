@@ -13,6 +13,9 @@ typedef sysret_t (*syscall_t)(long, long, long, long, long, long, long);
 
 void sys_exit(int code)
 {
+  if (current.t0)
+    printk("%ld cycles\n", rdcycle() - current.t0);
+
   frontend_syscall(SYS_exit, code, 0, 0, 0);
   while (1);
 }
@@ -146,6 +149,55 @@ sysret_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, of
   return do_mmap(addr, length, prot, flags, fd, offset);
 }
 
+sysret_t sys_munmap(uintptr_t addr, size_t length)
+{
+  return do_munmap(addr, length);
+}
+
+sysret_t sys_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
+{
+  return do_mremap(addr, old_size, new_size, flags);
+}
+
+sysret_t sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
+{
+  if (oact)
+  {
+    size_t sz = current.elf64 ? 6*sizeof(uint64_t) : 8*sizeof(uint32_t);
+    populate_mapping(oact, sz, PROT_WRITE);
+    memset(oact, 0, sz);
+  }
+
+  return (sysret_t){0, 0};
+}
+
+sysret_t sys_time(long* loc)
+{
+  uintptr_t t = rdcycle(), hz = 1000000000;
+  if (loc)
+  {
+    populate_mapping(loc, sizeof(long), PROT_WRITE);
+    loc[0] = t/hz;
+  }
+  return (sysret_t){t, 0};
+}
+
+sysret_t sys_writev(int fd, const void* iov, int cnt)
+{
+  long get(int i) { return current.elf64 ? ((long*)iov)[i] : ((int*)iov)[i]; }
+  populate_mapping(iov, cnt*2*(current.elf64 ? 8 : 4), PROT_READ);
+
+  ssize_t ret = 0;
+  for (int i = 0; i < cnt; i++)
+  {
+    sysret_t r = sys_write(fd, (void*)get(2*i), get(2*i+1));
+    if (r.result < 0)
+      return r;
+    ret += r.result;
+  }
+  return (sysret_t){ret, 0};
+}
+
 sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
 {
   const static void* syscall_table[] = {
@@ -168,6 +220,11 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_getgid] = sys_getuid,
     [SYS_getegid] = sys_getuid,
     [SYS_mmap] = sys_mmap,
+    [SYS_munmap] = sys_munmap,
+    [SYS_mremap] = sys_mremap,
+    [SYS_rt_sigaction] = sys_rt_sigaction,
+    [SYS_time] = sys_time,
+    [SYS_writev] = sys_writev,
   };
 
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])

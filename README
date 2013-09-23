@@ -32,6 +32,6 @@ Build Steps
 
  % mkdir build
  % cd build
- % ../configure
+ % CC=riscv-gcc ../configure --prefix=$RISCV/target --host=riscv
  % make
-
+ % make install

@@ -61,7 +61,7 @@
 
   # get faulting insn, if it wasn't a fetch-related trap
   li x5,-1
-  sd x5,36*REGBYTES(x2)
+  STORE x5,36*REGBYTES(x2)
 1:
   .endm
 

@@ -35,26 +35,25 @@ int emulate_fp(trapframe_t* tf)
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
 
-  #define RRS1 ((tf->insn >> 22) & 0x1F)
-  #define RRS2 ((tf->insn >> 17) & 0x1F)
-  #define RRS3 ((tf->insn >> 12) & 0x1F)
-  #define RRD  ((tf->insn >> 27) & 0x1F)
-  #define RM   ((tf->insn >>  9) &  0x7)
+  #define RS1 ((tf->insn >> 15) & 0x1F)
+  #define RS2 ((tf->insn >> 20) & 0x1F)
+  #define RS3 ((tf->insn >> 27) & 0x1F)
+  #define RD  ((tf->insn >>  7) & 0x1F)
+  #define RM  ((tf->insn >> 12) &  0x7)
 
-  int32_t imm = ((int32_t)tf->insn << 10) >> 20;
-  int32_t bimm = (((tf->insn >> 27) & 0x1f) << 7) | ((tf->insn >> 10) & 0x7f);
-  bimm = (bimm << 20) >> 20;
+  int32_t imm = (int32_t)tf->insn >> 20;
+  int32_t bimm = RD | imm >> 5 << 5;
 
-  #define XRS1 (tf->gpr[RRS1])
-  #define XRS2 (tf->gpr[RRS2])
-  #define XRDR (tf->gpr[RRD])
+  #define XRS1 (tf->gpr[RS1])
+  #define XRS2 (tf->gpr[RS2])
+  #define XRDR (tf->gpr[RD])
 
-  uint64_t frs1d = fp_state.fpr[RRS1];
-  uint64_t frs2d = fp_state.fpr[RRS2];
-  uint64_t frs3d = fp_state.fpr[RRS3];
-  uint32_t frs1s = get_fp_reg(RRS1, 0);
-  uint32_t frs2s = get_fp_reg(RRS2, 0);
-  uint32_t frs3s = get_fp_reg(RRS3, 0);
+  uint64_t frs1d = fp_state.fpr[RS1];
+  uint64_t frs2d = fp_state.fpr[RS2];
+  uint64_t frs3d = fp_state.fpr[RS3];
+  uint32_t frs1s = get_fp_reg(RS1, 0);
+  uint32_t frs2s = get_fp_reg(RS2, 0);
+  uint32_t frs3s = get_fp_reg(RS3, 0);
 
   long effective_address_load = XRS1 + imm;
   long effective_address_store = XRS1 + bimm;
@@ -199,7 +198,7 @@ int emulate_fp(trapframe_t* tf)
     return -1;
 
   if(do_writeback)
-    set_fp_reg(RRD, writeback_dp, writeback_value);
+    set_fp_reg(RD, writeback_dp, writeback_value);
 
   if(have_fp)
     put_fp_state(fp_state.fpr,fp_state.fsr);

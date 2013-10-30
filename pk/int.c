@@ -16,9 +16,9 @@ int emulate_int(trapframe_t* tf)
   if(noisy)
     printk("Int emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
 
-  #define RS1 ((tf->insn >> 22) & 0x1F)
-  #define RS2 ((tf->insn >> 17) & 0x1F)
-  #define RD  ((tf->insn >> 27) & 0x1F)
+  #define RS1 ((tf->insn >> 15) & 0x1F)
+  #define RS2 ((tf->insn >> 20) & 0x1F)
+  #define RD  ((tf->insn >>  7) & 0x1F)
 
 //  #define XRS1 (tf->gpr[RS1])
 //  #define XRS2 (tf->gpr[RS2])

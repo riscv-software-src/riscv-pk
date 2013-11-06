@@ -15,7 +15,7 @@ _start:
   mtpcr a0, evec
 
   li a0, SR_S | SR_PS | SR_EI | SR_S64
-  or a1, a0, SR_EF | SR_EV
+  or a1, a0, SR_EF | SR_EA
   mtpcr a1, status
   mfpcr a1, status
   mtpcr a0, status
@@ -24,9 +24,9 @@ _start:
   lui a0, %hi(have_fp)
   sw  a2, %lo(have_fp)(a0)
   
-  and a2, a1, SR_EV
-  lui a0, %hi(have_vector)
-  sw  a2, %lo(have_vector)(a0)
+  and a2, a1, SR_EA
+  lui a0, %hi(have_accelerator)
+  sw  a2, %lo(have_accelerator)(a0)
 
   lui a0, %hi(boot)
   jalr a0, %lo(boot)

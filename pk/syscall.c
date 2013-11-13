@@ -182,6 +182,17 @@ sysret_t sys_time(long* loc)
   return (sysret_t){t, 0};
 }
 
+sysret_t sys_gettimeofday(long* loc)
+{
+  populate_mapping(loc, 2*sizeof(long), PROT_WRITE);
+
+  uintptr_t t = rdcycle(), hz = 1000000000;
+  loc[0] = t/hz;
+  loc[1] = (t % hz) / (hz / 1000000);
+  
+  return (sysret_t){0, 0};
+}
+
 sysret_t sys_writev(int fd, const void* iov, int cnt)
 {
   long get(int i) { return current.elf64 ? ((long*)iov)[i] : ((int*)iov)[i]; }
@@ -224,6 +235,7 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_mremap] = sys_mremap,
     [SYS_rt_sigaction] = sys_rt_sigaction,
     [SYS_time] = sys_time,
+    [SYS_gettimeofday] = sys_gettimeofday,
     [SYS_writev] = sys_writev,
   };
 

@@ -13,7 +13,7 @@
 #define  MASK_BLTU 0x707f
 #define MATCH_FMIN_S 0xc0000053
 #define  MASK_FMIN_S 0xfe00707f
-#define MATCH_SLLIW 0x4000101b
+#define MATCH_SLLIW 0x101b
 #define  MASK_SLLIW 0xfe00707f
 #define MATCH_LB 0x3
 #define  MASK_LB 0x707f
@@ -229,7 +229,7 @@
 #define  MASK_REMW 0xfe00707f
 #define MATCH_SLTU 0x3033
 #define  MASK_SLTU 0xfe00707f
-#define MATCH_SLLI 0x40001013
+#define MATCH_SLLI 0x1013
 #define  MASK_SLLI 0xfc00707f
 #define MATCH_AMOOR_W 0x4000202f
 #define  MASK_AMOOR_W 0xf800707f

@@ -5,7 +5,6 @@
 #include "file.h"
 #include "pk.h"
 #include "frontend.h"
-#include "pcr.h"
 #include "vm.h"
 
 #define MAX_FDS 32

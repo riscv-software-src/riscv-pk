@@ -1,7 +1,5 @@
 // See LICENSE for license details.
 
-#include "pcr.h"
-
 	.text
 	.globl	get_fp_state
 get_fp_state:

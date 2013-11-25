@@ -1,6 +1,5 @@
 // See LICENSE for license details.
 
-#include "pcr.h"
 #include "pk.h"
 #include "file.h"
 #include "vm.h"
@@ -16,7 +15,7 @@ void init_tf(trapframe_t* tf, long pc, long sp, int user64)
   memset(tf,0,sizeof(*tf));
   if(sizeof(void*) != 8)
     kassert(!user64);
-  tf->sr = (mfpcr(PCR_SR) & (SR_IM | SR_S64 | SR_VM)) | SR_S | SR_PEI;
+  tf->sr = (read_csr(status) & (SR_IM | SR_S64 | SR_VM)) | SR_S | SR_PEI;
   if(user64)
     tf->sr |= SR_U64;
   tf->gpr[14] = sp;

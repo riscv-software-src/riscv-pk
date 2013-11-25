@@ -1,7 +1,6 @@
 // See LICENSE for license details.
 
 #include "pk.h"
-#include "pcr.h"
 #include "fp.h"
 #include "config.h"
 
@@ -10,7 +9,6 @@ static fp_state_t fp_state;
 #ifdef PK_ENABLE_FP_EMULATION
 
 #include "softfloat.h"
-#include "riscv-opc.h"
 #include <stdint.h>
 
 #define noisy 0
@@ -25,9 +23,9 @@ validate_address(trapframe_t* tf, long addr, int size, int store)
 
 int emulate_fp(trapframe_t* tf)
 {
-  if(have_fp)
+  if (have_fp)
   {
-    if(!(mfpcr(PCR_SR) & SR_EF))
+    if (!(read_csr(status) & SR_EF))
       init_fp(tf);
     fp_state.fsr = get_fp_state(fp_state.fpr);
   }
@@ -263,10 +261,8 @@ get_fp_reg(unsigned int which, unsigned int dp)
 
 void init_fp(trapframe_t* tf)
 {
-  long sr = mfpcr(PCR_SR);
-  mtpcr(PCR_SR, sr | SR_EF);
+  tf->sr |= SR_EF;
+  set_csr(status, SR_EF);
 
   put_fp_state(fp_state.fpr,fp_state.fsr);
-
-  tf->sr |= SR_EF;
 }

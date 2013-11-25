@@ -2,7 +2,6 @@
 
 #include "syscall.h"
 #include "pk.h"
-#include "pcr.h"
 #include "file.h"
 #include "frontend.h"
 #include "vm.h"

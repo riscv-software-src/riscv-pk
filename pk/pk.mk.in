@@ -5,12 +5,11 @@ pk_subproject_deps = \
 
 pk_hdrs = \
 	pk.h \
-	pcr.h \
+	encoding.h \
 	fp.h \
 	atomic.h \
 	file.h \
 	frontend.h \
-	riscv-opc.h \
 	elf.h \
 	vm.h \
 

@@ -1,6 +1,5 @@
 // See LICENSE for license details.
 
-#include "pcr.h"
 #include "pk.h"
 #include "config.h"
 #include "syscall.h"
@@ -55,7 +54,7 @@ static void handle_illegal_instruction(trapframe_t* tf)
 
 static void handle_fp_disabled(trapframe_t* tf)
 {
-  if(have_fp && !(mfpcr(PCR_SR) & SR_EF))
+  if (have_fp && !(read_csr(status) & SR_EF))
     init_fp(tf);
   else
     handle_illegal_instruction(tf);
@@ -124,7 +123,7 @@ static void handle_syscall(trapframe_t* tf)
 
 void handle_trap(trapframe_t* tf)
 {
-  setpcr(PCR_SR, SR_EI);
+  set_csr(status, SR_EI);
 
   typedef void (*trap_handler)(trapframe_t*);
 

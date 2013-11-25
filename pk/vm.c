@@ -1,7 +1,6 @@
 #include "vm.h"
 #include "file.h"
 #include "atomic.h"
-#include "pcr.h"
 #include "pk.h"
 #include <stdint.h>
 #include <errno.h>
@@ -156,7 +155,7 @@ static uintptr_t __vm_alloc(size_t npage)
 
 static void flush_tlb()
 {
-  mtpcr(PCR_FATC, 0);
+  write_csr(fatc, 0);
 }
 
 static int __handle_page_fault(uintptr_t vaddr, int prot)
@@ -397,7 +396,7 @@ void vm_init()
     size_t mem_pages = max_addr >> RISCV_PGSHIFT;
     const size_t min_free_pages = 2*RISCV_PGLEVELS;
     const size_t min_stack_pages = 8;
-    const size_t max_stack_pages = 128;
+    const size_t max_stack_pages = 1024;
     kassert(mem_pages > min_free_pages + min_stack_pages);
     free_pages = MAX(mem_pages >> (RISCV_PGLEVEL_BITS-1), min_free_pages);
     size_t stack_pages = CLAMP(mem_pages/32, min_stack_pages, max_stack_pages);
@@ -409,10 +408,9 @@ void vm_init()
 
     __map_kernel_range(0, current.user_min, PROT_READ|PROT_WRITE|PROT_EXEC);
 
-    mtpcr(PCR_PTBR, root_page_table_paddr);
-    setpcr(PCR_SR, SR_VM);
-    have_vm = mfpcr(PCR_SR) & SR_VM;
-    clearpcr(PCR_SR, SR_VM);
+    write_csr(ptbr, root_page_table_paddr);
+    set_csr(status, SR_VM);
+    have_vm = clear_csr(status, SR_VM) & SR_VM;
 
     size_t stack_size = RISCV_PGSIZE * stack_pages;
     current.stack_top = MIN(first_free_page, 0x80000000); // for RV32 sanity
@@ -422,7 +420,7 @@ void vm_init()
     {
       __map_kernel_range(first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
       kassert(__do_mmap(stack_bot, stack_size, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) == stack_bot);
-      setpcr(PCR_SR, SR_VM);
+      set_csr(status, SR_VM);
     }
 
     current.stack_bottom = stack_bot;

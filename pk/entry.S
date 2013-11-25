@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#include "pcr.h"
+#include "encoding.h"
 
 #ifdef __riscv64
 # define STORE    sd
@@ -46,12 +46,12 @@
 
 
   # get sr, epc, badvaddr, cause
-  mfpcr  x3,sup0    # x1
-  mfpcr  x4,sup1    # x2
-  mfpcr  x5,status
-  mfpcr  x6,epc
-  mfpcr  x7,badvaddr
-  mfpcr  x8,cause
+  csrr   x3,sup0    # x1
+  csrr   x4,sup1    # x2
+  csrr   x5,status
+  csrr   x6,epc
+  csrr   x7,badvaddr
+  csrr   x8,cause
   STORE  x3,1*REGBYTES(x2)
   STORE  x4,2*REGBYTES(x2)
   STORE  x5,32*REGBYTES(x2)
@@ -73,9 +73,9 @@ pop_tf:  # write the trap frame onto the stack
   LOAD  a2,1*REGBYTES(a0)
   LOAD  a3,2*REGBYTES(a0)
 
-  mtpcr  a1,status # restore sr (disable interrupts)
-  mtpcr  a2,sup0
-  mtpcr  a3,sup1
+  csrw   status, a1 # restore sr (disable interrupts)
+  csrw   sup0, a2
+  csrw   sup1, a3
 
   move  x1,a0
   LOAD  x3,3*REGBYTES(x1)
@@ -110,27 +110,27 @@ pop_tf:  # write the trap frame onto the stack
 
   # gtfo!
   LOAD  x2,33*REGBYTES(x1)
-  mfpcr x1,sup0
-  mtpcr x2,epc
-  mfpcr x2,sup1
-  eret
+  csrr  x1, sup0
+  csrw  epc, x2
+  csrr  x2, sup1
+  sret
 
   .global  trap_entry
 trap_entry:
-  mtpcr x1,sup0
-  mtpcr x2,sup1
+  csrw  sup0, x1
+  csrw  sup1, x2
 
   # when coming from kernel, continue below its stack
-  mfpcr x1,status
-  and   x1,x1,SR_PS
+  csrr  x1, status
+  and   x1, x1, SR_PS
   add   x2, sp, -320
   bnez  x1, 1f
-  la    x2,stack_top-320
+  la    x2, stack_top-320
 
 1:save_tf
   move  sp,x2
   move  a0,x2
-  jal    handle_trap
+  j     handle_trap
 
   .bss
   .align 4

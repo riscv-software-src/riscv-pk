@@ -2,7 +2,6 @@
 
 #include "file.h"
 #include "pk.h"
-#include "pcr.h"
 #include "vm.h"
 #include <sys/stat.h>
 #include <fcntl.h>

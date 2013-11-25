@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "encoding.h"
 
 typedef struct
 {
@@ -42,7 +43,7 @@ int emulate_int(trapframe_t*);
 
 void printk(const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp, int user64);
-void pop_tf(trapframe_t*);
+void pop_tf(trapframe_t*) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
 
 void unhandled_trap(trapframe_t*);

@@ -1,24 +1,20 @@
 // See LICENSE for license details.
 
-#include "pcr.h"
-#include "pk.h"
+#include "encoding.h"
 
 .section .text,"ax",@progbits
 .globl _start
 _start:
 
-  lui sp, %hi(stack_top)
-  add sp, sp, %lo(stack_top)
-
-  lui a0, %hi(trap_entry)
-  add a0, a0, %lo(trap_entry)
-  mtpcr a0, evec
+  la sp, stack_top
+  la a0, trap_entry
+  csrw evec, a0
 
   li a0, SR_S | SR_PS | SR_EI | SR_S64
   or a1, a0, SR_EF | SR_EA
-  mtpcr a1, status
-  mfpcr a1, status
-  mtpcr a0, status
+  csrw status, a1
+  csrr a1, status
+  csrw status, a0
   
   and a2, a1, SR_EF
   lui a0, %hi(have_fp)
@@ -29,4 +25,4 @@ _start:
   sw  a2, %lo(have_accelerator)(a0)
 
   lui a0, %hi(boot)
-  jalr a0, %lo(boot)
+  jr  a0, %lo(boot)

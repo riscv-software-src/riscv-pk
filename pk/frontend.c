@@ -3,7 +3,6 @@
 #include "pk.h"
 #include "atomic.h"
 #include "frontend.h"
-#include "pcr.h"
 #include <stdint.h>
 
 sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
@@ -21,8 +20,8 @@ sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
 
   mb();
 
-  mtpcr(PCR_TOHOST, magic_mem);
-  while (mtpcr(PCR_FROMHOST, 0) == 0);
+  write_csr(tohost, magic_mem);
+  while (swap_csr(fromhost, 0) == 0);
 
   mb();
 

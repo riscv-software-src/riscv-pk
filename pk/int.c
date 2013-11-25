@@ -1,11 +1,9 @@
 // See LICENSE for license details.
 
 #include "pk.h"
-#include "pcr.h"
 
 
 #include "softint.h"
-#include "riscv-opc.h"
 #include <stdint.h>
 
 #define noisy 0

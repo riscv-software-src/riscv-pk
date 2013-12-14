@@ -10,6 +10,17 @@
 
 typedef sysret_t (*syscall_t)(long, long, long, long, long, long, long);
 
+#define long_bytes (4 + 4*current.elf64)
+#define get_long(base, i) ({ long res; \
+  if (current.elf64) res = ((long*)base)[i]; \
+  else res = ((int*)base)[i]; \
+  res; })
+#define put_long(base, i, data) ({ long res; \
+  if (current.elf64) ((long*)base)[i] = (data); \
+  else ((int*)base)[i] = (data); })
+
+#define CLOCK_FREQ 1000000000
+
 void sys_exit(int code)
 {
   if (current.t0)
@@ -162,7 +173,7 @@ sysret_t sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
 {
   if (oact)
   {
-    size_t sz = current.elf64 ? 6*sizeof(uint64_t) : 8*sizeof(uint32_t);
+    size_t sz = long_bytes * 3;
     populate_mapping(oact, sz, PROT_WRITE);
     memset(oact, 0, sz);
   }
@@ -170,37 +181,50 @@ sysret_t sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
   return (sysret_t){0, 0};
 }
 
-sysret_t sys_time(long* loc)
+sysret_t sys_time(void* loc)
 {
-  uintptr_t t = rdcycle(), hz = 1000000000;
+  uintptr_t t = rdcycle();
   if (loc)
   {
-    populate_mapping(loc, sizeof(long), PROT_WRITE);
-    loc[0] = t/hz;
+    populate_mapping(loc, long_bytes, PROT_WRITE);
+    put_long(loc, 0, t / CLOCK_FREQ);
   }
   return (sysret_t){t, 0};
 }
 
+sysret_t sys_times(void* restrict loc)
+{
+  populate_mapping(loc, 4*long_bytes, PROT_WRITE);
+
+  uintptr_t t = rdcycle();
+  kassert(CLOCK_FREQ % 1000000 == 0);
+  put_long(loc, 0, t / (CLOCK_FREQ / 1000000));
+  put_long(loc, 1, 0);
+  put_long(loc, 2, 0);
+  put_long(loc, 3, 0);
+  
+  return (sysret_t){0, 0};
+}
+
 sysret_t sys_gettimeofday(long* loc)
 {
-  populate_mapping(loc, 2*sizeof(long), PROT_WRITE);
+  populate_mapping(loc, 2*long_bytes, PROT_WRITE);
 
-  uintptr_t t = rdcycle(), hz = 1000000000;
-  loc[0] = t/hz;
-  loc[1] = (t % hz) / (hz / 1000000);
+  uintptr_t t = rdcycle();
+  put_long(loc, 0, t/CLOCK_FREQ);
+  put_long(loc, 1, (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000));
   
   return (sysret_t){0, 0};
 }
 
 sysret_t sys_writev(int fd, const void* iov, int cnt)
 {
-  long get(int i) { return current.elf64 ? ((long*)iov)[i] : ((int*)iov)[i]; }
-  populate_mapping(iov, cnt*2*(current.elf64 ? 8 : 4), PROT_READ);
+  populate_mapping(iov, cnt*2*long_bytes, PROT_READ);
 
   ssize_t ret = 0;
   for (int i = 0; i < cnt; i++)
   {
-    sysret_t r = sys_write(fd, (void*)get(2*i), get(2*i+1));
+    sysret_t r = sys_write(fd, (void*)get_long(iov, 2*i), get_long(iov, 2*i+1));
     if (r.result < 0)
       return r;
     ret += r.result;
@@ -235,6 +259,7 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_rt_sigaction] = sys_rt_sigaction,
     [SYS_time] = sys_time,
     [SYS_gettimeofday] = sys_gettimeofday,
+    [SYS_times] = sys_times,
     [SYS_writev] = sys_writev,
   };
 

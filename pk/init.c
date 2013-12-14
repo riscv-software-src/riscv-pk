@@ -9,6 +9,9 @@
 #include <string.h>
 
 elf_info current;
+int have_vm = 1; // unless -p flag is given
+int have_fp;
+int have_accelerator;
 
 void init_tf(trapframe_t* tf, long pc, long sp, int user64)
 {
@@ -26,8 +29,12 @@ static void handle_option(const char* s)
 {
   switch (s[1])
   {
-    case 's':
+    case 's': // print cycle count upon termination
       current.t0 = rdcycle();
+      break;
+
+    case 'p': // physical memory mode
+      have_vm = 0;
       break;
 
     default:

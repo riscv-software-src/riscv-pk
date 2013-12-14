@@ -34,7 +34,8 @@ extern "C" {
 #endif
 
 extern int have_fp;
-extern int have_vector;
+extern int have_accelerator;
+extern int have_vm;
 extern uint32_t mem_mb;
 int emulate_fp(trapframe_t*);
 void init_fp(trapframe_t* tf);

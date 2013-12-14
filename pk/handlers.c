@@ -4,10 +4,7 @@
 #include "config.h"
 #include "syscall.h"
 #include "vm.h"
-
-int have_fp = 1; // initialized to 1 because it can't be in the .bss section!
-int have_accelerator = 1;
-  
+ 
 static void handle_accelerator_disabled(trapframe_t* tf)
 {
   if (have_accelerator)

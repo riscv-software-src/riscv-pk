@@ -23,7 +23,6 @@ static pte_t* root_page_table;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
-static int have_vm;
 
 static uintptr_t __page_alloc()
 {
@@ -408,9 +407,12 @@ void vm_init()
 
     __map_kernel_range(0, current.user_min, PROT_READ|PROT_WRITE|PROT_EXEC);
 
-    write_csr(ptbr, root_page_table_paddr);
-    set_csr(status, SR_VM);
-    have_vm = clear_csr(status, SR_VM) & SR_VM;
+    if (have_vm)
+    {
+      write_csr(ptbr, root_page_table_paddr);
+      set_csr(status, SR_VM);
+      have_vm = clear_csr(status, SR_VM) & SR_VM;
+    }
 
     size_t stack_size = RISCV_PGSIZE * stack_pages;
     current.stack_top = MIN(first_free_page, 0x80000000); // for RV32 sanity

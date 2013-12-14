@@ -177,21 +177,21 @@ int emulate_fp(trapframe_t* tf)
   else if(IS_INSN(FSQRT_D))
     DO_WRITEBACK(1, f64_sqrt(frs1d));
   else if(IS_INSN(FCVT_W_S))
-    XRDR = f32_to_i32_r_minMag(frs1s,true);
+    XRDR = f32_to_i32(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_W_D))
-    XRDR = f64_to_i32_r_minMag(frs1d,true);
+    XRDR = f64_to_i32(frs1d, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_L_S))
-    XRDR = f32_to_i64_r_minMag(frs1s,true);
+    XRDR = f32_to_i64(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_L_D))
-    XRDR = f64_to_i64_r_minMag(frs1d,true);
+    XRDR = f64_to_i64(frs1d, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_WU_S))
-    XRDR = f32_to_ui32_r_minMag(frs1s,true);
+    XRDR = f32_to_ui32(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_WU_D))
-    XRDR = f64_to_ui32_r_minMag(frs1d,true);
+    XRDR = f64_to_ui32(frs1d, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_LU_S))
-    XRDR = f32_to_ui64_r_minMag(frs1s,true);
+    XRDR = f32_to_ui64(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_LU_D))
-    XRDR = f64_to_ui64_r_minMag(frs1d,true);
+    XRDR = f64_to_ui64(frs1d, softfloat_roundingMode, true);
   else
     return -1;
 

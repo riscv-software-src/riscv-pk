@@ -110,7 +110,6 @@ static void user_init()
 
 void boot()
 {
-  memset(&current, 0, sizeof(current));
   file_init();
   vm_init();
   user_init();

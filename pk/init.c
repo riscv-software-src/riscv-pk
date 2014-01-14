@@ -79,6 +79,7 @@ static void user_init()
     {AT_PHENT, current.phent},
     {AT_PHDR, current.phdr},
     {AT_PAGESZ, RISCV_PGSIZE},
+    {AT_SECURE, 0},
     {AT_NULL, 0}
   };
 

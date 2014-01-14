@@ -46,6 +46,7 @@ SECTIONS
 
   /* Start of initialized data segment */
   . = ALIGN(16);
+  PROVIDE( _gp = . + 0x800 );
    _fdata = .;
 
   /* data: Writable data */

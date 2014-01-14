@@ -44,7 +44,6 @@
   STORE  x30,30*REGBYTES(x2)
   STORE  x31,31*REGBYTES(x2)
 
-
   # get sr, epc, badvaddr, cause
   csrr   x3,sup0    # x1
   csrr   x4,sup1    # x2
@@ -58,6 +57,8 @@
   STORE  x6,33*REGBYTES(x2)
   STORE  x7,34*REGBYTES(x2)
   STORE  x8,35*REGBYTES(x2)
+
+  la gp, _gp
 
   # get faulting insn, if it wasn't a fetch-related trap
   li x5,-1

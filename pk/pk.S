@@ -8,6 +8,7 @@ _start:
 
   la sp, stack_top
   la a0, trap_entry
+  la gp, _gp
   csrw evec, a0
 
   li a0, SR_S | SR_PS | SR_EI | SR_S64
@@ -17,12 +18,11 @@ _start:
   csrw status, a0
   
   and a2, a1, SR_EF
-  lui a0, %hi(have_fp)
-  sw  a2, %lo(have_fp)(a0)
+  auipc a0, %pcrel_hi(have_fp)
+  sw    a2, %lo(have_fp)(a0)
   
-  and a2, a1, SR_EA
-  lui a0, %hi(have_accelerator)
-  sw  a2, %lo(have_accelerator)(a0)
+  and   a2, a1, SR_EA
+  auipc a0, %pcrel_hi(have_accelerator)
+  sw    a2, %lo(have_accelerator)(a0)
 
-  lui a0, %hi(boot)
-  jr  a0, %lo(boot)
+  call  boot

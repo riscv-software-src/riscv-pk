@@ -215,11 +215,8 @@ int emulate_fp(trapframe_t* tf)
 static void __attribute__((noinline))
 set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
 {
-  if(noisy)
-  {
-    printk("fpr%c[%x] <= ",dp?'d':'s',which);
-    printk("%lx\n",val);
-  }
+  if (noisy)
+    printk("fpr%c[%x] <= %lx\n", dp ? 'd' : 's', which, val);
 
   if(dp || !have_fp)
     fp_state.fpr[which] = val;
@@ -248,11 +245,8 @@ get_fp_reg(unsigned int which, unsigned int dp)
     GET_FP_REG(0,s,val);
   }
 
-  if(noisy)
-  {
-    printk("fpr%c[%x] => ",dp?'d':'s',which);
-    printk("%lx\n",val);
-  }
+  if (noisy)
+    printk("fpr%c[%x] => %lx\n", dp ? 'd' : 's', which, val);
 
   return val;
 }

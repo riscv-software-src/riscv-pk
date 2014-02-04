@@ -5,7 +5,7 @@
 #include "frontend.h"
 #include <stdint.h>
 
-sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
+long frontend_syscall(long n, long a0, long a1, long a2, long a3)
 {
   static volatile uint64_t magic_mem[8];
 
@@ -25,7 +25,7 @@ sysret_t frontend_syscall(long n, long a0, long a1, long a2, long a3)
 
   mb();
 
-  sysret_t ret = {magic_mem[0],magic_mem[1]};
+  long ret = magic_mem[0];
 
   spinlock_unlock(&lock);
   return ret;

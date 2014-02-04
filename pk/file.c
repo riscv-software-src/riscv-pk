@@ -83,23 +83,24 @@ file_t* file_get(int fd)
   return f;
 }
 
-sysret_t file_open(const char* fn, int flags, int mode)
+file_t* file_open(const char* fn, int flags, int mode)
 {
   file_t* f = file_get_free();
-  if(!f)
-    return (sysret_t){-1,ENOMEM};
+  if (f == NULL)
+    return ERR_PTR(-ENOMEM);
 
   size_t fn_size = strlen(fn)+1;
-  sysret_t ret = frontend_syscall(SYS_open, (long)fn, fn_size, flags, mode);
-  if(ret.result != -1)
+  long ret = frontend_syscall(SYS_open, (long)fn, fn_size, flags, mode);
+  if (ret >= 0)
   {
-    f->kfd = ret.result;
-    ret.result = (long)f;
+    f->kfd = ret;
+    return f;
   }
   else
+  {
     file_decref(f);
-
-  return ret;
+    return ERR_PTR(ret);
+  }
 }
 
 int fd_close(int fd)
@@ -115,37 +116,37 @@ int fd_close(int fd)
   return 0;
 }
 
-sysret_t file_read(file_t* f, void* buf, size_t size)
+ssize_t file_read(file_t* f, void* buf, size_t size)
 {
   populate_mapping(buf, size, PROT_WRITE);
   return frontend_syscall(SYS_read, f->kfd, (uintptr_t)buf, size, 0);
 }
 
-sysret_t file_pread(file_t* f, void* buf, size_t size, off_t offset)
+ssize_t file_pread(file_t* f, void* buf, size_t size, off_t offset)
 {
   populate_mapping(buf, size, PROT_WRITE);
   return frontend_syscall(SYS_pread, f->kfd, (uintptr_t)buf, size, offset);
 }
 
-sysret_t file_write(file_t* f, const void* buf, size_t size)
+ssize_t file_write(file_t* f, const void* buf, size_t size)
 {
   populate_mapping(buf, size, PROT_READ);
   return frontend_syscall(SYS_write, f->kfd, (uintptr_t)buf, size, 0);
 }
 
-sysret_t file_pwrite(file_t* f, const void* buf, size_t size, off_t offset)
+ssize_t file_pwrite(file_t* f, const void* buf, size_t size, off_t offset)
 {
   populate_mapping(buf, size, PROT_READ);
   return frontend_syscall(SYS_pwrite, f->kfd, (uintptr_t)buf, size, offset);
 }
 
-sysret_t file_stat(file_t* f, struct stat* s)
+int file_stat(file_t* f, struct stat* s)
 {
   populate_mapping(s, sizeof(*s), PROT_WRITE);
   return frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)s, 0, 0);
 }
 
-sysret_t file_lseek(file_t* f, size_t ptr, int dir)
+ssize_t file_lseek(file_t* f, size_t ptr, int dir)
 {
   return frontend_syscall(SYS_lseek, f->kfd, ptr, dir, 0);
 }

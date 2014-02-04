@@ -109,12 +109,8 @@ void handle_fault_store(trapframe_t* tf)
 
 static void handle_syscall(trapframe_t* tf)
 {
-  sysret_t ret = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21],
-                         tf->gpr[22], tf->gpr[23], tf->gpr[16]);
-
-  tf->gpr[16] = ret.result;
-  tf->gpr[21] = ret.err;
-
+  tf->gpr[16] = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21],
+                        tf->gpr[22], tf->gpr[23], tf->gpr[16]);
   tf->epc += 4;
 }
 

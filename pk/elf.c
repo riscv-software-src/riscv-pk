@@ -10,13 +10,12 @@
 
 void load_elf(const char* fn, elf_info* info)
 {
-  sysret_t ret = file_open(fn, O_RDONLY, 0);
-  file_t* file = (file_t*)ret.result;
-  if (ret.result == -1)
+  file_t* file = file_open(fn, O_RDONLY, 0);
+  if (IS_ERR_VALUE(file))
     goto fail;
 
   Elf64_Ehdr eh64;
-  ssize_t ehdr_size = file_pread(file, &eh64, sizeof(eh64), 0).result;
+  ssize_t ehdr_size = file_pread(file, &eh64, sizeof(eh64), 0);
   if (ehdr_size < (ssize_t)sizeof(eh64) ||
       !(eh64.e_ident[0] == '\177' && eh64.e_ident[1] == 'E' &&
         eh64.e_ident[2] == 'L'    && eh64.e_ident[3] == 'F'))
@@ -28,7 +27,7 @@ void load_elf(const char* fn, elf_info* info)
     if (info->phdr_top - phdr_size < info->stack_bottom) \
       goto fail; \
     info->phdr = info->phdr_top - phdr_size; \
-    ssize_t ret = file_pread(file, (void*)info->phdr, phdr_size, eh->e_phoff).result; \
+    ssize_t ret = file_pread(file, (void*)info->phdr, phdr_size, eh->e_phoff); \
     if (ret < (ssize_t)phdr_size) goto fail; \
     info->entry = eh->e_entry; \
     info->phnum = eh->e_phnum; \

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <errno.h>
 
-typedef sysret_t (*syscall_t)(long, long, long, long, long, long, long);
+typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
 #define long_bytes (4 + 4*current.elf64)
 #define get_long(base, i) ({ long res; \
@@ -30,9 +30,9 @@ void sys_exit(int code)
   while (1);
 }
 
-sysret_t sys_read(int fd, char* buf, size_t n)
+ssize_t sys_read(int fd, char* buf, size_t n)
 {
-  sysret_t r = {-1,EBADF};
+  ssize_t r = -EBADF;
   file_t* f = file_get(fd);
 
   if (f)
@@ -44,9 +44,9 @@ sysret_t sys_read(int fd, char* buf, size_t n)
   return r;
 }
 
-sysret_t sys_write(int fd, const char* buf, size_t n)
+ssize_t sys_write(int fd, const char* buf, size_t n)
 {
-  sysret_t r = {-1,EBADF};
+  ssize_t r = -EBADF;
   file_t* f = file_get(fd);
 
   if (f)
@@ -58,27 +58,30 @@ sysret_t sys_write(int fd, const char* buf, size_t n)
   return r;
 }
 
-sysret_t sys_open(const char* name, int flags, int mode)
+int sys_open(const char* name, int flags, int mode)
 {
-  sysret_t ret = file_open(name, flags, mode);
-  if(ret.result == -1)
-    return ret;
+  file_t* file = file_open(name, flags, mode);
+  if (IS_ERR_VALUE(file))
+    return PTR_ERR(file);
 
-  if((ret.result = file_dup((file_t*)ret.result)) == -1)
-    ret.err = ENOMEM;
+  int fd = file_dup(file);
+  if (fd < 0)
+    return -ENOMEM;
 
+  return fd;
+}
+
+int sys_close(int fd)
+{
+  int ret = fd_close(fd);
+  if (ret < 0)
+    return -EBADF;
   return ret;
 }
 
-sysret_t sys_close(int fd)
+int sys_fstat(int fd, void* st)
 {
-  int ret = fd_close(fd);
-  return (sysret_t){ret, ret & EBADF};
-}
-
-sysret_t sys_fstat(int fd, void* st)
-{
-  sysret_t r = {-1,EBADF};
+  int r = -EBADF;
   file_t* f = file_get(fd);
 
   if (f)
@@ -90,9 +93,9 @@ sysret_t sys_fstat(int fd, void* st)
   return r;
 }
 
-sysret_t sys_lseek(int fd, size_t ptr, int dir)
+ssize_t sys_lseek(int fd, size_t ptr, int dir)
 {
-  sysret_t r = {-1,EBADF};
+  ssize_t r = -EBADF;
   file_t* f = file_get(fd);
 
   if (f)
@@ -104,21 +107,21 @@ sysret_t sys_lseek(int fd, size_t ptr, int dir)
   return r;
 }
 
-sysret_t sys_stat(const char* name, void* st)
+long sys_stat(const char* name, void* st)
 {
   size_t name_size = strlen(name)+1;
   populate_mapping(st, sizeof(struct stat), PROT_WRITE);
   return frontend_syscall(SYS_stat, (uintptr_t)name, name_size, (uintptr_t)st, 0);
 }
 
-sysret_t sys_lstat(const char* name, void* st)
+long sys_lstat(const char* name, void* st)
 {
   size_t name_size = strlen(name)+1;
   populate_mapping(st, sizeof(struct stat), PROT_WRITE);
   return frontend_syscall(SYS_lstat, (uintptr_t)name, name_size, (uintptr_t)st, 0);
 }
 
-sysret_t sys_link(const char* old_name, const char* new_name)
+long sys_link(const char* old_name, const char* new_name)
 {
   size_t old_size = strlen(old_name)+1;
   size_t new_size = strlen(new_name)+1;
@@ -126,18 +129,18 @@ sysret_t sys_link(const char* old_name, const char* new_name)
                                     (uintptr_t)new_name, new_size);
 }
 
-sysret_t sys_unlink(const char* name, size_t len)
+long sys_unlink(const char* name, size_t len)
 {
   size_t name_size = strlen(name)+1;
   return frontend_syscall(SYS_unlink, (uintptr_t)name, name_size, 0, 0);
 }
 
-sysret_t sys_brk(size_t pos)
+size_t sys_brk(size_t pos)
 {
   return do_brk(pos);
 }
 
-sysret_t sys_uname(void* buf)
+int sys_uname(void* buf)
 {
   const int sz = 65;
   strcpy(buf + 0*sz, "Proxy Kernel");
@@ -146,30 +149,30 @@ sysret_t sys_uname(void* buf)
   strcpy(buf + 3*sz, "");
   strcpy(buf + 4*sz, "");
   strcpy(buf + 5*sz, "");
-  return (sysret_t){0,0};
+  return 0;
 }
 
-sysret_t sys_getuid()
+int sys_getuid()
 {
-  return (sysret_t){0,0};
+  return 0;
 }
 
-sysret_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
+uintptr_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
   return do_mmap(addr, length, prot, flags, fd, offset);
 }
 
-sysret_t sys_munmap(uintptr_t addr, size_t length)
+int sys_munmap(uintptr_t addr, size_t length)
 {
   return do_munmap(addr, length);
 }
 
-sysret_t sys_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
+uintptr_t sys_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 {
   return do_mremap(addr, old_size, new_size, flags);
 }
 
-sysret_t sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
+int sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
 {
   if (oact)
   {
@@ -178,21 +181,21 @@ sysret_t sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
     memset(oact, 0, sz);
   }
 
-  return (sysret_t){0, 0};
+  return 0;
 }
 
-sysret_t sys_time(void* loc)
+long sys_time(void* loc)
 {
-  uintptr_t t = rdcycle();
+  uintptr_t t = rdcycle() / CLOCK_FREQ;
   if (loc)
   {
     populate_mapping(loc, long_bytes, PROT_WRITE);
-    put_long(loc, 0, t / CLOCK_FREQ);
+    put_long(loc, 0, t);
   }
-  return (sysret_t){t, 0};
+  return t;
 }
 
-sysret_t sys_times(void* restrict loc)
+int sys_times(void* restrict loc)
 {
   populate_mapping(loc, 4*long_bytes, PROT_WRITE);
 
@@ -203,10 +206,10 @@ sysret_t sys_times(void* restrict loc)
   put_long(loc, 2, 0);
   put_long(loc, 3, 0);
   
-  return (sysret_t){0, 0};
+  return 0;
 }
 
-sysret_t sys_gettimeofday(long* loc)
+int sys_gettimeofday(long* loc)
 {
   populate_mapping(loc, 2*long_bytes, PROT_WRITE);
 
@@ -214,25 +217,25 @@ sysret_t sys_gettimeofday(long* loc)
   put_long(loc, 0, t/CLOCK_FREQ);
   put_long(loc, 1, (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000));
   
-  return (sysret_t){0, 0};
+  return 0;
 }
 
-sysret_t sys_writev(int fd, const void* iov, int cnt)
+ssize_t sys_writev(int fd, const void* iov, int cnt)
 {
   populate_mapping(iov, cnt*2*long_bytes, PROT_READ);
 
   ssize_t ret = 0;
   for (int i = 0; i < cnt; i++)
   {
-    sysret_t r = sys_write(fd, (void*)get_long(iov, 2*i), get_long(iov, 2*i+1));
-    if (r.result < 0)
+    ssize_t r = sys_write(fd, (void*)get_long(iov, 2*i), get_long(iov, 2*i+1));
+    if (r < 0)
       return r;
-    ret += r.result;
+    ret += r;
   }
-  return (sysret_t){ret, 0};
+  return ret;
 }
 
-sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
+long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
 {
   const static void* syscall_table[] = {
     [SYS_exit] = sys_exit,
@@ -266,6 +269,6 @@ sysret_t syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])
     panic("bad syscall #%ld!",n);
 
-  sysret_t r = ((syscall_t)syscall_table[n])(a0, a1, a2, a3, a4, a5, n);
+  long r = ((syscall_t)syscall_table[n])(a0, a1, a2, a3, a4, a5, n);
   return r;
 }

@@ -18,11 +18,9 @@ _start:
   csrw status, a0
   
   and a2, a1, SR_EF
-  auipc a0, %pcrel_hi(have_fp)
-  sw    a2, %lo(have_fp)(a0)
+  sw a2, have_fp, t0
   
   and   a2, a1, SR_EA
-  auipc a0, %pcrel_hi(have_accelerator)
-  sw    a2, %lo(have_accelerator)(a0)
+  sw a2, have_accelerator, t0
 
   call  boot

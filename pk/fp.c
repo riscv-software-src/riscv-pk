@@ -192,6 +192,10 @@ int emulate_fp(trapframe_t* tf)
     XRDR = f32_to_ui64(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_LU_D))
     XRDR = f64_to_ui64(frs1d, softfloat_roundingMode, true);
+  else if(IS_INSN(FCLASS_S))
+    XRDR = f32_classify(frs1s);
+  else if(IS_INSN(FCLASS_D))
+    XRDR = f64_classify(frs1s);
   else
     return -1;
 

@@ -12,5 +12,8 @@ typedef uint64_t float64_t;
 typedef struct { uint64_t v; uint16_t x; } floatx80_t;
 typedef struct { uint64_t v[ 2 ]; } float128_t;
 
+#define INLINE inline
+#define INLINE_LEVEL 1
+
 #endif
 

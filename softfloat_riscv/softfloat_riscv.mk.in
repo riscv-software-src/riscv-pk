@@ -7,12 +7,9 @@ softfloat_riscv_hdrs = \
 
 softfloat_riscv_c_srcs = \
 	softfloat_raiseFlags.c \
-	s_commonNaNToF32UI.c   \
 	s_commonNaNToF64UI.c   \
 	s_f32UIToCommonNaN.c   \
 	s_f64UIToCommonNaN.c   \
-	s_isSigNaNF32UI.c      \
-	s_isSigNaNF64UI.c      \
 	s_propagateNaNF32UI.c  \
 	s_propagateNaNF64UI.c  \
 

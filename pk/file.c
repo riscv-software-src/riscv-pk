@@ -8,7 +8,7 @@
 #include "vm.h"
 
 #define MAX_FDS 32
-static file_t* fds[MAX_FDS];
+static atomic_t fds[MAX_FDS];
 #define MAX_FILES 32
 static file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
@@ -42,7 +42,7 @@ int file_dup(file_t* f)
 {
   for (int i = 0; i < MAX_FDS; i++)
   {
-    if (fds[i] == NULL && __sync_bool_compare_and_swap(&fds[i], 0, f))
+    if (atomic_cas(&fds[i], 0, (long)f) == 0)
     {
       file_incref(f);
       return i;
@@ -70,7 +70,7 @@ void file_init()
 file_t* file_get(int fd)
 {
   file_t* f;
-  if (fd < 0 || fd >= MAX_FDS || (f = fds[fd]) == NULL)
+  if (fd < 0 || fd >= MAX_FDS || (f = (file_t*)atomic_read(&fds[fd])) == NULL)
     return 0;
 
   long old_cnt;
@@ -108,9 +108,9 @@ int fd_close(int fd)
   file_t* f = file_get(fd);
   if (!f)
     return -1;
-  int success = __sync_bool_compare_and_swap(&fds[fd], f, 0);
+  file_t* old = (file_t*)atomic_cas(&fds[fd], (long)f, 0);
   file_decref(f);
-  if (!success)
+  if (old != f)
     return -1;
   file_decref(f);
   return 0;

@@ -183,6 +183,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     }
     else
       memset((void*)vaddr, 0, RISCV_PGSIZE);
+    __vmr_decref(v, 1);
     *pte = pte_create(ppn, v->prot, v->prot);
   }
 

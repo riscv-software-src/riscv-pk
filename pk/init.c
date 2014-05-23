@@ -54,7 +54,7 @@ static void user_init()
   size_t stack_top = current.stack_top;
   struct args* args = (struct args*)(stack_top - argc_argv_size);
   populate_mapping(args, argc_argv_size, PROT_WRITE);
-  long r = frontend_syscall(SYS_getmainvars, (long)args, argc_argv_size, 0, 0);
+  long r = frontend_syscall(SYS_getmainvars, (long)args, argc_argv_size, 0, 0, 0);
   kassert(r == 0);
 
   // argv[0] is the proxy kernel itself.  skip it and any flags.

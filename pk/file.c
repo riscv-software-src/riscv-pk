@@ -7,9 +7,9 @@
 #include "frontend.h"
 #include "vm.h"
 
-#define MAX_FDS 32
+#define MAX_FDS 64
 static atomic_t fds[MAX_FDS];
-#define MAX_FILES 32
+#define MAX_FILES 64
 static file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
 
@@ -26,7 +26,7 @@ void file_decref(file_t* f)
     mb();
     atomic_set(&f->refcnt, 0);
 
-    frontend_syscall(SYS_close, kfd, 0, 0, 0);
+    frontend_syscall(SYS_close, kfd, 0, 0, 0, 0);
   }
 }
 
@@ -90,7 +90,27 @@ file_t* file_open(const char* fn, int flags, int mode)
     return ERR_PTR(-ENOMEM);
 
   size_t fn_size = strlen(fn)+1;
-  long ret = frontend_syscall(SYS_open, (long)fn, fn_size, flags, mode);
+  long ret = frontend_syscall(SYS_open, (long)fn, fn_size, flags, mode, 0);
+  if (ret >= 0)
+  {
+    f->kfd = ret;
+    return f;
+  }
+  else
+  {
+    file_decref(f);
+    return ERR_PTR(ret);
+  }
+}
+
+file_t* file_openat(int dirfd, const char* fn, int flags, int mode)
+{
+  file_t* f = file_get_free();
+  if (f == NULL)
+    return ERR_PTR(-ENOMEM);
+
+  size_t fn_size = strlen(fn)+1;
+  long ret = frontend_syscall(SYS_openat, dirfd, (long)fn, fn_size, flags, mode);
   if (ret >= 0)
   {
     f->kfd = ret;
@@ -119,34 +139,34 @@ int fd_close(int fd)
 ssize_t file_read(file_t* f, void* buf, size_t size)
 {
   populate_mapping(buf, size, PROT_WRITE);
-  return frontend_syscall(SYS_read, f->kfd, (uintptr_t)buf, size, 0);
+  return frontend_syscall(SYS_read, f->kfd, (uintptr_t)buf, size, 0, 0);
 }
 
 ssize_t file_pread(file_t* f, void* buf, size_t size, off_t offset)
 {
   populate_mapping(buf, size, PROT_WRITE);
-  return frontend_syscall(SYS_pread, f->kfd, (uintptr_t)buf, size, offset);
+  return frontend_syscall(SYS_pread, f->kfd, (uintptr_t)buf, size, offset, 0);
 }
 
 ssize_t file_write(file_t* f, const void* buf, size_t size)
 {
   populate_mapping(buf, size, PROT_READ);
-  return frontend_syscall(SYS_write, f->kfd, (uintptr_t)buf, size, 0);
+  return frontend_syscall(SYS_write, f->kfd, (uintptr_t)buf, size, 0, 0);
 }
 
 ssize_t file_pwrite(file_t* f, const void* buf, size_t size, off_t offset)
 {
   populate_mapping(buf, size, PROT_READ);
-  return frontend_syscall(SYS_pwrite, f->kfd, (uintptr_t)buf, size, offset);
+  return frontend_syscall(SYS_pwrite, f->kfd, (uintptr_t)buf, size, offset, 0);
 }
 
 int file_stat(file_t* f, struct stat* s)
 {
   populate_mapping(s, sizeof(*s), PROT_WRITE);
-  return frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)s, 0, 0);
+  return frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)s, 0, 0, 0);
 }
 
 ssize_t file_lseek(file_t* f, size_t ptr, int dir)
 {
-  return frontend_syscall(SYS_lseek, f->kfd, ptr, dir, 0);
+  return frontend_syscall(SYS_lseek, f->kfd, ptr, dir, 0, 0);
 }

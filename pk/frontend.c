@@ -5,7 +5,7 @@
 #include "frontend.h"
 #include <stdint.h>
 
-long frontend_syscall(long n, long a0, long a1, long a2, long a3)
+long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4)
 {
   static volatile uint64_t magic_mem[8];
 
@@ -17,6 +17,7 @@ long frontend_syscall(long n, long a0, long a1, long a2, long a3)
   magic_mem[2] = a1;
   magic_mem[3] = a2;
   magic_mem[4] = a3;
+  magic_mem[5] = a4;
 
   mb();
 

@@ -21,6 +21,7 @@ void file_decref(file_t*);
 void file_incref(file_t*);
 int file_dup(file_t*);
 
+file_t* file_openat(int dirfd, const char* fn, int flags, int mode);
 ssize_t file_pwrite(file_t* f, const void* buf, size_t n, off_t off);
 ssize_t file_pread(file_t* f, void* buf, size_t n, off_t off);
 ssize_t file_write(file_t* f, const void* buf, size_t n);

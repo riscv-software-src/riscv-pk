@@ -178,6 +178,8 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     {
       size_t flen = MIN(RISCV_PGSIZE, v->length - (vaddr - v->addr));
       ssize_t ret = file_pread(v->file, (void*)vaddr, flen, vaddr - v->addr + v->offset);
+      printk("VMR_%ld(ad:%ld,len:%ld,off:%ld,refcnt:%ld,prot:%ld\n",v - vmrs, v->addr, v->length, v->offset, v->refcnt, v->prot);
+      printk("vaddr:%ld,flen:%ld,ret:%ld\n",vaddr,flen,ret);
       kassert(ret > 0);
       if (ret < RISCV_PGSIZE)
         memset((void*)vaddr + ret, 0, RISCV_PGSIZE - ret);
@@ -223,19 +225,21 @@ static void __do_munmap(uintptr_t addr, size_t len)
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* f, off_t offset)
 {
   size_t npage = (length-1)/RISCV_PGSIZE+1;
-  vmr_t* v = __vmr_alloc(addr, length, f, offset, npage, prot);
-  if (!v)
-    goto fail_vmr;
-
   if (flags & MAP_FIXED)
   {
     if ((addr & (RISCV_PGSIZE-1)) || addr < current.user_min ||
         addr + length > current.stack_top || addr + length < addr)
-      goto fail_vma;
+      return (uintptr_t)-1;
   }
   else if ((addr = __vm_alloc(npage)) == 0)
-    goto fail_vma;
+    return (uintptr_t)-1;
 
+  vmr_t* v = __vmr_alloc(addr, length, f, offset, npage, prot);
+  if (!v)
+    return (uintptr_t)-1;
+
+
+  printk("start:%ld, len:%ld\n",addr,length);
   for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
   {
     pte_t* pte = __walk_create(a);
@@ -254,11 +258,6 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
   if (f) file_incref(f);
 
   return addr;
-
-fail_vma:
-  __vmr_decref(v, npage);
-fail_vmr:
-  return (uintptr_t)-1;
 }
 
 int do_munmap(uintptr_t addr, size_t length)

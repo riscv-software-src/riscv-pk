@@ -177,9 +177,10 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     if (v->file)
     {
       size_t flen = MIN(RISCV_PGSIZE, v->length - (vaddr - v->addr));
-      kassert(flen == file_pread(v->file, (void*)vaddr, flen, vaddr - v->addr + v->offset));
-      if (flen < RISCV_PGSIZE)
-        memset((void*)vaddr + flen, 0, RISCV_PGSIZE - flen);
+      ssize_t ret = file_pread(v->file, (void*)vaddr, flen, vaddr - v->addr + v->offset);
+      kassert(ret > 0);
+      if (ret < RISCV_PGSIZE)
+        memset((void*)vaddr + ret, 0, RISCV_PGSIZE - ret);
     }
     else
       memset((void*)vaddr, 0, RISCV_PGSIZE);

@@ -75,7 +75,6 @@ ssize_t sys_write(int fd, const char* buf, size_t n)
 
 int sys_open(const char* name, int flags, int mode)
 {
-  printk("OPEN(%s)\n",name);
   file_t* file = file_open(name, flags, mode);
   if (IS_ERR_VALUE(file))
     return PTR_ERR(file);
@@ -110,7 +109,6 @@ int sys_openat(int dirfd, const char* name, int flags, int mode)
 
 int sys_close(int fd)
 {
-  //printk("CLOSE(%ld)\n",fd);
   int ret = fd_close(fd);
   if (ret < 0)
     return -EBADF;
@@ -119,7 +117,6 @@ int sys_close(int fd)
 
 int sys_fstat(int fd, void* st)
 {
-  printk("FSTAT(%ld)\n",fd);
   int r = -EBADF;
   file_t* f = file_get(fd);
 
@@ -275,9 +272,7 @@ int sys_getuid()
 
 uintptr_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
-  printk("MMAP(ad:%ld,len:%ld,prot:%ld,flags:%ld,fd:%ld,off:%ld\n",addr,length,prot,flags,fd,offset);
   uintptr_t ret =  do_mmap(addr, length, prot, flags, fd, offset);
-  //printk("MMAP DONE\n");
   return ret;
 }
 
@@ -289,6 +284,11 @@ int sys_munmap(uintptr_t addr, size_t length)
 uintptr_t sys_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 {
   return do_mremap(addr, old_size, new_size, flags);
+}
+
+uintptr_t sys_mprotect(uintptr_t addr, size_t length, int prot)
+{
+  return do_mprotect(addr, length, prot);
 }
 
 int sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
@@ -390,6 +390,7 @@ long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_mmap] = sys_mmap,
     [SYS_munmap] = sys_munmap,
     [SYS_mremap] = sys_mremap,
+    [SYS_mprotect] = sys_mprotect,
     [SYS_rt_sigaction] = sys_rt_sigaction,
     [SYS_time] = sys_time,
     [SYS_gettimeofday] = sys_gettimeofday,

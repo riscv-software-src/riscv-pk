@@ -242,7 +242,7 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
     kassert(pte);
 
     if (*pte)
-      __do_munmap(addr, RISCV_PGSIZE);
+      __do_munmap(a, RISCV_PGSIZE);
 
     *pte = (pte_t)v;
   }
@@ -339,6 +339,41 @@ uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
                     vmrs[i].file, vmrs[i].offset + new_size - old_size);
         __vmr_decref(&vmrs[i], old_npage - new_npage);
         res = addr;
+      }
+    }
+  spinlock_unlock(&vm_lock);
+ 
+  return res;
+}
+
+uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
+{
+  uintptr_t res = 0;
+  if ((addr) & (RISCV_PGSIZE-1))
+    return -EINVAL;
+
+  spinlock_lock(&vm_lock);
+    for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
+    {
+      pte_t* pte = __walk(a);
+      if (pte == 0 || *pte == 0)
+        return -ENOMEM;
+  
+      if(!(*pte & PTE_V)){
+        vmr_t* v = (vmr_t*)*pte;
+        if((v->prot ^ prot) & ~v->prot){
+          //TODO:look at file to find perms
+          return -EACCES;
+        }
+        v->prot = prot;
+      }else{
+        pte_t perms = pte_create(0, 0, prot);
+        if ((*pte & perms) != perms){
+          //TODO:look at file to find perms
+          return -EACCES;
+        }
+        pte_t permset = (*pte & ~(PTE_UR | PTE_UW | PTE_UX)) | perms;
+        *pte = permset;
       }
     }
   spinlock_unlock(&vm_lock);

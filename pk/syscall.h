@@ -35,6 +35,7 @@
 #define SYS_mmap 222
 #define SYS_munmap 215
 #define SYS_mremap 216
+#define SYS_mprotect 226
 #define SYS_time 1062
 #define SYS_getmainvars 2011
 #define SYS_rt_sigaction 134

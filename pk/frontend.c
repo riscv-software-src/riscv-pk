@@ -10,7 +10,7 @@ long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4)
   static volatile uint64_t magic_mem[8];
 
   static spinlock_t lock = SPINLOCK_INIT;
-  spinlock_lock(&lock);
+  long irq = spinlock_lock_irqsave(&lock);
 
   magic_mem[0] = n;
   magic_mem[1] = a0;
@@ -28,6 +28,6 @@ long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4)
 
   long ret = magic_mem[0];
 
-  spinlock_unlock(&lock);
+  spinlock_unlock_irqrestore(&lock, irq);
   return ret;
 }

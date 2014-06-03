@@ -4,6 +4,7 @@
 #define _RISCV_ATOMIC_H
 
 #include "config.h"
+#include "encoding.h"
 
 typedef struct { volatile long val; } atomic_t;
 typedef struct { atomic_t lock; } spinlock_t;
@@ -69,6 +70,19 @@ static inline void spinlock_unlock(spinlock_t* lock)
 {
   mb();
   atomic_set(&lock->lock,0);
+}
+
+static inline long spinlock_lock_irqsave(spinlock_t* lock)
+{
+  long flags = clear_csr(status, SR_EI);
+  spinlock_lock(lock);
+  return flags;
+}
+
+static inline void spinlock_unlock_irqrestore(spinlock_t* lock, long flags)
+{
+  spinlock_unlock(lock);
+  set_csr(status, flags & SR_EI);
 }
 
 #endif

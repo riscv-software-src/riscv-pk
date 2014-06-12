@@ -30,7 +30,7 @@ static void handle_option(const char* s)
   switch (s[1])
   {
     case 's': // print cycle count upon termination
-      current.t0 = rdcycle();
+      current.t0 = 1;
       break;
 
     case 'p': // physical memory mode
@@ -43,18 +43,14 @@ static void handle_option(const char* s)
   }
 }
 
-static void user_init()
-{
-  struct args {
-    uint64_t argc;
-    uint64_t argv[];
-  };
+struct mainvars {
+  uint64_t argc;
+  uint64_t argv[127]; // this space is shared with the arg strings themselves
+};
 
-  const int argc_argv_size = 1024;
-  size_t stack_top = current.stack_top;
-  struct args* args = (struct args*)(stack_top - argc_argv_size);
-  populate_mapping(args, argc_argv_size, PROT_WRITE);
-  long r = frontend_syscall(SYS_getmainvars, (long)args, argc_argv_size, 0, 0, 0);
+static struct mainvars* handle_args(struct mainvars* args)
+{
+  long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0);
   kassert(r == 0);
 
   // argv[0] is the proxy kernel itself.  skip it and any flags.
@@ -62,8 +58,21 @@ static void user_init()
   for ( ; a0 < args->argc && *(char*)(uintptr_t)args->argv[a0] == '-'; a0++)
     handle_option((const char*)(uintptr_t)args->argv[a0]);
   args->argv[a0-1] = args->argc - a0;
-  args = (struct args*)&args->argv[a0-1];
-  stack_top = (uintptr_t)args;
+  return (struct mainvars*)&args->argv[a0-1];
+}
+
+static void user_init(struct mainvars* args)
+{
+  // copy argv to user stack
+  size_t stack_top = current.stack_top;
+  for (size_t i = 0; i < args->argc; i++) {
+    size_t len = strlen((char*)(uintptr_t)args->argv[i])+1;
+    stack_top -= len;
+    memcpy((void*)stack_top, (void*)(uintptr_t)args->argv[i], len);
+    args->argv[i] = stack_top;
+  }
+  stack_top &= -sizeof(void*);
+  populate_mapping((void*)stack_top, current.stack_top - stack_top, PROT_WRITE);
 
   // load program named by argv[0]
   current.phdr_top = stack_top;
@@ -110,6 +119,9 @@ static void user_init()
   else
     STACK_INIT(uint32_t);
 
+  if (current.t0) // start timer if so requested
+    current.t0 = rdcycle();
+
   trapframe_t tf;
   init_tf(&tf, current.entry, stack_top, current.elf64);
   __clear_cache(0, 0);
@@ -119,6 +131,8 @@ static void user_init()
 void boot()
 {
   file_init();
+  struct mainvars args0;
+  struct mainvars* args = handle_args(&args0);
   vm_init();
-  user_init();
+  user_init(args);
 }

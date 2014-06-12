@@ -247,11 +247,11 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
     *pte = (pte_t)v;
   }
 
+  if (f) file_incref(f);
+
   if (!have_vm || (flags & MAP_POPULATE))
     for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
       kassert(__handle_page_fault(a, prot) == 0);
-
-  if (f) file_incref(f);
 
   return addr;
 }

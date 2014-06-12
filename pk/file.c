@@ -15,7 +15,8 @@ file_t *stdout, *stdin, *stderr;
 
 void file_incref(file_t* f)
 {
-  atomic_add(&f->refcnt, 1);
+  long prev = atomic_add(&f->refcnt, 1);
+  kassert(prev > 0);
 }
 
 void file_decref(file_t* f)

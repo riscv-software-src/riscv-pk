@@ -11,7 +11,13 @@ _start:
   la gp, _gp
   csrw evec, a0
 
-  li a0, SR_S | SR_PS | SR_EI | SR_S64
+  # clear any pending interrupts
+  li t0, -1
+  csrw compare, t0
+  csrw count,zero
+  csrwi clear_ipi, 0
+
+  li a0, SR_S | SR_PS | SR_EI | SR_S64 | SR_U64
   or a1, a0, SR_EF | SR_EA
   csrw status, a1
   csrr a1, status

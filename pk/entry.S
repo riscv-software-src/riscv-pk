@@ -49,13 +49,11 @@
   csrr   x4,sup1    # x2
   csrr   x5,status
   csrr   x6,epc
-  csrr   x7,badvaddr
   csrr   x8,cause
   STORE  x3,1*REGBYTES(x2)
   STORE  x4,2*REGBYTES(x2)
   STORE  x5,32*REGBYTES(x2)
   STORE  x6,33*REGBYTES(x2)
-  STORE  x7,34*REGBYTES(x2)
   STORE  x8,35*REGBYTES(x2)
 
   la gp, _gp

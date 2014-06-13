@@ -98,12 +98,14 @@ static void handle_fault_fetch(trapframe_t* tf)
 
 void handle_fault_load(trapframe_t* tf)
 {
+  tf->badvaddr = read_csr(badvaddr);
   if (handle_page_fault(tf->badvaddr, PROT_READ) != 0)
     segfault(tf, tf->badvaddr, "load");
 }
 
 void handle_fault_store(trapframe_t* tf)
 {
+  tf->badvaddr = read_csr(badvaddr);
   if (handle_page_fault(tf->badvaddr, PROT_WRITE) != 0)
     segfault(tf, tf->badvaddr, "store");
 }

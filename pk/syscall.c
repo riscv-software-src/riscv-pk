@@ -28,6 +28,7 @@ void sys_exit(int code)
     printk("%ld cycles\n", rdcycle() - current.t0);
 
   frontend_syscall(SYS_exit, code, 0, 0, 0, 0);
+  clear_csr(status, SR_EI);
   while (1);
 }
 

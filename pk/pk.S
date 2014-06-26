@@ -12,9 +12,6 @@ _start:
   csrw evec, a0
 
   # clear any pending interrupts
-  li t0, -1
-  csrw compare, t0
-  csrw count,zero
   csrwi clear_ipi, 0
 
   li a0, SR_S | SR_PS | SR_EI | SR_S64 | SR_U64

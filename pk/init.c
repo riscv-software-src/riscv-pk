@@ -13,6 +13,10 @@ int have_vm = 1; // unless -p flag is given
 int have_fp;
 int have_accelerator;
 
+int uarch_counters_enabled;
+long uarch_counters[NUM_COUNTERS];
+char* uarch_counter_names[NUM_COUNTERS];
+
 void init_tf(trapframe_t* tf, long pc, long sp, int user64)
 {
   memset(tf,0,sizeof(*tf));
@@ -31,6 +35,11 @@ static void handle_option(const char* s)
   {
     case 's': // print cycle count upon termination
       current.t0 = 1;
+      break;
+
+    case 'c': // print uarch counters upon termination
+              // If your HW doesn't support uarch counters, then don't use this flag!
+      uarch_counters_enabled = 1;
       break;
 
     case 'p': // physical memory mode
@@ -121,6 +130,23 @@ static void user_init(struct mainvars* args)
 
   if (current.t0) // start timer if so requested
     current.t0 = rdcycle();
+
+  if (uarch_counters_enabled) { // start tracking the uarch counters if requested
+    size_t i = 0;
+    #define READ_CTR_INIT(name) do { \
+      while (i >= NUM_COUNTERS) ; \
+      long csr = read_csr(name); \
+      uarch_counters[i++] = csr; \
+    } while (0)
+    READ_CTR_INIT(cycle);   READ_CTR_INIT(instret);
+    READ_CTR_INIT(uarch0);  READ_CTR_INIT(uarch1);  READ_CTR_INIT(uarch2);
+    READ_CTR_INIT(uarch3);  READ_CTR_INIT(uarch4);  READ_CTR_INIT(uarch5);
+    READ_CTR_INIT(uarch6);  READ_CTR_INIT(uarch7);  READ_CTR_INIT(uarch8);
+    READ_CTR_INIT(uarch9);  READ_CTR_INIT(uarch10); READ_CTR_INIT(uarch11);
+    READ_CTR_INIT(uarch12); READ_CTR_INIT(uarch13); READ_CTR_INIT(uarch14);
+    READ_CTR_INIT(uarch15);
+    #undef READ_CTR_INIT
+  }
 
   trapframe_t tf;
   init_tf(&tf, current.entry, stack_top, current.elf64);

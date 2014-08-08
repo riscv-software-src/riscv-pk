@@ -82,6 +82,11 @@ static inline int insn_len(long insn)
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 
+#define NUM_COUNTERS (18)
+extern int uarch_counters_enabled;
+extern long uarch_counters[NUM_COUNTERS];
+extern char* uarch_counter_names[NUM_COUNTERS];
+
 #ifdef __cplusplus
 }
 #endif

@@ -46,7 +46,7 @@ void sys_exit(int code)
 
     for (int i = 0; i < NUM_COUNTERS; i++) {
       if (uarch_counters[i]) {
-        printk("%s = %d\n", uarch_counter_names[i], uarch_counters[i]);
+        printk("%s = %ld\n", uarch_counter_names[i], uarch_counters[i]);
       }
     }
   }

@@ -379,10 +379,14 @@ ssize_t sys_writev(int fd, const void* iov, int cnt)
   return ret;
 }
 
-
 int sys_getdents(int fd, void* dirbuf, int count)
 {
   return 0; //stub
+}
+
+int sys_nosys()
+{
+  return -ENOSYS;
 }
 
 long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
@@ -426,6 +430,7 @@ long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_fcntl] = sys_fcntl,
     [SYS_getdents] = sys_getdents,
     [SYS_dup] = sys_dup,
+    [SYS_readlinkat] = sys_nosys,
   };
 
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])

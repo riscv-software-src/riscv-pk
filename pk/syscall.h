@@ -45,6 +45,7 @@
 #define SYS_fcntl 25
 #define SYS_getdents 61
 #define SYS_dup 23
+#define SYS_readlinkat 78
 
 #define IS_ERR_VALUE(x) ((unsigned long)(x) >= (unsigned long)-4096)
 #define ERR_PTR(x) ((void*)(long)(x))

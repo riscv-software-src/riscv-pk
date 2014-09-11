@@ -22,6 +22,7 @@
 #define AT_PAGESZ 6
 #define AT_ENTRY  9
 #define AT_SECURE 23
+#define AT_RANDOM 25
 
 typedef struct {
   uint8_t  e_ident[16];

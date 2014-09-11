@@ -98,6 +98,7 @@ static void user_init(struct mainvars* args)
     {AT_PHDR, current.phdr},
     {AT_PAGESZ, RISCV_PGSIZE},
     {AT_SECURE, 0},
+    {AT_RANDOM, stack_top},
     {AT_NULL, 0}
   };
 

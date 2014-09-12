@@ -3951,7 +3951,7 @@ fi
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-CFLAGS="-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes"
+CFLAGS="-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
 
 LIBS="-lc -lgcc"
 

@@ -384,12 +384,17 @@ int sys_getdents(int fd, void* dirbuf, int count)
   return 0; //stub
 }
 
-int sys_nosys()
+static int sys_stub_success()
+{
+  return 0;
+}
+
+static int sys_stub_nosys()
 {
   return -ENOSYS;
 }
 
-long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
+long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
 {
   const static void* syscall_table[] = {
     [SYS_exit] = sys_exit,
@@ -430,7 +435,8 @@ long syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_fcntl] = sys_fcntl,
     [SYS_getdents] = sys_getdents,
     [SYS_dup] = sys_dup,
-    [SYS_readlinkat] = sys_nosys,
+    [SYS_readlinkat] = sys_stub_nosys,
+    [SYS_rt_sigprocmask] = sys_stub_success,
   };
 
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])

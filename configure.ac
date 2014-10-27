@@ -72,7 +72,6 @@ AC_HEADER_STDC
 #-------------------------------------------------------------------------
 
 AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
-AC_SUBST([LIBS],  ["-lc -lgcc"])
 
 AX_DEFAULT_CONFIGURE_ARG([--host=riscv])
 

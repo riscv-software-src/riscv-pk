@@ -112,8 +112,8 @@ void handle_fault_store(trapframe_t* tf)
 
 static void handle_syscall(trapframe_t* tf)
 {
-  tf->gpr[16] = syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21],
-                        tf->gpr[22], tf->gpr[23], tf->gpr[16]);
+  tf->gpr[16] = do_syscall(tf->gpr[18], tf->gpr[19], tf->gpr[20], tf->gpr[21],
+                           tf->gpr[22], tf->gpr[23], tf->gpr[16]);
   tf->epc += 4;
 }
 

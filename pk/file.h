@@ -4,6 +4,7 @@
 #define _FILE_H
 
 #include <sys/stat.h>
+#include <unistd.h>
 #include "atomic.h"
 
 typedef struct file

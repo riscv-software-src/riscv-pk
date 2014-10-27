@@ -3953,8 +3953,6 @@ fi
 
 CFLAGS="-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
 
-LIBS="-lc -lgcc"
-
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: adding default configure arg: --host=riscv" >&5

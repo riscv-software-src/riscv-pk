@@ -24,6 +24,7 @@ pk_c_srcs = \
 	elf.c \
 	console.c \
 	vm.c \
+	string.c \
 
 pk_asm_srcs = \
 	entry.S \

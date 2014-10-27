@@ -68,7 +68,15 @@ int emulate_fp(trapframe_t* tf)
     do { do_writeback = 1; writeback_dp = (dp); writeback_value = (value); } \
     while(0)
 
-  if(IS_INSN(FLW))
+  if(IS_INSN(FDIV_S))
+    DO_WRITEBACK(0, f32_div(frs1s, frs2s));
+  else if(IS_INSN(FDIV_D))
+    DO_WRITEBACK(1, f64_div(frs1d, frs2d));
+  else if(IS_INSN(FSQRT_S))
+    DO_WRITEBACK(0, f32_sqrt(frs1s));
+  else if(IS_INSN(FSQRT_D))
+    DO_WRITEBACK(1, f64_sqrt(frs1d));
+  else if(IS_INSN(FLW))
   {
     validate_address(tf, effective_address_load, 4, 0);
     DO_WRITEBACK(0, *(uint32_t*)effective_address_load);
@@ -168,14 +176,6 @@ int emulate_fp(trapframe_t* tf)
     DO_WRITEBACK(0, f32_mulAdd(frs1s, frs2s, frs3s ^ (uint32_t)INT32_MIN) ^ (uint32_t)INT32_MIN);
   else if(IS_INSN(FNMSUB_D))
     DO_WRITEBACK(1, f64_mulAdd(frs1d, frs2d, frs3d ^ INT64_MIN) ^ INT64_MIN);
-  else if(IS_INSN(FDIV_S))
-    DO_WRITEBACK(0, f32_div(frs1s, frs2s));
-  else if(IS_INSN(FDIV_D))
-    DO_WRITEBACK(1, f64_div(frs1d, frs2d));
-  else if(IS_INSN(FSQRT_S))
-    DO_WRITEBACK(0, f32_sqrt(frs1s));
-  else if(IS_INSN(FSQRT_D))
-    DO_WRITEBACK(1, f64_sqrt(frs1d));
   else if(IS_INSN(FCVT_W_S))
     XRDR = f32_to_i32(frs1s, softfloat_roundingMode, true);
   else if(IS_INSN(FCVT_W_D))

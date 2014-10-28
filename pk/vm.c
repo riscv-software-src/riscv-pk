@@ -356,21 +356,25 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
     for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
     {
       pte_t* pte = __walk(a);
-      if (pte == 0 || *pte == 0)
-        return -ENOMEM;
+      if (pte == 0 || *pte == 0) {
+        res = -ENOMEM;
+        break;
+      }
   
       if(!(*pte & PTE_V)){
         vmr_t* v = (vmr_t*)*pte;
         if((v->prot ^ prot) & ~v->prot){
           //TODO:look at file to find perms
-          return -EACCES;
+          res = -EACCES;
+          break;
         }
         v->prot = prot;
       }else{
         pte_t perms = pte_create(0, 0, prot);
         if ((*pte & perms) != perms){
           //TODO:look at file to find perms
-          return -EACCES;
+          res = -EACCES;
+          break;
         }
         pte_t permset = (*pte & ~(PTE_UR | PTE_UW | PTE_UX)) | perms;
         *pte = permset;

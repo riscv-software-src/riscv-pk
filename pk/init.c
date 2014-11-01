@@ -25,7 +25,7 @@ void init_tf(trapframe_t* tf, long pc, long sp, int user64)
   tf->sr = (read_csr(status) & (SR_IM | SR_S64 | SR_VM)) | SR_S | SR_PEI;
   if(user64)
     tf->sr |= SR_U64;
-  tf->gpr[14] = sp;
+  tf->gpr[2] = sp;
   tf->epc = pc;
 }
 

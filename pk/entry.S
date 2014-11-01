@@ -117,18 +117,17 @@ pop_tf:  # write the trap frame onto the stack
   .global  trap_entry
 trap_entry:
   csrw  sup0, x1
-  csrw  sup1, x2
+  csrw  sup1, sp
 
   # when coming from kernel, continue below its stack
   csrr  x1, status
   and   x1, x1, SR_PS
-  add   x2, sp, -320
+  add   sp, sp, -320
   bnez  x1, 1f
-  la    x2, stack_top-320
+  la    sp, stack_top-320
 
 1:save_tf
-  move  sp,x2
-  move  a0,x2
+  move  a0,sp
   j     handle_trap
 
   .bss

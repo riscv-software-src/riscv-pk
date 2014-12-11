@@ -87,18 +87,4 @@ SECTIONS
   /* End of uninitialized data segment (used by syscalls.c for heap) */
   PROVIDE( end = . );
   _end = .;
-
-  /*--------------------------------------------------------------------*/
-  /* Special gcc sections (this was in idt32.ld)                        */
-  /*--------------------------------------------------------------------*/
-
-  .mdebug.abi32        0 : { KEEP(*(.mdebug.abi32))        }
-  .mdebug.abiN32       0 : { KEEP(*(.mdebug.abiN32))       }
-  .mdebug.abi64        0 : { KEEP(*(.mdebug.abi64))        }
-  .mdebug.abiO64       0 : { KEEP(*(.mdebug.abiO64))       }
-  .mdebug.eabi32       0 : { KEEP(*(.mdebug.eabi32))       }
-  .mdebug.eabi64       0 : { KEEP(*(.mdebug.eabi64))       }
-  .gcc_compiled_long32 0 : { KEEP(*(.gcc_compiled_long32)) }
-  .gcc_compiled_long64 0 : { KEEP(*(.gcc_compiled_long64)) }
-
 }

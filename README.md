@@ -15,6 +15,6 @@ install path, and that the riscv-gcc package is installed.
 
     $ mkdir build
     $ cd build
-    $ CC=riscv-gcc ../configure --prefix=$RISCV/riscv-elf --host=riscv
+    $ CC=riscv64-unknown-elf-gcc ../configure --prefix=$RISCV/riscv64-unknown-elf --host=riscv
     $ make
     $ make install

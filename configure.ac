@@ -73,8 +73,6 @@ AC_HEADER_STDC
 
 AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
 
-AX_DEFAULT_CONFIGURE_ARG([--host=riscv])
-
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
 #-------------------------------------------------------------------------

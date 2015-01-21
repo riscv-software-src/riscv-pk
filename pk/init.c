@@ -59,7 +59,7 @@ struct mainvars {
 
 static struct mainvars* handle_args(struct mainvars* args)
 {
-  long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0);
+  long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0, 0, 0);
   kassert(r == 0);
 
   // argv[0] is the proxy kernel itself.  skip it and any flags.

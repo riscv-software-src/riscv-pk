@@ -7,7 +7,6 @@
 #include "vm.h"
 #include <string.h>
 #include <errno.h>
-//#include <fcntl.h>
 
 typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
@@ -51,7 +50,7 @@ void sys_exit(int code)
     }
   }
 
-  frontend_syscall(SYS_exit, code, 0, 0, 0, 0);
+  frontend_syscall(SYS_exit, code, 0, 0, 0, 0, 0, 0);
   clear_csr(status, SR_EI);
   while (1);
 }
@@ -98,38 +97,38 @@ ssize_t sys_write(int fd, const char* buf, size_t n)
   return r;
 }
 
-int sys_open(const char* name, int flags, int mode)
+static int at_kfd(int dirfd)
 {
-  file_t* file = file_open(name, flags, mode);
-  if (IS_ERR_VALUE(file))
-    return PTR_ERR(file);
-
-  int fd = file_dup(file);
-  if (fd < 0)
-    return -ENOMEM;
-
-  return fd;
+  if (dirfd == AT_FDCWD)
+    return AT_FDCWD;
+  file_t* dir = file_get(dirfd);
+  if (dir == NULL)
+    return -1;
+  return dir->kfd;
 }
 
 int sys_openat(int dirfd, const char* name, int flags, int mode)
 {
-  if(name[0] == '/'){
-    return sys_open(name, flags, mode);
-  }
-  file_t* dir = file_get(dirfd);
-  if(dir)
-  {
-    file_t* file = file_openat(dir->kfd, name, flags, mode);
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
+    file_t* file = file_openat(kfd, name, flags, mode);
     if (IS_ERR_VALUE(file))
       return PTR_ERR(file);
 
     int fd = file_dup(file);
-    if (fd < 0)
+    if (fd < 0) {
+      file_decref(file);
       return -ENOMEM;
+    }
 
     return fd;
-   }
+  }
   return -EBADF;
+}
+
+int sys_open(const char* name, int flags, int mode)
+{
+  return sys_openat(AT_FDCWD, name, flags, mode);
 }
 
 int sys_close(int fd)
@@ -161,7 +160,7 @@ int sys_fcntl(int fd, int cmd, int arg)
 
   if (f)
   {
-    r = frontend_syscall(SYS_fcntl, f->kfd, cmd, arg, 0, 0);
+    r = frontend_syscall(SYS_fcntl, f->kfd, cmd, arg, 0, 0, 0, 0);
     file_decref(f);
   }
 
@@ -196,76 +195,97 @@ ssize_t sys_lseek(int fd, size_t ptr, int dir)
   return r;
 }
 
-long sys_stat(const char* name, void* st)
-{
-  size_t name_size = strlen(name)+1;
-  populate_mapping(st, sizeof(struct stat), PROT_WRITE);
-  return frontend_syscall(SYS_stat, (uintptr_t)name, name_size, (uintptr_t)st, 0, 0);
-}
-
 long sys_lstat(const char* name, void* st)
 {
   size_t name_size = strlen(name)+1;
   populate_mapping(st, sizeof(struct stat), PROT_WRITE);
-  return frontend_syscall(SYS_lstat, (uintptr_t)name, name_size, (uintptr_t)st, 0, 0);
+  return frontend_syscall(SYS_lstat, (uintptr_t)name, name_size, (uintptr_t)st, 0, 0, 0, 0);
 }
+
 long sys_fstatat(int dirfd, const char* name, void* st, int flags)
 {
-  if(name[0] == '/'){
-    return sys_stat(name, st);
-  }
-  file_t* dir = file_get(dirfd);
-  if(dir)
-  {
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
     size_t name_size = strlen(name)+1;
     populate_mapping(st, sizeof(struct stat), PROT_WRITE);
-    return frontend_syscall(SYS_fstatat, dir->kfd, (uintptr_t)name, name_size, (uintptr_t)st, flags);
+    return frontend_syscall(SYS_fstatat, kfd, (uintptr_t)name, name_size, (uintptr_t)st, flags, 0, 0);
   }
   return -EBADF;
 }
 
-int sys_access(const char *name, int mode){
-  size_t name_size = strlen(name)+1;
-  return frontend_syscall(SYS_access, (uintptr_t)name, name_size, mode, 0, 0);
+long sys_stat(const char* name, void* st)
+{
+  return sys_fstatat(AT_FDCWD, name, st, 0);
 }
 
-int sys_faccessat(int dirfd, const char *name, int mode, int flags){
-  if(name[0] == '/'){
-    return sys_access(name, mode);
-  }
-  file_t* dir = file_get(dirfd);
-  if(dir)
-  {
+long sys_faccessat(int dirfd, const char *name, int mode)
+{
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
     size_t name_size = strlen(name)+1;
-    return frontend_syscall(SYS_access, dir->kfd, (uintptr_t)name, name_size, mode, flags);
+    return frontend_syscall(SYS_faccessat, kfd, (uintptr_t)name, name_size, mode, 0, 0, 0);
+  }
+  return -EBADF;
+}
+
+long sys_access(const char *name, int mode)
+{
+  return sys_faccessat(AT_FDCWD, name, mode);
+}
+
+long sys_linkat(int old_dirfd, const char* old_name, int new_dirfd, const char* new_name, int flags)
+{
+  int old_kfd = at_kfd(old_dirfd);
+  int new_kfd = at_kfd(new_dirfd);
+  if (old_kfd != -1 && new_kfd != -1) {
+    size_t old_size = strlen(old_name)+1;
+    size_t new_size = strlen(new_name)+1;
+    return frontend_syscall(SYS_linkat, old_kfd, (uintptr_t)old_name, old_size,
+                                        new_kfd, (uintptr_t)new_name, new_size,
+                                        flags);
   }
   return -EBADF;
 }
 
 long sys_link(const char* old_name, const char* new_name)
 {
-  size_t old_size = strlen(old_name)+1;
-  size_t new_size = strlen(new_name)+1;
-  return frontend_syscall(SYS_link, (uintptr_t)old_name, old_size,
-                                    (uintptr_t)new_name, new_size, 0);
+  return sys_linkat(AT_FDCWD, old_name, AT_FDCWD, new_name, 0);
 }
 
-long sys_unlink(const char* name, size_t len)
+long sys_unlinkat(int dirfd, const char* name, int flags)
 {
-  size_t name_size = strlen(name)+1;
-  return frontend_syscall(SYS_unlink, (uintptr_t)name, name_size, 0, 0, 0);
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
+    size_t name_size = strlen(name)+1;
+    return frontend_syscall(SYS_unlinkat, kfd, (uintptr_t)name, name_size, flags, 0, 0, 0);
+  }
+  return -EBADF;
+}
+
+long sys_unlink(const char* name)
+{
+  return sys_unlinkat(AT_FDCWD, name, 0);
+}
+
+long sys_mkdirat(int dirfd, const char* name, int mode)
+{
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
+    size_t name_size = strlen(name)+1;
+    return frontend_syscall(SYS_mkdirat, kfd, (uintptr_t)name, name_size, mode, 0, 0, 0);
+  }
+  return -EBADF;
 }
 
 long sys_mkdir(const char* name, int mode)
 {
-  size_t name_size = strlen(name)+1;
-  return frontend_syscall(SYS_mkdir, (uintptr_t)name, name_size, mode, 0, 0);
+  return sys_mkdirat(AT_FDCWD, name, mode);
 }
 
 long sys_getcwd(const char* buf, size_t size)
 {
   populate_mapping(buf, size, PROT_WRITE);
-  return frontend_syscall(SYS_getcwd, (uintptr_t)buf, size, 0, 0, 0);
+  return frontend_syscall(SYS_getcwd, (uintptr_t)buf, size, 0, 0, 0, 0, 0);
 }
 
 size_t sys_brk(size_t pos)
@@ -413,6 +433,9 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_link] = sys_link,
     [SYS_unlink] = sys_unlink,
     [SYS_mkdir] = sys_mkdir,
+    [SYS_linkat] = sys_linkat,
+    [SYS_unlinkat] = sys_unlinkat,
+    [SYS_mkdirat] = sys_mkdirat,
     [SYS_getcwd] = sys_getcwd,
     [SYS_brk] = sys_brk,
     [SYS_uname] = sys_uname,

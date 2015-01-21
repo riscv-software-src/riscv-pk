@@ -17,6 +17,9 @@
 #define SYS_link 1025
 #define SYS_unlink 1026
 #define SYS_mkdir 1030
+#define SYS_linkat 37
+#define SYS_unlinkat 35
+#define SYS_mkdirat 34
 #define SYS_chdir 49
 #define SYS_getcwd 17
 #define SYS_stat 1038
@@ -51,6 +54,8 @@
 #define IS_ERR_VALUE(x) ((unsigned long)(x) >= (unsigned long)-4096)
 #define ERR_PTR(x) ((void*)(long)(x))
 #define PTR_ERR(x) ((long)(x))
+
+#define AT_FDCWD -100
 
 void sys_exit(int code) __attribute__((noreturn));
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n);

@@ -7,9 +7,9 @@
 #include "frontend.h"
 #include "vm.h"
 
-#define MAX_FDS 64
+#define MAX_FDS 128
 static atomic_t fds[MAX_FDS];
-#define MAX_FILES 64
+#define MAX_FILES 128
 static file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
 file_t *stdout, *stdin, *stderr;
 

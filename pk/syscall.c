@@ -460,6 +460,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_dup] = sys_dup,
     [SYS_readlinkat] = sys_stub_nosys,
     [SYS_rt_sigprocmask] = sys_stub_success,
+    [SYS_ioctl] = sys_stub_nosys,
   };
 
   if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])

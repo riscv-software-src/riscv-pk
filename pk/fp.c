@@ -27,7 +27,7 @@ int emulate_fp(trapframe_t* tf)
   {
     if (!(read_csr(status) & SR_EF))
       init_fp(tf);
-    fp_state.fsr = get_fp_state(fp_state.fpr);
+    fp_state.fsr.bits = get_fp_state(fp_state.fpr);
   }
 
   if(noisy)
@@ -56,8 +56,8 @@ int emulate_fp(trapframe_t* tf)
   long effective_address_load = XRS1 + imm;
   long effective_address_store = XRS1 + bimm;
 
-  softfloat_exceptionFlags = 0;
-  softfloat_roundingMode = (RM == 7) ? ((fp_state.fsr >> 5) & 7) : RM;
+  softfloat_exceptionFlags = fp_state.fsr.fsr.flags;
+  softfloat_roundingMode = (RM == 7) ? fp_state.fsr.fsr.rm : RM;
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 
@@ -67,6 +67,8 @@ int emulate_fp(trapframe_t* tf)
   #define DO_WRITEBACK(dp, value) \
     do { do_writeback = 1; writeback_dp = (dp); writeback_value = (value); } \
     while(0)
+
+  #define DO_CSR(which, op) ({ long tmp = which; which op; tmp; })
 
   if(IS_INSN(FDIV_S))
     DO_WRITEBACK(0, f32_div(frs1s, frs2s));
@@ -196,14 +198,34 @@ int emulate_fp(trapframe_t* tf)
     XRDR = f32_classify(frs1s);
   else if(IS_INSN(FCLASS_D))
     XRDR = f64_classify(frs1s);
+  else if(IS_INSN(CSRRS) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, |= XRS1);
+  else if(IS_INSN(CSRRS) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, |= XRS1);
+  else if(IS_INSN(CSRRS) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, |= XRS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, |= RS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, |= RS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, |= RS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, &= ~XRS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, &= ~XRS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, &= ~XRS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, &= ~RS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, &= ~RS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, &= ~RS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, = XRS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, = XRS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, = XRS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, = RS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, = RS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, = RS1);
   else
     return -1;
+
+  fp_state.fsr.fsr.flags = softfloat_exceptionFlags;
 
   if(do_writeback)
     set_fp_reg(RD, writeback_dp, writeback_value);
 
   if(have_fp)
-    put_fp_state(fp_state.fpr,fp_state.fsr);
+    put_fp_state(fp_state.fpr, fp_state.fsr.bits);
 
   return 0;
 }
@@ -262,5 +284,5 @@ void init_fp(trapframe_t* tf)
   tf->sr |= SR_EF;
   set_csr(status, SR_EF);
 
-  put_fp_state(fp_state.fpr,fp_state.fsr);
+  put_fp_state(fp_state.fpr, fp_state.fsr.bits);
 }

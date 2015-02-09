@@ -125,7 +125,7 @@ int emulate_fp(trapframe_t* tf)
   else if(IS_INSN(FLE_S))
     XRDR = f32_eq(frs1s, frs2s) || f32_lt(frs1s, frs2s);
   else if(IS_INSN(FLE_D))
-    XRDR = f64_eq(frs1d, frs2d) || f64_lt(frs1s, frs2s);
+    XRDR = f64_eq(frs1d, frs2d) || f64_lt(frs1d, frs2d);
   else if(IS_INSN(FLT_S))
     XRDR = f32_lt(frs1s, frs2s);
   else if(IS_INSN(FLT_D))

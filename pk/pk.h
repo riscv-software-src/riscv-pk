@@ -12,7 +12,7 @@
 typedef struct
 {
   long gpr[32];
-  long sr;
+  long status;
   long epc;
   long badvaddr;
   long cause;
@@ -33,12 +33,10 @@ void kassert_fail(const char* s) __attribute__((noreturn));
 extern "C" {
 #endif
 
-extern int have_fp;
-extern int have_accelerator;
 extern int have_vm;
 extern uint32_t mem_mb;
 int emulate_fp(trapframe_t*);
-void init_fp(trapframe_t* tf);
+void fp_init();
 
 int emulate_int(trapframe_t*);
 

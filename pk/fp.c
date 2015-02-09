@@ -4,8 +4,6 @@
 #include "fp.h"
 #include "config.h"
 
-static fp_state_t fp_state;
-
 #ifdef PK_ENABLE_FP_EMULATION
 
 #include "softfloat.h"
@@ -13,23 +11,60 @@ static fp_state_t fp_state;
 
 #define noisy 0
 
-static void set_fp_reg(unsigned int which, unsigned int dp, uint64_t val);
-static uint64_t get_fp_reg(unsigned int which, unsigned int dp);
-
 static inline void
 validate_address(trapframe_t* tf, long addr, int size, int store)
 {
 }
 
+#ifdef __riscv_hard_float
+# define get_fcsr() ({ fcsr_t fcsr; asm ("frcsr %0" : "=r"(fcsr)); fcsr; })
+# define put_fcsr(value) ({ asm ("fscsr %0" :: "r"(value)); })
+# define get_f32_reg(i) ({ \
+  register int value asm("a0"); \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(get_f32_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(value) : "r"(offset)); \
+  value; })
+# define put_f32_reg(i, value) ({ \
+  long tmp; \
+  register long __value asm("a0") = (value); \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(put_f32_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(offset), "r"(__value)); })
+# ifdef __riscv64
+#  define get_f64_reg(i) ({ \
+  register long value asm("a0"); \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(value) : "r"(offset)); \
+  value; })
+#  define put_f64_reg(i, value) ({ \
+  long tmp; \
+  register long __value asm("a0") = (value); \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(offset), "r"(__value)); })
+# else
+#  define get_f64_reg(i) ({ \
+  long long value; \
+  register long long* valuep asm("a0") = &value; \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(valuep) : "r"(offset)); \
+  value; })
+#  define put_f64_reg(i, value) ({ \
+  long long __value = (value); \
+  register long long* valuep asm("a0") = &__value; \
+  register long offset asm("a1") = (i) * 8; \
+  asm ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %1; jalr %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(offset), "r"(__value)); })
+# endif
+#else
+static fp_state_t fp_state;
+# define get_fcsr() fp_state.fcsr
+# define put_fcsr(value) fp_state.fcsr = (value)
+# define get_f32_reg(i) fp_state.fpr[i]
+# define get_f64_reg(i) fp_state.fpr[i]
+# define put_f32_reg(i, value) fp_state.fpr[i] = (value)
+# define put_f64_reg(i, value) fp_state.fpr[i] = (value)
+#endif
+
 int emulate_fp(trapframe_t* tf)
 {
-  if (have_fp)
-  {
-    if (!(read_csr(status) & SR_EF))
-      init_fp(tf);
-    fp_state.fsr.bits = get_fp_state(fp_state.fpr);
-  }
-
   if(noisy)
     printk("FPU emulation at pc %lx, insn %x\n",tf->epc,(uint32_t)tf->insn);
 
@@ -46,27 +81,25 @@ int emulate_fp(trapframe_t* tf)
   #define XRS2 (tf->gpr[RS2])
   #define XRDR (tf->gpr[RD])
 
-  uint64_t frs1d = fp_state.fpr[RS1];
-  uint64_t frs2d = fp_state.fpr[RS2];
-  uint64_t frs3d = fp_state.fpr[RS3];
-  uint32_t frs1s = get_fp_reg(RS1, 0);
-  uint32_t frs2s = get_fp_reg(RS2, 0);
-  uint32_t frs3s = get_fp_reg(RS3, 0);
+  #define frs1d get_f64_reg(RS1)
+  #define frs2d get_f64_reg(RS2)
+  #define frs3d get_f64_reg(RS3)
+  #define frs1s get_f32_reg(RS1)
+  #define frs2s get_f32_reg(RS2)
+  #define frs3s get_f32_reg(RS3)
 
   long effective_address_load = XRS1 + imm;
   long effective_address_store = XRS1 + bimm;
 
-  softfloat_exceptionFlags = fp_state.fsr.fsr.flags;
-  softfloat_roundingMode = (RM == 7) ? fp_state.fsr.fsr.rm : RM;
+  fcsr_t fcsr = get_fcsr();
+  softfloat_exceptionFlags = fcsr.fcsr.flags;
+  softfloat_roundingMode = (RM == 7) ? fcsr.fcsr.rm : RM;
 
   #define IS_INSN(x) ((tf->insn & MASK_ ## x) == MATCH_ ## x)
 
-  int do_writeback = 0;
-  int writeback_dp;
-  uint64_t writeback_value;
-  #define DO_WRITEBACK(dp, value) \
-    do { do_writeback = 1; writeback_dp = (dp); writeback_value = (value); } \
-    while(0)
+  #define DO_WRITEBACK(dp, value) ({ \
+    if (dp) put_f64_reg(RD, value); \
+    else put_f32_reg(RD, value); })
 
   #define DO_CSR(which, op) ({ long tmp = which; which op; tmp; })
 
@@ -198,34 +231,28 @@ int emulate_fp(trapframe_t* tf)
     XRDR = f32_classify(frs1s);
   else if(IS_INSN(FCLASS_D))
     XRDR = f64_classify(frs1s);
-  else if(IS_INSN(CSRRS) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, |= XRS1);
-  else if(IS_INSN(CSRRS) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, |= XRS1);
-  else if(IS_INSN(CSRRS) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, |= XRS1);
-  else if(IS_INSN(CSRRSI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, |= RS1);
-  else if(IS_INSN(CSRRSI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, |= RS1);
-  else if(IS_INSN(CSRRSI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, |= RS1);
-  else if(IS_INSN(CSRRC) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, &= ~XRS1);
-  else if(IS_INSN(CSRRC) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, &= ~XRS1);
-  else if(IS_INSN(CSRRC) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, &= ~XRS1);
-  else if(IS_INSN(CSRRCI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, &= ~RS1);
-  else if(IS_INSN(CSRRCI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, &= ~RS1);
-  else if(IS_INSN(CSRRCI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, &= ~RS1);
-  else if(IS_INSN(CSRRW) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, = XRS1);
-  else if(IS_INSN(CSRRW) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, = XRS1);
-  else if(IS_INSN(CSRRW) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, = XRS1);
-  else if(IS_INSN(CSRRWI) && imm == CSR_FCSR) XRDR = DO_CSR(fp_state.fsr.bits, = RS1);
-  else if(IS_INSN(CSRRWI) && imm == CSR_FRM) XRDR = DO_CSR(fp_state.fsr.fsr.rm, = RS1);
-  else if(IS_INSN(CSRRWI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fp_state.fsr.fsr.flags, = RS1);
+  else if(IS_INSN(CSRRS) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, |= XRS1);
+  else if(IS_INSN(CSRRS) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, |= XRS1);
+  else if(IS_INSN(CSRRS) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, |= XRS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, |= RS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, |= RS1);
+  else if(IS_INSN(CSRRSI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, |= RS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, &= ~XRS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, &= ~XRS1);
+  else if(IS_INSN(CSRRC) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, &= ~XRS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, &= ~RS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, &= ~RS1);
+  else if(IS_INSN(CSRRCI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, &= ~RS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, = XRS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, = XRS1);
+  else if(IS_INSN(CSRRW) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, = XRS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FCSR) XRDR = DO_CSR(fcsr.bits, = RS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FRM) XRDR = DO_CSR(fcsr.fcsr.rm, = RS1);
+  else if(IS_INSN(CSRRWI) && imm == CSR_FFLAGS) XRDR = DO_CSR(fcsr.fcsr.flags, = RS1);
   else
     return -1;
 
-  fp_state.fsr.fsr.flags = softfloat_exceptionFlags;
-
-  if(do_writeback)
-    set_fp_reg(RD, writeback_dp, writeback_value);
-
-  if(have_fp)
-    put_fp_state(fp_state.fpr, fp_state.fsr.bits);
+  put_fcsr(fcsr);
 
   return 0;
 }
@@ -238,51 +265,11 @@ int emulate_fp(trapframe_t* tf)
 #define LOAD_FP_REG(which, type, val) asm("fl" STR(type) " f" STR(which) ",%0" : : "m"(val))
 #define STORE_FP_REG(which, type, val)  asm("fs" STR(type) " f" STR(which) ",%0" : "=m"(val) : : "memory")
 
-static void __attribute__((noinline))
-set_fp_reg(unsigned int which, unsigned int dp, uint64_t val)
-{
-  if (noisy)
-    printk("fpr%c[%x] <= %lx\n", dp ? 'd' : 's', which, val);
-
-  if(dp || !have_fp)
-    fp_state.fpr[which] = val;
-  else
-  {
-    // to set an SP value, move the SP value into the FPU
-    // then move it back out as a DP value.  OK to clobber $f0
-    // because we'll restore it later.
-    PUT_FP_REG(0,s,val);
-    STORE_FP_REG(0,d,fp_state.fpr[which]);
-  }
-}
-
-static uint64_t __attribute__((noinline))
-get_fp_reg(unsigned int which, unsigned int dp)
-{
-  uint64_t val;
-  if(dp || !have_fp)
-    val = fp_state.fpr[which];
-  else
-  {
-    // to get an SP value, move the DP value into the FPU
-    // then move it back out as an SP value.  OK to clobber $f0
-    // because we'll restore it later.
-    LOAD_FP_REG(0,d,fp_state.fpr[which]);
-    GET_FP_REG(0,s,val);
-  }
-
-  if (noisy)
-    printk("fpr%c[%x] => %lx\n", dp ? 'd' : 's', which, val);
-
-  return val;
-}
-
 #endif
 
-void init_fp(trapframe_t* tf)
+void fp_init()
 {
-  tf->sr |= SR_EF;
-  set_csr(status, SR_EF);
-
-  put_fp_state(fp_state.fpr, fp_state.fsr.bits);
+  if (read_csr(mstatus) & MSTATUS_FS)
+    for (int i = 0; i < 32; i++)
+      put_f64_reg(i, 0);
 }

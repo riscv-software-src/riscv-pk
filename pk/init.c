@@ -10,8 +10,6 @@
 
 elf_info current;
 int have_vm = 1; // unless -p flag is given
-int have_fp;
-int have_accelerator;
 
 int uarch_counters_enabled;
 long uarch_counters[NUM_COUNTERS];
@@ -22,9 +20,9 @@ void init_tf(trapframe_t* tf, long pc, long sp, int user64)
   memset(tf,0,sizeof(*tf));
   if(sizeof(void*) != 8)
     kassert(!user64);
-  tf->sr = (read_csr(status) & (SR_IM | SR_S64 | SR_VM)) | SR_S | SR_PEI;
-  if(user64)
-    tf->sr |= SR_U64;
+  tf->status = read_csr(mstatus);
+  if (user64)
+    tf->status |= (long long)UA_RV64 << __builtin_ctzll(MSTATUS_UA);
   tf->gpr[2] = sp;
   tf->epc = pc;
 }
@@ -161,5 +159,6 @@ void boot()
   struct mainvars args0;
   struct mainvars* args = handle_args(&args0);
   vm_init();
+  fp_init();
   user_init(args);
 }

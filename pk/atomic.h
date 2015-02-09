@@ -74,7 +74,7 @@ static inline void spinlock_unlock(spinlock_t* lock)
 
 static inline long spinlock_lock_irqsave(spinlock_t* lock)
 {
-  long flags = clear_csr(status, SR_EI);
+  long flags = clear_csr(mstatus, MSTATUS_IE);
   spinlock_lock(lock);
   return flags;
 }
@@ -82,7 +82,7 @@ static inline long spinlock_lock_irqsave(spinlock_t* lock)
 static inline void spinlock_unlock_irqrestore(spinlock_t* lock, long flags)
 {
   spinlock_unlock(lock);
-  set_csr(status, flags & SR_EI);
+  set_csr(mstatus, flags & MSTATUS_IE);
 }
 
 #endif

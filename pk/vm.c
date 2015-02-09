@@ -154,7 +154,7 @@ static uintptr_t __vm_alloc(size_t npage)
 
 static void flush_tlb()
 {
-  write_csr(fatc, 0);
+  asm volatile("sfence.vm");
 }
 
 static int __handle_page_fault(uintptr_t vaddr, int prot)
@@ -443,11 +443,14 @@ void vm_init()
 
     __map_kernel_range(0, current.user_min, PROT_READ|PROT_WRITE|PROT_EXEC);
 
+    int vm_field = sizeof(long) == 4 ? VM_SV32 : VM_SV43;
     if (have_vm)
     {
-      write_csr(ptbr, root_page_table_paddr);
-      set_csr(status, SR_VM);
-      have_vm = clear_csr(status, SR_VM) & SR_VM;
+#if 0
+      write_csr(sptbr, root_page_table_paddr);
+      set_csr(mstatus, vm_field << __builtin_ctz(MSTATUS_VM));
+#endif
+      have_vm = (clear_csr(mstatus, MSTATUS_VM) & MSTATUS_VM) != VM_MBARE;
     }
 
     size_t stack_size = RISCV_PGSIZE * stack_pages;
@@ -458,7 +461,7 @@ void vm_init()
     {
       __map_kernel_range(first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
       kassert(__do_mmap(stack_bot, stack_size, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) == stack_bot);
-      set_csr(status, SR_VM);
+      set_csr(mstatus, vm_field);
     }
 
     current.stack_bottom = stack_bot;

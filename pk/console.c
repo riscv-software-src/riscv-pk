@@ -126,7 +126,7 @@ void dump_tf(trapframe_t* tf)
     for(int j = 0; j < 4; j++)
       printk("%s %lx%c",regnames[i+j],tf->gpr[i+j],j < 3 ? ' ' : '\n');
   }
-  printk("sr %lx pc %lx va %lx insn       %x\n",tf->sr,tf->epc,tf->badvaddr,
+  printk("pc %lx va %lx insn       %x\n", tf->epc, tf->badvaddr,
          (uint32_t)tf->insn);
 }
 

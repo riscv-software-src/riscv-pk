@@ -16,7 +16,7 @@ SECTIONS
 
   .text :
   {
-    pk.o(.text)
+    *(.text.init)
   }
 
   /* text: Program code section */

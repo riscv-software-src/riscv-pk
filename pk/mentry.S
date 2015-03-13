@@ -78,7 +78,7 @@ mentry:
   STORE a1,11*REGBYTES(sp)
 
   csrr a0, mcause
-  li a1, CAUSE_MCALL
+  li a1, CAUSE_HCALL
   beq a0, a1, .Lhandle_trap_in_machine_mode
   li a1, CAUSE_FAULT_LOAD
   beq a0, a1, .Lhandle_trap_in_machine_mode
@@ -236,8 +236,8 @@ trap_table:
   .word illegal_insn_trap
   .word bad_trap
   .word bad_trap
+  .word hcall_trap
   .word bad_trap
-  .word mcall_trap
   .word bad_trap
   .word misaligned_load_trap
   .word machine_page_fault

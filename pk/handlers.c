@@ -14,20 +14,6 @@ static void handle_illegal_instruction(trapframe_t* tf)
   else
     kassert(len == 2);
 
-#ifdef PK_ENABLE_FP_EMULATION
-  if (emulate_fp(tf) == 0)
-  {
-    tf->epc += len;
-    return;
-  }
-#endif
-
-  if (emulate_int(tf) == 0)
-  {
-    tf->epc += len;
-    return;
-  }
-
   dump_tf(tf);
   panic("An illegal instruction was executed!");
 }
@@ -73,14 +59,14 @@ static void handle_fault_fetch(trapframe_t* tf)
 
 void handle_fault_load(trapframe_t* tf)
 {
-  tf->badvaddr = read_csr(mbadaddr);
+  tf->badvaddr = read_csr(sbadaddr);
   if (handle_page_fault(tf->badvaddr, PROT_READ) != 0)
     segfault(tf, tf->badvaddr, "load");
 }
 
 void handle_fault_store(trapframe_t* tf)
 {
-  tf->badvaddr = read_csr(mbadaddr);
+  tf->badvaddr = read_csr(sbadaddr);
   if (handle_page_fault(tf->badvaddr, PROT_WRITE) != 0)
     segfault(tf, tf->badvaddr, "store");
 }
@@ -92,9 +78,17 @@ static void handle_syscall(trapframe_t* tf)
   tf->epc += 4;
 }
 
+static void handle_interrupt(trapframe_t* tf)
+{
+  clear_csr(sstatus, SSTATUS_SIP);
+
+  pop_tf(tf);
+}
+
 void handle_trap(trapframe_t* tf)
 {
-  set_csr(mstatus, MSTATUS_IE);
+  if ((intptr_t)tf->cause < 0)
+    return handle_interrupt(tf);
 
   typedef void (*trap_handler)(trapframe_t*);
 
@@ -102,7 +96,7 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_MISALIGNED_FETCH] = handle_misaligned_fetch,
     [CAUSE_FAULT_FETCH] = handle_fault_fetch,
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
-    [CAUSE_SYSCALL] = handle_syscall,
+    [CAUSE_SCALL] = handle_syscall,
     [CAUSE_BREAKPOINT] = handle_breakpoint,
     [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,

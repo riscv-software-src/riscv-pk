@@ -1,6 +1,6 @@
 OUTPUT_ARCH( "riscv" )
 
-ENTRY( _start )
+ENTRY( mentry )
 
 SECTIONS
 {
@@ -10,7 +10,7 @@ SECTIONS
   /*--------------------------------------------------------------------*/
 
   /* Begining of code and text segment */
-  . = 0x00002000;
+  . = 0x0;
   _ftext = .;
   PROVIDE( eprol = . );
 
@@ -34,6 +34,10 @@ SECTIONS
     *(.rodata)
     *(.rodata.*)
     *(.gnu.linkonce.r.*)
+
+    unprivileged_access_ranges = .;
+    *(.unpriv)
+    unprivileged_access_ranges_end = .;
   }
 
   /* End of code and read-only segment */
@@ -46,7 +50,6 @@ SECTIONS
 
   /* Start of initialized data segment */
   . = ALIGN(16);
-  PROVIDE( _gp = . + 0x800 );
    _fdata = .;
 
   /* data: Writable data */
@@ -54,7 +57,9 @@ SECTIONS
   {
     *(.data)
     *(.data.*)
+    *(.srodata*)
     *(.gnu.linkonce.d.*)
+    *(.comment)
   }
 
   /* End of initialized data segment */
@@ -80,8 +85,14 @@ SECTIONS
   {
     *(.bss)
     *(.bss.*)
+    *(.sbss*)
     *(.gnu.linkonce.b.*)
     *(COMMON)
+  }
+
+  .sbi :
+  {
+    *(.sbi)
   }
 
   /* End of uninitialized data segment (used by syscalls.c for heap) */

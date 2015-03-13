@@ -20,7 +20,7 @@ uint_fast32_t f64_to_ui32_r_minMag( float64_t a, bool exact )
     sig = fracF64UI( uiA );
     if ( exp < 0x3FF ) {
         if ( exact && ( exp | sig ) ) {
-            softfloat_exceptionFlags |= softfloat_flag_inexact;
+            softfloat_raiseFlags( softfloat_flag_inexact );
         }
         return 0;
     }
@@ -32,7 +32,7 @@ uint_fast32_t f64_to_ui32_r_minMag( float64_t a, bool exact )
     shiftCount = 0x433 - exp;
     z = sig>>shiftCount;
     if ( exact && ( (uint_fast64_t) z<<shiftCount != sig ) ) {
-        softfloat_exceptionFlags |= softfloat_flag_inexact;
+        softfloat_raiseFlags( softfloat_flag_inexact );
     }
     return z;
 

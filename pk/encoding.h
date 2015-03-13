@@ -14,8 +14,7 @@
 #define MSTATUS_PRV2        0x00001800
 #define MSTATUS_IE3         0x00002000
 #define MSTATUS_PRV3        0x0000C000
-#define MSTATUS_IE4         0x00010000
-#define MSTATUS_PRV4        0x00060000
+#define MSTATUS_MPRV        0x00030000
 #define MSTATUS_VM          0x00780000
 #define MSTATUS_STIE        0x01000000
 #define MSTATUS_HTIE        0x02000000
@@ -27,6 +26,18 @@
 #define MSTATUS64_SA        0x000000F000000000
 #define MSTATUS64_HA        0x00000F0000000000
 #define MSTATUS64_SD        0x8000000000000000
+
+#define SSTATUS_SIP         0x00000002
+#define SSTATUS_IE          0x00000010
+#define SSTATUS_PIE         0x00000080
+#define SSTATUS_PS          0x00000100
+#define SSTATUS_UA          0x000F0000
+#define SSTATUS_TIE         0x01000000
+#define SSTATUS_TIP         0x04000000
+#define SSTATUS_FS          0x18000000
+#define SSTATUS_XS          0x60000000
+#define SSTATUS32_SD        0x80000000
+#define SSTATUS64_SD        0x8000000000000000
 
 #define PRV_U 0
 #define PRV_S 1
@@ -70,10 +81,12 @@
 # define MSTATUS_SA MSTATUS64_SA
 # define MSTATUS_HA MSTATUS64_HA
 # define MSTATUS_SD MSTATUS64_SD
+# define SSTATUS_SD SSTATUS64_SD
 # define RISCV_PGLEVELS 3
 # define RISCV_PGSHIFT 13
 #else
 # define MSTATUS_SD MSTATUS32_SD
+# define SSTATUS_SD SSTATUS32_SD
 # define RISCV_PGLEVELS 2
 # define RISCV_PGSHIFT 12
 #endif
@@ -82,7 +95,9 @@
 
 #ifndef __ASSEMBLER__
 
-#define read_csr(reg) ({ long __tmp; \
+#ifdef __GNUC__
+
+#define read_csr(reg) ({ unsigned long __tmp; \
   asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
   __tmp; })
 
@@ -93,31 +108,25 @@
   asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "r"(val)); \
   __tmp; })
 
-#define set_csr(reg, bit) ({ long __tmp; \
+#define set_csr(reg, bit) ({ unsigned long __tmp; \
   if (__builtin_constant_p(bit) && (bit) < 32) \
     asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
   else \
     asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
   __tmp; })
 
-#define clear_csr(reg, bit) ({ long __tmp; \
+#define clear_csr(reg, bit) ({ unsigned long __tmp; \
   if (__builtin_constant_p(bit) && (bit) < 32) \
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
   else \
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
   __tmp; })
 
-#define rdtime() ({ unsigned long __tmp; \
-  asm volatile ("rdtime %0" : "=r"(__tmp)); \
-  __tmp; })
+#define rdtime() read_csr(time)
+#define rdcycle() read_csr(cycle)
+#define rdinstret() read_csr(instret)
 
-#define rdcycle() ({ unsigned long __tmp; \
-  asm volatile ("rdcycle %0" : "=r"(__tmp)); \
-  __tmp; })
-
-#define rdinstret() ({ unsigned long __tmp; \
-  asm volatile ("rdinstret %0" : "=r"(__tmp)); \
-  __tmp; })
+#endif
 
 #endif
 
@@ -251,6 +260,8 @@
 #define MASK_MULH  0xfe00707f
 #define MATCH_FMUL_S 0x10000053
 #define MASK_FMUL_S  0xfe00007f
+#define MATCH_MCALL 0x20000073
+#define MASK_MCALL  0xffffffff
 #define MATCH_CSRRSI 0x6073
 #define MASK_CSRRSI  0x707f
 #define MATCH_SRAI 0x40005013
@@ -291,6 +302,8 @@
 #define MASK_FSUB_D  0xfe00007f
 #define MATCH_FSGNJX_S 0x20002053
 #define MASK_FSGNJX_S  0xfe00707f
+#define MATCH_MRTS 0x30900073
+#define MASK_MRTS  0xffffffff
 #define MATCH_FEQ_D 0xa2002053
 #define MASK_FEQ_D  0xfe00707f
 #define MATCH_FCVT_D_WU 0xd2100053
@@ -407,8 +420,6 @@
 #define MASK_FMADD_S  0x600007f
 #define MATCH_FSQRT_S 0x58000053
 #define MASK_FSQRT_S  0xfff0007f
-#define MATCH_MSENTER 0x30900073
-#define MASK_MSENTER  0xffffffff
 #define MATCH_AMOMIN_W 0x8000202f
 #define MASK_AMOMIN_W  0xf800707f
 #define MATCH_FSGNJN_S 0x20001053
@@ -472,34 +483,38 @@
 #define CSR_UARCH15 0xccf
 #define CSR_SSTATUS 0x100
 #define CSR_STVEC 0x101
-#define CSR_SCOMPARE 0x121
+#define CSR_STIMECMP 0x121
 #define CSR_SSCRATCH 0x140
 #define CSR_SEPC 0x141
 #define CSR_SPTBR 0x188
 #define CSR_SASID 0x189
-#define CSR_COUNT 0x900
+#define CSR_SCYCLE 0x900
 #define CSR_STIME 0x901
 #define CSR_SINSTRET 0x902
 #define CSR_SCAUSE 0xd40
 #define CSR_SBADADDR 0xd41
-#define CSR_TOHOST 0x580
-#define CSR_FROMHOST 0x581
 #define CSR_MSTATUS 0x300
 #define CSR_MSCRATCH 0x340
 #define CSR_MEPC 0x341
-#define CSR_MCAUSE 0xf40
-#define CSR_MBADADDR 0xf41
+#define CSR_MCAUSE 0x342
+#define CSR_MBADADDR 0x343
 #define CSR_RESET 0x780
+#define CSR_TOHOST 0x781
+#define CSR_FROMHOST 0x782
+#define CSR_SEND_IPI 0x783
+#define CSR_HARTID 0xfc0
 #define CSR_CYCLEH 0xc80
 #define CSR_TIMEH 0xc81
 #define CSR_INSTRETH 0xc82
-#define CSR_COUNTH 0x980
+#define CSR_SCYCLEH 0x980
 #define CSR_STIMEH 0x981
 #define CSR_SINSTRETH 0x982
 #define CAUSE_MISALIGNED_FETCH 0x0
 #define CAUSE_FAULT_FETCH 0x1
-#define CAUSE_ILLEGAL_INSTRUCTION 0x4
-#define CAUSE_SYSCALL 0x6
+#define CAUSE_ILLEGAL_INSTRUCTION 0x2
+#define CAUSE_SCALL 0x4
+#define CAUSE_HCALL 0x5
+#define CAUSE_MCALL 0x6
 #define CAUSE_BREAKPOINT 0x7
 #define CAUSE_MISALIGNED_LOAD 0x8
 #define CAUSE_FAULT_LOAD 0x9
@@ -569,6 +584,7 @@ DECLARE_INSN(csrrci, MATCH_CSRRCI, MASK_CSRRCI)
 DECLARE_INSN(addi, MATCH_ADDI, MASK_ADDI)
 DECLARE_INSN(mulh, MATCH_MULH, MASK_MULH)
 DECLARE_INSN(fmul_s, MATCH_FMUL_S, MASK_FMUL_S)
+DECLARE_INSN(mcall, MATCH_MCALL, MASK_MCALL)
 DECLARE_INSN(csrrsi, MATCH_CSRRSI, MASK_CSRRSI)
 DECLARE_INSN(srai, MATCH_SRAI, MASK_SRAI)
 DECLARE_INSN(amoand_d, MATCH_AMOAND_D, MASK_AMOAND_D)
@@ -589,6 +605,7 @@ DECLARE_INSN(sraiw, MATCH_SRAIW, MASK_SRAIW)
 DECLARE_INSN(srl, MATCH_SRL, MASK_SRL)
 DECLARE_INSN(fsub_d, MATCH_FSUB_D, MASK_FSUB_D)
 DECLARE_INSN(fsgnjx_s, MATCH_FSGNJX_S, MASK_FSGNJX_S)
+DECLARE_INSN(mrts, MATCH_MRTS, MASK_MRTS)
 DECLARE_INSN(feq_d, MATCH_FEQ_D, MASK_FEQ_D)
 DECLARE_INSN(fcvt_d_wu, MATCH_FCVT_D_WU, MASK_FCVT_D_WU)
 DECLARE_INSN(or, MATCH_OR, MASK_OR)
@@ -647,7 +664,6 @@ DECLARE_INSN(csrrwi, MATCH_CSRRWI, MASK_CSRRWI)
 DECLARE_INSN(sc_d, MATCH_SC_D, MASK_SC_D)
 DECLARE_INSN(fmadd_s, MATCH_FMADD_S, MASK_FMADD_S)
 DECLARE_INSN(fsqrt_s, MATCH_FSQRT_S, MASK_FSQRT_S)
-DECLARE_INSN(msenter, MATCH_MSENTER, MASK_MSENTER)
 DECLARE_INSN(amomin_w, MATCH_AMOMIN_W, MASK_AMOMIN_W)
 DECLARE_INSN(fsgnjn_s, MATCH_FSGNJN_S, MASK_FSGNJN_S)
 DECLARE_INSN(amoswap_d, MATCH_AMOSWAP_D, MASK_AMOSWAP_D)
@@ -694,28 +710,30 @@ DECLARE_CSR(uarch14, CSR_UARCH14)
 DECLARE_CSR(uarch15, CSR_UARCH15)
 DECLARE_CSR(sstatus, CSR_SSTATUS)
 DECLARE_CSR(stvec, CSR_STVEC)
-DECLARE_CSR(scompare, CSR_SCOMPARE)
+DECLARE_CSR(stimecmp, CSR_STIMECMP)
 DECLARE_CSR(sscratch, CSR_SSCRATCH)
 DECLARE_CSR(sepc, CSR_SEPC)
 DECLARE_CSR(sptbr, CSR_SPTBR)
 DECLARE_CSR(sasid, CSR_SASID)
-DECLARE_CSR(count, CSR_COUNT)
+DECLARE_CSR(scycle, CSR_SCYCLE)
 DECLARE_CSR(stime, CSR_STIME)
 DECLARE_CSR(sinstret, CSR_SINSTRET)
 DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(sbadaddr, CSR_SBADADDR)
-DECLARE_CSR(tohost, CSR_TOHOST)
-DECLARE_CSR(fromhost, CSR_FROMHOST)
 DECLARE_CSR(mstatus, CSR_MSTATUS)
 DECLARE_CSR(mscratch, CSR_MSCRATCH)
 DECLARE_CSR(mepc, CSR_MEPC)
 DECLARE_CSR(mcause, CSR_MCAUSE)
 DECLARE_CSR(mbadaddr, CSR_MBADADDR)
 DECLARE_CSR(reset, CSR_RESET)
+DECLARE_CSR(tohost, CSR_TOHOST)
+DECLARE_CSR(fromhost, CSR_FROMHOST)
+DECLARE_CSR(send_ipi, CSR_SEND_IPI)
+DECLARE_CSR(hartid, CSR_HARTID)
 DECLARE_CSR(cycleh, CSR_CYCLEH)
 DECLARE_CSR(timeh, CSR_TIMEH)
 DECLARE_CSR(instreth, CSR_INSTRETH)
-DECLARE_CSR(counth, CSR_COUNTH)
+DECLARE_CSR(scycleh, CSR_SCYCLEH)
 DECLARE_CSR(stimeh, CSR_STIMEH)
 DECLARE_CSR(sinstreth, CSR_SINSTRETH)
 #endif
@@ -745,28 +763,30 @@ DECLARE_CAUSE("uarch14", CAUSE_UARCH14)
 DECLARE_CAUSE("uarch15", CAUSE_UARCH15)
 DECLARE_CAUSE("sstatus", CAUSE_SSTATUS)
 DECLARE_CAUSE("stvec", CAUSE_STVEC)
-DECLARE_CAUSE("scompare", CAUSE_SCOMPARE)
+DECLARE_CAUSE("stimecmp", CAUSE_STIMECMP)
 DECLARE_CAUSE("sscratch", CAUSE_SSCRATCH)
 DECLARE_CAUSE("sepc", CAUSE_SEPC)
 DECLARE_CAUSE("sptbr", CAUSE_SPTBR)
 DECLARE_CAUSE("sasid", CAUSE_SASID)
-DECLARE_CAUSE("count", CAUSE_COUNT)
+DECLARE_CAUSE("scycle", CAUSE_SCYCLE)
 DECLARE_CAUSE("stime", CAUSE_STIME)
 DECLARE_CAUSE("sinstret", CAUSE_SINSTRET)
 DECLARE_CAUSE("scause", CAUSE_SCAUSE)
 DECLARE_CAUSE("sbadaddr", CAUSE_SBADADDR)
-DECLARE_CAUSE("tohost", CAUSE_TOHOST)
-DECLARE_CAUSE("fromhost", CAUSE_FROMHOST)
 DECLARE_CAUSE("mstatus", CAUSE_MSTATUS)
 DECLARE_CAUSE("mscratch", CAUSE_MSCRATCH)
 DECLARE_CAUSE("mepc", CAUSE_MEPC)
 DECLARE_CAUSE("mcause", CAUSE_MCAUSE)
 DECLARE_CAUSE("mbadaddr", CAUSE_MBADADDR)
 DECLARE_CAUSE("reset", CAUSE_RESET)
+DECLARE_CAUSE("tohost", CAUSE_TOHOST)
+DECLARE_CAUSE("fromhost", CAUSE_FROMHOST)
+DECLARE_CAUSE("send_ipi", CAUSE_SEND_IPI)
+DECLARE_CAUSE("hartid", CAUSE_HARTID)
 DECLARE_CAUSE("cycleh", CAUSE_CYCLEH)
 DECLARE_CAUSE("timeh", CAUSE_TIMEH)
 DECLARE_CAUSE("instreth", CAUSE_INSTRETH)
-DECLARE_CAUSE("counth", CAUSE_COUNTH)
+DECLARE_CAUSE("scycleh", CAUSE_SCYCLEH)
 DECLARE_CAUSE("stimeh", CAUSE_STIMEH)
 DECLARE_CAUSE("sinstreth", CAUSE_SINSTRETH)
 #endif

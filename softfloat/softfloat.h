@@ -44,7 +44,6 @@ these four paragraphs for those parts of this code that are retained.
 /*----------------------------------------------------------------------------
 | Software floating-point underflow tininess-detection mode.
 *----------------------------------------------------------------------------*/
-extern int_fast8_t softfloat_detectTininess;
 enum {
     softfloat_tininess_beforeRounding = 0,
     softfloat_tininess_afterRounding  = 1
@@ -53,7 +52,6 @@ enum {
 /*----------------------------------------------------------------------------
 | Software floating-point rounding mode.
 *----------------------------------------------------------------------------*/
-extern int_fast8_t softfloat_roundingMode;
 enum {
     softfloat_round_nearest_even   = 0,
     softfloat_round_minMag         = 1,
@@ -73,11 +71,6 @@ enum {
     softfloat_flag_infinity  =  8,
     softfloat_flag_invalid   = 16
 };
-
-/*----------------------------------------------------------------------------
-| Routine to raise any or all of the software floating-point exception flags.
-*----------------------------------------------------------------------------*/
-void softfloat_raiseFlags( int_fast8_t );
 
 /*----------------------------------------------------------------------------
 | Integer-to-floating-point conversion routines.
@@ -226,6 +219,30 @@ bool f128_eq_signaling( float128_t, float128_t );
 bool f128_le_quiet( float128_t, float128_t );
 bool f128_lt_quiet( float128_t, float128_t );
 bool f128_isSignalingNaN( float128_t );
+
+#include "specialize.h"
+
+/*----------------------------------------------------------------------------
+| Returns 1 if the single-precision floating-point value `a' is a NaN;
+| otherwise, returns 0.
+*----------------------------------------------------------------------------*/
+#define isNaNF32UI( ui ) (0xFF000000<(uint32_t)((uint_fast32_t)(ui)<<1))
+/*----------------------------------------------------------------------------
+| Returns 1 if the double-precision floating-point value `a' is a NaN;
+| otherwise, returns 0.
+*----------------------------------------------------------------------------*/
+#define isNaNF64UI( ui ) (UINT64_C(0xFFE0000000000000)<(uint64_t)((uint_fast64_t)(ui)<<1))
+
+enum {
+    softfloat_mulAdd_subC    = 1,
+    softfloat_mulAdd_subProd = 2
+};
+
+float32_t
+ softfloat_mulAddF32( int, uint_fast32_t, uint_fast32_t, uint_fast32_t );
+
+float64_t
+ softfloat_mulAddF64( int, uint_fast64_t, uint_fast64_t, uint_fast64_t );
 
 #ifdef __cplusplus
 }

@@ -71,7 +71,8 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
+AC_SUBST([CFLAGS],  ["-Wall -Werror -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
+AC_SUBST([LIBS],  ["-lgcc"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
@@ -80,7 +81,7 @@ AC_SUBST([CFLAGS],  ["-Wall -Os -std=gnu99 -Wno-unused -Wno-attributes -fno-dele
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ pk, softfloat, softfloat_riscv, softint ])
+MCPPBS_SUBPROJECTS([ pk, softfloat ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups

@@ -1,16 +1,7 @@
 // See LICENSE for license details.
 
 #include "encoding.h"
-
-#ifdef __riscv64
-# define STORE    sd
-# define LOAD     ld
-# define REGBYTES 8
-#else
-# define STORE    sw
-# define LOAD     lw
-# define REGBYTES 4
-#endif
+#include "bits.h"
 
   .macro save_tf
   # save gprs
@@ -47,16 +38,14 @@
 
   # get sr, epc, badvaddr, cause
   addi   t0,sp,320
-  csrrw  t0,mscratch,t0
-  csrr   t1,mstatus
-  csrr   t2,mepc
-  csrr   t3,mcause
+  csrrw  t0,sscratch,t0
+  csrr   t1,sstatus
+  csrr   t2,sepc
+  csrr   t3,scause
   STORE  t0,2*REGBYTES(x2)
   STORE  t1,32*REGBYTES(x2)
   STORE  t2,33*REGBYTES(x2)
   STORE  t3,35*REGBYTES(x2)
-
-  la gp, _gp
 
   # get faulting insn, if it wasn't a fetch-related trap
   li x5,-1
@@ -64,30 +53,27 @@
 1:
   .endm
 
-  .section .text.init,"ax",@progbits
+  .text
   .global  trap_entry
 trap_entry:
-  # entry point for reset
-  j _start
-
-  # entry point when coming from machine mode
-  j 1f
-
-  # entry point when coming from other modes
-  csrrw sp, mscratch, sp
+  csrrw sp, sscratch, sp
 
 1:addi sp,sp,-320
   save_tf
   move  a0,sp
-  j     handle_trap
+  j   handle_trap
   
   .globl  pop_tf
 pop_tf:  # write the trap frame onto the stack
-  # restore sr (disable interrupts) and epc
-  LOAD  a1,32*REGBYTES(a0)
-  LOAD  a2,33*REGBYTES(a0)
-  csrw  mstatus, a1
-  csrw  mepc, a2
+  # restore sstatus and epc
+  csrc sstatus, SSTATUS_IE
+  li t0, SSTATUS_PS
+  LOAD t1, 32*REGBYTES(a0)
+  LOAD t2, 33*REGBYTES(a0)
+  csrc sstatus, t0
+  and t0, t0, t1
+  csrs sstatus, t0
+  csrw sepc, t2
 
   # restore x registers
   LOAD  x1,1*REGBYTES(a0)
@@ -124,13 +110,4 @@ pop_tf:  # write the trap frame onto the stack
   LOAD  x10,10*REGBYTES(a0)
 
   # gtfo
-  mret
-
-
-  .bss
-  .align 4
-  .global stack_bot
-  .global stack_top
-stack_bot:
-  .skip  4096
-stack_top:
+  sret

@@ -37,7 +37,7 @@ int_fast32_t
     z = uZ.i;
     if ( z && ( ( z < 0 ) ^ sign ) ) goto invalid;
     if ( exact && roundBits ) {
-        softfloat_exceptionFlags |= softfloat_flag_inexact;
+        softfloat_raiseFlags( softfloat_flag_inexact );
     }
     return z;
  invalid:

@@ -5,15 +5,19 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdint.h>
 #include "atomic.h"
 
 typedef struct file
 {
-  int kfd; // file descriptor on the appserver side
-  atomic_t refcnt;
+  int kfd; // file descriptor on the host side of the HTIF
+  uint32_t refcnt;
 } file_t;
 
-extern file_t *stdin, *stdout, *stderr;
+extern file_t files[];
+#define stdin  (files + 0)
+#define stdout (files + 1)
+#define stderr (files + 2)
 
 file_t* file_get(int fd);
 file_t* file_open(const char* fn, int flags, int mode);

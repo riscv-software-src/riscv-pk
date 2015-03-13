@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 
 void* memcpy(void* dest, const void* src, size_t len)
 {
@@ -50,4 +51,25 @@ char* strcpy(char* dest, const char* src)
   while ((*d++ = *src++))
     ;
   return dest;
+}
+
+long atol(const char* str)
+{
+  long res = 0;
+  int sign = 0;
+
+  while (*str == ' ')
+    str++;
+
+  if (*str == '-' || *str == '+') {
+    sign = *str == '-';
+    str++;
+  }
+
+  while (*str) {
+    res *= 10;
+    res += *str++ - '0';
+  }
+
+  return sign ? -res : res;
 }

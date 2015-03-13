@@ -413,7 +413,7 @@ static int sys_stub_nosys()
   return -ENOSYS;
 }
 
-long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
+long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned long n)
 {
   const static void* syscall_table[] = {
     [SYS_exit] = sys_exit,
@@ -421,17 +421,11 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_read] = sys_read,
     [SYS_pread] = sys_pread,
     [SYS_write] = sys_write,
-    [SYS_open] = sys_open,
     [SYS_openat] = sys_openat,
     [SYS_close] = sys_close,
     [SYS_fstat] = sys_fstat,
     [SYS_lseek] = sys_lseek,
-    [SYS_stat] = sys_stat,
-    [SYS_lstat] = sys_lstat,
     [SYS_fstatat] = sys_fstatat,
-    [SYS_link] = sys_link,
-    [SYS_unlink] = sys_unlink,
-    [SYS_mkdir] = sys_mkdir,
     [SYS_linkat] = sys_linkat,
     [SYS_unlinkat] = sys_unlinkat,
     [SYS_mkdirat] = sys_mkdirat,
@@ -448,11 +442,9 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_mremap] = sys_mremap,
     [SYS_mprotect] = sys_mprotect,
     [SYS_rt_sigaction] = sys_rt_sigaction,
-    [SYS_time] = sys_time,
     [SYS_gettimeofday] = sys_gettimeofday,
     [SYS_times] = sys_times,
     [SYS_writev] = sys_writev,
-    [SYS_access] = sys_access,
     [SYS_faccessat] = sys_faccessat,
     [SYS_fcntl] = sys_fcntl,
     [SYS_getdents] = sys_getdents,
@@ -462,9 +454,26 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long n)
     [SYS_ioctl] = sys_stub_nosys,
   };
 
-  if(n >= ARRAY_SIZE(syscall_table) || !syscall_table[n])
+  const static void* old_syscall_table[] = {
+    [-OLD_SYSCALL_THRESHOLD + SYS_open] = sys_open,
+    [-OLD_SYSCALL_THRESHOLD + SYS_link] = sys_link,
+    [-OLD_SYSCALL_THRESHOLD + SYS_unlink] = sys_unlink,
+    [-OLD_SYSCALL_THRESHOLD + SYS_mkdir] = sys_mkdir,
+    [-OLD_SYSCALL_THRESHOLD + SYS_access] = sys_access,
+    [-OLD_SYSCALL_THRESHOLD + SYS_stat] = sys_stat,
+    [-OLD_SYSCALL_THRESHOLD + SYS_lstat] = sys_lstat,
+    [-OLD_SYSCALL_THRESHOLD + SYS_time] = sys_time,
+  };
+
+  syscall_t f = 0;
+
+  if (n < ARRAY_SIZE(syscall_table))
+    f = syscall_table[n];
+  else if (n - OLD_SYSCALL_THRESHOLD < ARRAY_SIZE(old_syscall_table))
+    f = old_syscall_table[n - OLD_SYSCALL_THRESHOLD];
+
+  if (!f)
     panic("bad syscall #%ld!",n);
 
-  long r = ((syscall_t)syscall_table[n])(a0, a1, a2, a3, a4, a5, n);
-  return r;
+  return f(a0, a1, a2, a3, a4, a5, n);
 }

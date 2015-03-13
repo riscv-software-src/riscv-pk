@@ -1,17 +1,7 @@
 #include "pk.h"
+#include "frontend.h"
 #include <string.h>
 #include <stdlib.h>
-
-static uint64_t tohost_sync(unsigned dev, unsigned cmd, uint64_t payload)
-{
-  uint64_t tohost = (uint64_t)dev << 56 | (uint64_t)cmd << 48 | payload;
-  uint64_t fromhost;
-  __sync_synchronize();
-  while (swap_csr(tohost, tohost) != 0);
-  while ((fromhost = swap_csr(fromhost, 0)) == 0);
-  __sync_synchronize();
-  return fromhost;
-}
 
 void enumerate_devices()
 {

@@ -6,55 +6,40 @@
 #include "config.h"
 #include "encoding.h"
 
-typedef struct { volatile long val; } atomic_t;
-typedef struct { atomic_t lock; } spinlock_t;
-#define SPINLOCK_INIT {{0}}
+#define disable_irqsave() clear_csr(sstatus, SSTATUS_IE)
+#define enable_irqrestore(flags) set_csr(sstatus, (flags) & SSTATUS_IE)
+
+typedef struct { int lock; } spinlock_t;
+#define SPINLOCK_INIT {0}
 
 #define mb() __sync_synchronize()
+#define atomic_set(ptr, val) (*(volatile typeof(*(ptr)) *)(ptr) = val)
+#define atomic_read(ptr) (*(volatile typeof(*(ptr)) *)(ptr))
 
-static inline void atomic_set(atomic_t* a, long val)
-{
-  a->val = val;
-}
-
-static inline long atomic_read(atomic_t* a)
-{
-  return a->val;
-}
-
-static inline long atomic_add(atomic_t* a, long inc)
-{
 #ifdef PK_ENABLE_ATOMICS
-  return __sync_fetch_and_add(&a->val, inc);
+# define atomic_add(ptr, inc) __sync_fetch_and_add(ptr, inc)
+# define atomic_swap(ptr, swp) __sync_lock_test_and_set(ptr, swp)
+# define atomic_cas(ptr, cmp, swp) __sync_val_compare_and_swap(ptr, cmp, swp)
 #else
-  long ret = atomic_read(a);
-  atomic_set(a, ret + inc);
-  return ret;
+# define atomic_add(ptr, inc) ({ \
+  long flags = disable_irqsave(); \
+  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  *(volatile typeof(ptr))(ptr) = res + (inc); \
+  enable_irqrestore(flags); \
+  res; })
+# define atomic_swap(ptr, swp) ({ \
+  long flags = disable_irqsave(); \
+  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  *(volatile typeof(ptr))(ptr) = (swp); \
+  enable_irqrestore(flags); \
+  res; })
+# define atomic_cas(ptr, cmp, swp) ({ \
+  long flags = disable_irqsave(); \
+  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  if (res == (cmp)) *(volatile typeof(ptr))(ptr) = (swp); \
+  enable_irqrestore(flags); \
+  res; })
 #endif
-}
-
-static inline long atomic_swap(atomic_t* a, long val)
-{
-#ifdef PK_ENABLE_ATOMICS
-  return __sync_lock_test_and_set(&a->val, val);
-#else
-  long ret = atomic_read(a);
-  atomic_set(a, val);
-  return ret;
-#endif
-}
-
-static inline long atomic_cas(atomic_t* a, long compare, long swap)
-{
-#ifdef PK_ENABLE_ATOMICS
-  return __sync_val_compare_and_swap(&a->val, compare, swap);
-#else
-  long ret = atomic_read(a);
-  if (ret == compare)
-    atomic_set(a, swap);
-  return ret;
-#endif
-}
 
 static inline void spinlock_lock(spinlock_t* lock)
 {
@@ -74,7 +59,7 @@ static inline void spinlock_unlock(spinlock_t* lock)
 
 static inline long spinlock_lock_irqsave(spinlock_t* lock)
 {
-  long flags = clear_csr(mstatus, MSTATUS_IE);
+  long flags = disable_irqsave();
   spinlock_lock(lock);
   return flags;
 }
@@ -82,7 +67,7 @@ static inline long spinlock_lock_irqsave(spinlock_t* lock)
 static inline void spinlock_unlock_irqrestore(spinlock_t* lock, long flags)
 {
   spinlock_unlock(lock);
-  set_csr(mstatus, flags & MSTATUS_IE);
+  enable_irqrestore(flags);
 }
 
 #endif

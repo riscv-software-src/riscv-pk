@@ -1,10 +1,10 @@
-softfloat_subproject_deps = \
-	sotfloat_riscv \
-
 softfloat_hdrs = \
 	internals.h \
 	primitives.h \
 	softfloat.h \
+	softfloat_types.h \
+	platform.h        \
+	specialize.h      \
 
 softfloat_c_srcs = \
 	f32_add.c                      \
@@ -82,7 +82,6 @@ softfloat_c_srcs = \
 	s_normRoundPackToF64.c         \
 	s_normSubnormalF32Sig.c        \
 	s_normSubnormalF64Sig.c        \
-	softfloat_state.c              \
 	s_roundPackToF32.c             \
 	s_roundPackToF64.c             \
 	s_roundPackToI32.c             \
@@ -109,6 +108,11 @@ softfloat_c_srcs = \
 	ui32_to_f64.c                  \
 	ui64_to_f32.c                  \
 	ui64_to_f64.c                  \
+	s_commonNaNToF64UI.c   \
+	s_f32UIToCommonNaN.c   \
+	s_f64UIToCommonNaN.c   \
+	s_propagateNaNF32UI.c  \
+	s_propagateNaNF64UI.c  \
 
 softfloat_test_srcs =
 

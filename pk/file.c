@@ -8,10 +8,9 @@
 #include "vm.h"
 
 #define MAX_FDS 128
-static atomic_t fds[MAX_FDS];
+static file_t* fds[MAX_FDS];
 #define MAX_FILES 128
-static file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,{0}}};
-file_t *stdout, *stdin, *stderr;
+file_t files[MAX_FILES] = {[0 ... MAX_FILES-1] = {-1,0}};
 
 void file_incref(file_t* f)
 {
@@ -43,7 +42,7 @@ int file_dup(file_t* f)
 {
   for (int i = 0; i < MAX_FDS; i++)
   {
-    if (atomic_cas(&fds[i], 0, (long)f) == 0)
+    if (atomic_cas(&fds[i], 0, f) == 0)
     {
       file_incref(f);
       return i;
@@ -54,24 +53,18 @@ int file_dup(file_t* f)
 
 void file_init()
 {
-  stdin = file_get_free();
-  stdout = file_get_free();
-  stderr = file_get_free();
-
-  stdin->kfd = 0;
-  stdout->kfd = 1;
-  stderr->kfd = 2;
-
-  // create user FDs 0, 1, and 2
-  file_dup(stdin);
-  file_dup(stdout);
-  file_dup(stderr);
+  // create stdin, stdout, stderr and FDs 0-2
+  for (int i = 0; i < 3; i++) {
+    file_t* f = file_get_free();
+    f->kfd = i;
+    file_dup(f);
+  }
 }
 
 file_t* file_get(int fd)
 {
   file_t* f;
-  if (fd < 0 || fd >= MAX_FDS || (f = (file_t*)atomic_read(&fds[fd])) == NULL)
+  if (fd < 0 || fd >= MAX_FDS || (f = atomic_read(&fds[fd])) == NULL)
     return 0;
 
   long old_cnt;
@@ -114,7 +107,7 @@ int fd_close(int fd)
   file_t* f = file_get(fd);
   if (!f)
     return -1;
-  file_t* old = (file_t*)atomic_cas(&fds[fd], (long)f, 0);
+  file_t* old = atomic_cas(&fds[fd], (long)f, 0);
   file_decref(f);
   if (old != f)
     return -1;

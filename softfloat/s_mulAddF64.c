@@ -39,10 +39,10 @@ float64_t
     signB = signF64UI( uiB );
     expB = expF64UI( uiB );
     sigB = fracF64UI( uiB );
-    signC = signF64UI( uiC ) ^ ( op == softfloat_mulAdd_subC );
+    signC = signF64UI( uiC ) ^ (( op & softfloat_mulAdd_subC ) != 0);
     expC = expF64UI( uiC );
     sigC = fracF64UI( uiC );
-    signProd = signA ^ signB ^ ( op == softfloat_mulAdd_subProd );
+    signProd = signA ^ signB ^ ( ( op & softfloat_mulAdd_subProd ) != 0);
     if ( expA == 0x7FF ) {
         if ( sigA || ( ( expB == 0x7FF ) && sigB ) ) goto propagateNaN_ABC;
         magBits = expB | sigB;

@@ -1,3 +1,5 @@
+#ifndef _softfloat_specialize_h
+#define _softfloat_specialize_h
 
 /*============================================================================
 
@@ -36,7 +38,7 @@ these four paragraphs for those parts of this code that are retained.
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
-#define init_detectTininess softfloat_tininess_beforeRounding;
+#define softfloat_detectTininess softfloat_tininess_beforeRounding
 
 /*----------------------------------------------------------------------------
 | Structure used to transfer NaN representations from one format to another.
@@ -82,7 +84,7 @@ uint_fast32_t softfloat_propagateNaNF32UI( uint_fast32_t, uint_fast32_t );
 /*----------------------------------------------------------------------------
 | The pattern for a default generated double-precision NaN.
 *----------------------------------------------------------------------------*/
-#define defaultNaNF64UI UINT64_C(0xFFF8000000000000)
+#define defaultNaNF64UI UINT64_C(0xFFFFFFFFFFFFFFFF)
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
@@ -110,3 +112,6 @@ uint_fast64_t softfloat_commonNaNToF64UI( struct commonNaN );
 *----------------------------------------------------------------------------*/
 uint_fast64_t softfloat_propagateNaNF64UI( uint_fast64_t, uint_fast64_t );
 
+#include "../pk/mtrap.h"
+
+#endif

@@ -21,36 +21,65 @@ void load_elf(const char* fn, elf_info* info)
         eh64.e_ident[2] == 'L'    && eh64.e_ident[3] == 'F'))
     goto fail;
 
-  size_t bias = 0;
-  extern char _end;
-  if (eh64.e_type == ET_DYN)
-    bias = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
+  uintptr_t min_vaddr = -1, max_vaddr = 0;
 
   #define LOAD_ELF do { \
     eh = (typeof(eh))&eh64; \
     size_t phdr_size = eh->e_phnum*sizeof(*ph); \
-    if (info->phdr_top - phdr_size < info->stack_bottom) \
+    if (phdr_size > info->phdr_size) \
       goto fail; \
-    info->phdr = info->phdr_top - phdr_size; \
     ssize_t ret = file_pread(file, (void*)info->phdr, phdr_size, eh->e_phoff); \
-    if (ret < (ssize_t)phdr_size) goto fail; \
-    info->entry = bias + eh->e_entry; \
+    if (ret < (ssize_t)phdr_size) \
+      goto fail; \
     info->phnum = eh->e_phnum; \
     info->phent = sizeof(*ph); \
     ph = (typeof(ph))info->phdr; \
-    for(int i = 0; i < eh->e_phnum; i++, ph++) { \
-      if(ph->p_type == PT_LOAD && ph->p_memsz) { \
-        info->brk_min = MAX(info->brk_min, bias + ph->p_vaddr + ph->p_memsz); \
-        size_t vaddr = ROUNDDOWN(ph->p_vaddr, RISCV_PGSIZE), prepad = ph->p_vaddr - vaddr; \
-        size_t memsz = ph->p_memsz + prepad, filesz = ph->p_filesz + prepad; \
-        size_t offset = ph->p_offset - prepad; \
-        vaddr += bias; \
-        if (__do_mmap(vaddr, filesz, -1, MAP_FIXED|MAP_PRIVATE, file, offset) != vaddr) \
-          goto fail; \
-        size_t mapped = ROUNDUP(filesz, RISCV_PGSIZE); \
-        if (memsz > mapped) \
-          if (__do_mmap(vaddr + mapped, memsz - mapped, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) != vaddr + mapped) \
+    info->is_supervisor = (eh->e_entry >> (8*sizeof(eh->e_entry)-1)) != 0; \
+    if (info->is_supervisor) \
+      info->first_free_paddr = ROUNDUP(info->first_free_paddr, SUPERPAGE_SIZE); \
+    for (int i = 0; i < eh->e_phnum; i++) \
+      if (ph[i].p_type == PT_LOAD && ph[i].p_memsz && ph[i].p_vaddr < min_vaddr) \
+        min_vaddr = ph[i].p_vaddr; \
+    if (info->is_supervisor) \
+      min_vaddr = ROUNDDOWN(min_vaddr, SUPERPAGE_SIZE); \
+    else \
+      min_vaddr = ROUNDDOWN(min_vaddr, RISCV_PGSIZE); \
+    uintptr_t bias = 0; \
+    if (info->is_supervisor || eh->e_type == ET_DYN) \
+      bias = info->first_free_paddr - min_vaddr; \
+    info->entry = eh->e_entry; \
+    if (!info->is_supervisor) { \
+      info->entry += bias; \
+      min_vaddr += bias; \
+    } \
+    info->bias = bias; \
+    int flags = MAP_FIXED | MAP_PRIVATE; \
+    if (info->is_supervisor) \
+      flags |= MAP_POPULATE; \
+    for (int i = eh->e_phnum - 1; i >= 0; i--) { \
+      if(ph[i].p_type == PT_LOAD && ph[i].p_memsz) { \
+        uintptr_t prepad = ph[i].p_vaddr % RISCV_PGSIZE; \
+        uintptr_t vaddr = ph[i].p_vaddr + bias; \
+        if (vaddr + ph[i].p_memsz > max_vaddr) \
+          max_vaddr = vaddr + ph[i].p_memsz; \
+        if (info->is_supervisor) { \
+          if (!__valid_user_range(vaddr - prepad, vaddr + ph[i].p_memsz)) \
             goto fail; \
+          ret = file_pread(file, (void*)vaddr, ph[i].p_filesz, ph[i].p_offset); \
+          if (ret < (ssize_t)ph[i].p_filesz) \
+            goto fail; \
+          memset((void*)vaddr - prepad, 0, prepad); \
+          memset((void*)vaddr + ph[i].p_filesz, 0, ph[i].p_memsz - ph[i].p_filesz); \
+        } else { \
+          int flags2 = flags | (prepad ? MAP_POPULATE : 0); \
+          if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, -1, flags2, file, ph[i].p_offset - prepad) != vaddr) \
+            goto fail; \
+          memset((void*)vaddr - prepad, 0, prepad); \
+          size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad; \
+          if (ph[i].p_memsz > mapped) \
+            if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, -1, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped) \
+              goto fail; \
+        } \
       } \
     } \
   } while(0)
@@ -70,6 +99,10 @@ void load_elf(const char* fn, elf_info* info)
   }
   else
     goto fail;
+
+  info->first_user_vaddr = min_vaddr;
+  info->first_vaddr_after_user = ROUNDUP(max_vaddr - info->bias, RISCV_PGSIZE);
+  info->brk_min = max_vaddr;
 
   file_decref(file);
   return;

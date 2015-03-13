@@ -11,11 +11,6 @@ union ui128_f128 { uint64_t ui0, ui64; float128_t f; };
 union ui128_f128 { uint64_t ui64, ui0; float128_t f; };
 #endif
 
-enum {
-    softfloat_mulAdd_subC    = 1,
-    softfloat_mulAdd_subProd = 2
-};
-
 uint_fast32_t
  softfloat_roundPackToUI32( bool, uint_fast64_t, int_fast8_t, bool );
 uint_fast64_t
@@ -48,11 +43,6 @@ int_fast64_t
  softfloat_roundPackToI64(
      bool, uint_fast64_t, uint_fast64_t, int_fast8_t, bool );
 
-/*----------------------------------------------------------------------------
-| Returns 1 if the single-precision floating-point value `a' is a NaN;
-| otherwise, returns 0.
-*----------------------------------------------------------------------------*/
-#define isNaNF32UI( ui ) (0xFF000000<(uint32_t)((uint_fast32_t)(ui)<<1))
 /*----------------------------------------------------------------------------
 | Returns the sign bit of the single-precision floating-point value `a'.
 *----------------------------------------------------------------------------*/
@@ -134,16 +124,7 @@ float32_t softfloat_addMagsF32( uint_fast32_t, uint_fast32_t, bool );
 | Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 float32_t softfloat_subMagsF32( uint_fast32_t, uint_fast32_t, bool );
-/*----------------------------------------------------------------------------
-*----------------------------------------------------------------------------*/
-float32_t
- softfloat_mulAddF32( int, uint_fast32_t, uint_fast32_t, uint_fast32_t );
 
-/*----------------------------------------------------------------------------
-| Returns 1 if the double-precision floating-point value `a' is a NaN;
-| otherwise, returns 0.
-*----------------------------------------------------------------------------*/
-#define isNaNF64UI( ui ) (UINT64_C(0xFFE0000000000000)<(uint64_t)((uint_fast64_t)(ui)<<1))
 /*----------------------------------------------------------------------------
 | Returns the sign bit of the double-precision floating-point value `a'.
 *----------------------------------------------------------------------------*/
@@ -225,8 +206,4 @@ float64_t softfloat_addMagsF64( uint_fast64_t, uint_fast64_t, bool );
 | Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 float64_t softfloat_subMagsF64( uint_fast64_t, uint_fast64_t, bool );
-/*----------------------------------------------------------------------------
-*----------------------------------------------------------------------------*/
-float64_t
- softfloat_mulAddF64( int, uint_fast64_t, uint_fast64_t, uint_fast64_t );
 

@@ -36,7 +36,7 @@ uint_fast64_t
                     & roundNearestEven );
     }
     if ( sign && sig64 ) goto invalid;
-    if ( exact && sig0 ) softfloat_exceptionFlags |= softfloat_flag_inexact;
+    if ( exact && sig0 ) softfloat_raiseFlags( softfloat_flag_inexact );
     return sig64;
  invalid:
     softfloat_raiseFlags( softfloat_flag_invalid );

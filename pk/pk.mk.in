@@ -1,12 +1,9 @@
 pk_subproject_deps = \
-	softfloat_riscv \
 	softfloat \
-	softint \
 
 pk_hdrs = \
-	pk.h \
+	mtrap.h \
 	encoding.h \
-	fp.h \
 	atomic.h \
 	file.h \
 	frontend.h \
@@ -14,21 +11,26 @@ pk_hdrs = \
 	vm.h \
 
 pk_c_srcs = \
+	mtrap.c \
+	minit.c \
+	emulation.c \
+	sbi_impl.c \
 	init.c \
 	file.c \
 	syscall.c \
 	handlers.c \
 	frontend.c \
-	fp.c \
-	int.c \
 	elf.c \
 	console.c \
 	vm.c \
 	string.c \
 
 pk_asm_srcs = \
+	mentry.S \
 	entry.S \
 	fp_asm.S \
+	sbi_entry.S \
+	sbi.S \
 
 pk_test_srcs =
 

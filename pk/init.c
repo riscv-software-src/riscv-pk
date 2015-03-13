@@ -6,6 +6,7 @@
 #include "frontend.h"
 #include "elf.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 elf_info current;
@@ -17,12 +18,12 @@ char* uarch_counter_names[NUM_COUNTERS];
 
 void init_tf(trapframe_t* tf, long pc, long sp, int user64)
 {
-  memset(tf,0,sizeof(*tf));
-  if(sizeof(void*) != 8)
-    kassert(!user64);
-  tf->status = read_csr(mstatus);
-  if (user64)
-    tf->status |= (long long)UA_RV64 << __builtin_ctzll(MSTATUS_UA);
+  memset(tf, 0, sizeof(*tf));
+  if (user64) {
+    kassert(sizeof(void*) == 8);
+    set_csr(sstatus, UA_RV64 * (SSTATUS_UA & ~(SSTATUS_UA << 1)));
+  }
+  tf->status = read_csr(sstatus);
   tf->gpr[2] = sp;
   tf->epc = pc;
 }
@@ -40,22 +41,34 @@ static void handle_option(const char* s)
       uarch_counters_enabled = 1;
       break;
 
-    case 'p': // physical memory mode
-      have_vm = 0;
+    case 'm': // memory capacity in MiB
+    {
+      uintptr_t mem_mb = atol(&s[2]);
+      if (!mem_mb)
+        goto need_nonzero_int;
+      mem_size = mem_mb << 20;
+      if ((mem_size >> 20) < mem_mb)
+        mem_size = (typeof(mem_size))-1 & -RISCV_PGSIZE;
+      break;
+    }
+
+    case 'p': // number of harts
+      num_harts = atol(&s[2]);
+      if (!num_harts)
+        goto need_nonzero_int;
       break;
 
     default:
       panic("unrecognized option: `%c'", s[1]);
       break;
   }
+  return;
+
+need_nonzero_int:
+  panic("the -%c flag requires a nonzero argument", s[1]);
 }
 
-struct mainvars {
-  uint64_t argc;
-  uint64_t argv[127]; // this space is shared with the arg strings themselves
-};
-
-static struct mainvars* handle_args(struct mainvars* args)
+struct mainvars* parse_args(struct mainvars* args)
 {
   long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0, 0, 0);
   kassert(r == 0);
@@ -68,10 +81,32 @@ static struct mainvars* handle_args(struct mainvars* args)
   return (struct mainvars*)&args->argv[a0-1];
 }
 
-static void user_init(struct mainvars* args)
+uintptr_t boot_loader(struct mainvars* args)
 {
+  // load program named by argv[0]
+  long phdrs[128];
+  current.phdr = (uintptr_t)phdrs;
+  current.phdr_size = sizeof(phdrs);
+  if (!args->argc)
+    panic("tell me what ELF to load!");
+  load_elf((char*)(uintptr_t)args->argv[0], &current);
+
+  if (current.is_supervisor) {
+    supervisor_vm_init();
+    write_csr(mepc, current.entry);
+    asm volatile("mret");
+    __builtin_unreachable();
+  }
+
+  pk_vm_init();
+  asm volatile("la t0, 1f; csrw mepc, t0; mret; 1:" ::: "t0");
+
+  // copy phdrs to user stack
+  size_t stack_top = current.stack_top - current.phdr_size;
+  memcpy((void*)stack_top, (void*)current.phdr, current.phdr_size);
+  current.phdr = stack_top;
+
   // copy argv to user stack
-  size_t stack_top = current.stack_top;
   for (size_t i = 0; i < args->argc; i++) {
     size_t len = strlen((char*)(uintptr_t)args->argv[i])+1;
     stack_top -= len;
@@ -79,12 +114,6 @@ static void user_init(struct mainvars* args)
     args->argv[i] = stack_top;
   }
   stack_top &= -sizeof(void*);
-  populate_mapping((void*)stack_top, current.stack_top - stack_top, PROT_WRITE);
-
-  // load program named by argv[0]
-  current.phdr_top = stack_top;
-  load_elf((char*)(uintptr_t)args->argv[0], &current);
-  stack_top = current.phdr;
 
   struct {
     long key;
@@ -151,14 +180,4 @@ static void user_init(struct mainvars* args)
   init_tf(&tf, current.entry, stack_top, current.elf64);
   __clear_cache(0, 0);
   pop_tf(&tf);
-}
-
-void boot()
-{
-  file_init();
-  struct mainvars args0;
-  struct mainvars* args = handle_args(&args0);
-  vm_init();
-  fp_init();
-  user_init(args);
 }

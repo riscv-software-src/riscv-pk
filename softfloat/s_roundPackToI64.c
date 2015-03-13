@@ -40,7 +40,7 @@ int_fast64_t
     uZ.ui = sign ? - sig64 : sig64;
     z = uZ.i;
     if ( z && ( ( z < 0 ) ^ sign ) ) goto invalid;
-    if ( exact && sig0 ) softfloat_exceptionFlags |= softfloat_flag_inexact;
+    if ( exact && sig0 ) softfloat_raiseFlags( softfloat_flag_inexact );
     return z;
  invalid:
     softfloat_raiseFlags( softfloat_flag_invalid );

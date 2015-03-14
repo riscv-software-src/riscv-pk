@@ -47,6 +47,18 @@ static void hart_init()
     panic("TODO: SMP support");
 }
 
+static void fp_init()
+{
+#ifdef __riscv_hard_float
+  kassert(read_csr(mstatus) & MSTATUS_FS);
+  SET_FCSR(0);
+  for (int i = 0; i < 32; i++)
+    init_fp_reg(i);
+#else
+  kassert(!(read_csr(mstatus) & MSTATUS_FS));
+#endif
+}
+
 void machine_init()
 {
   file_init();
@@ -57,6 +69,7 @@ void machine_init()
   mstatus_init();
   memory_init();
   hart_init();
+  fp_init();
   vm_init();
   boot_loader(args);
 }

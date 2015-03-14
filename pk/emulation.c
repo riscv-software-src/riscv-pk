@@ -303,6 +303,7 @@ DECLARE_EMULATION_FUNC(emulate_mul_div)
     return -1;
 
   SET_RD(insn, regs, val);
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -330,6 +331,7 @@ DECLARE_EMULATION_FUNC(emulate_mul_div32)
     return -1;
 
   SET_RD(insn, regs, val);
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -391,6 +393,7 @@ DECLARE_EMULATION_FUNC(emulate_system)
     return -1;
 
   SET_RD(insn, regs, csr_val);
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -444,30 +447,32 @@ DECLARE_EMULATION_FUNC(emulate_fp)
   return f(mcause, regs, insn, mstatus, mepc);
 }
 
-uintptr_t emulate_any_fadd(uintptr_t mcause, uintptr_t* regs, insn_t insn, uintptr_t neg_b)
+uintptr_t emulate_any_fadd(uintptr_t mcause, uintptr_t* regs, insn_t insn, uintptr_t mstatus, uintptr_t mepc, uintptr_t neg_b)
 {
   if (GET_PRECISION(insn) == PRECISION_S) {
     uint32_t rs1 = GET_F32_RS1(insn, regs);
     uint32_t rs2 = GET_F32_RS2(insn, regs) ^ neg_b;
     SET_F32_RD(insn, regs, f32_add(rs1, rs2));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs) ^ ((uint64_t)neg_b << 32);
     SET_F64_RD(insn, regs, f64_add(rs1, rs2));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fadd)
 {
-  return emulate_any_fadd(mcause, regs, insn, 0);
+  return emulate_any_fadd(mcause, regs, insn, mstatus, mepc, 0);
 }
 
 DECLARE_EMULATION_FUNC(emulate_fsub)
 {
-  return emulate_any_fadd(mcause, regs, insn, INT32_MIN);
+  return emulate_any_fadd(mcause, regs, insn, mstatus, mepc, INT32_MIN);
 }
 
 DECLARE_EMULATION_FUNC(emulate_fmul)
@@ -476,14 +481,16 @@ DECLARE_EMULATION_FUNC(emulate_fmul)
     uint32_t rs1 = GET_F32_RS1(insn, regs);
     uint32_t rs2 = GET_F32_RS2(insn, regs);
     SET_F32_RD(insn, regs, f32_mul(rs1, rs2));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs);
     SET_F64_RD(insn, regs, f64_mul(rs1, rs2));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fdiv)
@@ -492,14 +499,16 @@ DECLARE_EMULATION_FUNC(emulate_fdiv)
     uint32_t rs1 = GET_F32_RS1(insn, regs);
     uint32_t rs2 = GET_F32_RS2(insn, regs);
     SET_F32_RD(insn, regs, f32_div(rs1, rs2));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs);
     SET_F64_RD(insn, regs, f64_div(rs1, rs2));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fsqrt)
@@ -509,12 +518,14 @@ DECLARE_EMULATION_FUNC(emulate_fsqrt)
 
   if (GET_PRECISION(insn) == PRECISION_S) {
     SET_F32_RD(insn, regs, f32_sqrt(GET_F32_RS1(insn, regs)));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     SET_F64_RD(insn, regs, f64_sqrt(GET_F64_RS1(insn, regs)));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fsgnj)
@@ -534,14 +545,16 @@ DECLARE_EMULATION_FUNC(emulate_fsgnj)
     uint32_t rs1 = GET_F32_RS1(insn, regs);
     uint32_t rs2 = GET_F32_RS2(insn, regs);
     SET_F32_RD(insn, regs, DO_FSGNJ(rs1, rs2, rm));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs);
     SET_F64_RD(insn, regs, DO_FSGNJ(rs1, rs2, rm));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fmin)
@@ -557,7 +570,6 @@ DECLARE_EMULATION_FUNC(emulate_fmin)
     uint32_t arg2 = rm ? rs1 : rs2;
     int use_rs1 = f32_lt_quiet(arg1, arg2) || isNaNF32UI(rs2);
     SET_F32_RD(insn, regs, use_rs1 ? rs1 : rs2);
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs);
@@ -565,9 +577,12 @@ DECLARE_EMULATION_FUNC(emulate_fmin)
     uint64_t arg2 = rm ? rs1 : rs2;
     int use_rs1 = f64_lt_quiet(arg1, arg2) || isNaNF64UI(rs2);
     SET_F64_RD(insn, regs, use_rs1 ? rs1 : rs2);
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fcvt_ff)
@@ -577,14 +592,16 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_ff)
     if (rs2_num != 1)
       return -1;
     SET_F32_RD(insn, regs, f64_to_f32(GET_F64_RS1(insn, regs)));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     if (rs2_num != 0)
       return -1;
     SET_F64_RD(insn, regs, f32_to_f64(GET_F32_RS1(insn, regs)));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
@@ -624,6 +641,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
   else
     SET_F64_RD(insn, regs, float64);
 
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -701,6 +719,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_if)
   SET_FS_DIRTY();
   SET_RD(insn, regs, result);
 
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -731,6 +750,7 @@ DECLARE_EMULATION_FUNC(emulate_fcmp)
   return -1;
 success:
   SET_RD(insn, regs, result);
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -747,6 +767,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_if)
     return -1;
 
   SET_RD(insn, regs, result);
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
@@ -761,10 +782,11 @@ DECLARE_EMULATION_FUNC(emulate_fmv_fi)
   else
     return -1;
 
+  write_csr(mepc, mepc + 4);
   return 0;
 }
 
-uintptr_t emulate_any_fmadd(int op, uintptr_t* regs, insn_t insn, uintptr_t mstatus)
+uintptr_t emulate_any_fmadd(int op, uintptr_t* regs, insn_t insn, uintptr_t mstatus, uintptr_t mepc)
 {
   // if FPU is disabled, punt back to the OS
   if (unlikely((mstatus & MSTATUS_FS) == 0))
@@ -776,37 +798,38 @@ uintptr_t emulate_any_fmadd(int op, uintptr_t* regs, insn_t insn, uintptr_t msta
     uint32_t rs2 = GET_F32_RS2(insn, regs);
     uint32_t rs3 = GET_F32_RS3(insn, regs);
     SET_F32_RD(insn, regs, softfloat_mulAddF32(op, rs1, rs2, rs3));
-    return 0;
   } else if (GET_PRECISION(insn) == PRECISION_D) {
     uint64_t rs1 = GET_F64_RS1(insn, regs);
     uint64_t rs2 = GET_F64_RS2(insn, regs);
     uint64_t rs3 = GET_F64_RS3(insn, regs);
     SET_F64_RD(insn, regs, softfloat_mulAddF64(op, rs1, rs2, rs3));
-    return 0;
+  } else {
+    return -1;
   }
-  return -1;
+  write_csr(mepc, mepc + 4);
+  return 0;
 }
 
 DECLARE_EMULATION_FUNC(emulate_fmadd)
 {
   int op = 0;
-  return emulate_any_fmadd(op, regs, insn, mstatus);
+  return emulate_any_fmadd(op, regs, insn, mstatus, mepc);
 }
 
 DECLARE_EMULATION_FUNC(emulate_fmsub)
 {
   int op = softfloat_mulAdd_subC;
-  return emulate_any_fmadd(op, regs, insn, mstatus);
+  return emulate_any_fmadd(op, regs, insn, mstatus, mepc);
 }
 
 DECLARE_EMULATION_FUNC(emulate_fnmadd)
 {
   int op = softfloat_mulAdd_subC | softfloat_mulAdd_subProd;
-  return emulate_any_fmadd(op, regs, insn, mstatus);
+  return emulate_any_fmadd(op, regs, insn, mstatus, mepc);
 }
 
 DECLARE_EMULATION_FUNC(emulate_fnmsub)
 {
   int op = softfloat_mulAdd_subProd;
-  return emulate_any_fmadd(op, regs, insn, mstatus);
+  return emulate_any_fmadd(op, regs, insn, mstatus, mepc);
 }

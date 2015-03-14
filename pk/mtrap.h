@@ -106,6 +106,7 @@ typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, ui
   uintptr_t offset = ((insn) >> ((pos)-3)) & 0xf8; \
   uintptr_t tmp; \
   asm volatile ("1: auipc %0, %%pcrel_hi(put_f32_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(value), "r"(offset) : "t0"); })
+# define init_fp_reg(i) SET_F32_REG((i) << 3, 3, 0, 0)
 # define GET_F64_REG(insn, pos, regs) ({ \
   register uintptr_t value asm("a0") = ((insn) >> ((pos)-3)) & 0xf8; \
   uintptr_t tmp; \
@@ -160,8 +161,8 @@ typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, ui
 #define GET_F64_RS1(insn, regs) (GET_F64_REG(insn, 15, regs))
 #define GET_F64_RS2(insn, regs) (GET_F64_REG(insn, 20, regs))
 #define GET_F64_RS3(insn, regs) (GET_F64_REG(insn, 27, regs))
-#define SET_F32_RD(insn, regs, val) (SET_F32_REG(insn, 15, regs, val), SET_FS_DIRTY())
-#define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 15, regs, val), SET_FS_DIRTY())
+#define SET_F32_RD(insn, regs, val) (SET_F32_REG(insn, 7, regs, val), SET_FS_DIRTY())
+#define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 7, regs, val), SET_FS_DIRTY())
 #define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 
 typedef struct {

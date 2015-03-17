@@ -4,7 +4,7 @@
 #include "atomic.h"
 #include "frontend.h"
 #include "sbi.h"
-#include "hcall.h"
+#include "mcall.h"
 #include <stdint.h>
 
 uint64_t tohost_sync(unsigned dev, unsigned cmd, uint64_t payload)
@@ -13,8 +13,8 @@ uint64_t tohost_sync(unsigned dev, unsigned cmd, uint64_t payload)
   __sync_synchronize();
 
   sbi_device_message m = {dev, cmd, payload}, *p;
-  do_hcall(HCALL_SEND_DEVICE_REQUEST, &m);
-  while ((p = (void*)do_hcall(HCALL_RECEIVE_DEVICE_RESPONSE)) == 0);
+  do_mcall(MCALL_SEND_DEVICE_REQUEST, &m);
+  while ((p = (void*)do_mcall(MCALL_RECEIVE_DEVICE_RESPONSE)) == 0);
   kassert(p == &m);
 
   __sync_synchronize();

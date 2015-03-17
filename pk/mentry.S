@@ -2,19 +2,41 @@
 
 #include "mtrap.h"
 
-#define HANDLE_TRAP_IN_MACHINE_MODE 0        \
-  | (0 << (31- 0)) /* IF misaligned */       \
-  | (0 << (31- 1)) /* IF fault */            \
-  | (1 << (31- 2)) /* illegal instruction */ \
-  | (1 << (31- 3)) /* reserved */            \
-  | (0 << (31- 4)) /* system call */         \
-  | (1 << (31- 5)) /* hypervisor call */     \
-  | (1 << (31- 6)) /* machine call */        \
-  | (0 << (31- 7)) /* breakpoint */          \
-  | (1 << (31- 8)) /* load misaligned */     \
-  | (0 << (31- 9)) /* load fault */          \
-  | (1 << (31-10)) /* store misaligned */    \
-  | (0 << (31-11)) /* store fault */
+#define HANDLE_USER_TRAP_IN_MACHINE_MODE 0       \
+  | (0 << (31- 0)) /* IF misaligned */           \
+  | (0 << (31- 1)) /* IF fault */                \
+  | (1 << (31- 2)) /* illegal instruction */     \
+  | (1 << (31- 3)) /* reserved */                \
+  | (1 << (31- 4)) /* load misaligned */         \
+  | (0 << (31- 5)) /* load fault */              \
+  | (1 << (31- 6)) /* store misaligned */        \
+  | (0 << (31- 7)) /* store fault */             \
+  | (0 << (31- 8)) /* environment call */        \
+  | (0 << (31- 9)) /* breakpoint */              \
+
+#define HANDLE_SUPERVISOR_TRAP_IN_MACHINE_MODE 0 \
+  | (0 << (31- 0)) /* IF misaligned */           \
+  | (0 << (31- 1)) /* IF fault */                \
+  | (1 << (31- 2)) /* illegal instruction */     \
+  | (1 << (31- 3)) /* reserved */                \
+  | (1 << (31- 4)) /* load misaligned */         \
+  | (0 << (31- 5)) /* load fault */              \
+  | (1 << (31- 6)) /* store misaligned */        \
+  | (0 << (31- 7)) /* store fault */             \
+  | (1 << (31- 8)) /* environment call */        \
+  | (0 << (31- 9)) /* breakpoint */              \
+
+#define HANDLE_MACHINE_TRAP_IN_MACHINE_MODE 0    \
+  | (0 << (31- 0)) /* IF misaligned */           \
+  | (0 << (31- 1)) /* IF fault */                \
+  | (0 << (31- 2)) /* illegal instruction */     \
+  | (0 << (31- 3)) /* reserved */                \
+  | (0 << (31- 4)) /* load misaligned */         \
+  | (1 << (31- 5)) /* load fault */              \
+  | (0 << (31- 6)) /* store misaligned */        \
+  | (1 << (31- 7)) /* store fault */             \
+  | (1 << (31- 8)) /* environment call */        \
+  | (0 << (31- 9)) /* breakpoint */              \
 
   .section .text.init,"ax",@progbits
   .globl mentry
@@ -28,7 +50,7 @@ mentry:
   csrr a0, mcause
   bltz a0, .Linterrupt
 
-  li a1, HANDLE_TRAP_IN_MACHINE_MODE
+  li a1, HANDLE_USER_TRAP_IN_MACHINE_MODE
   SLL32 a1, a1, a0
   bltz a1, .Lhandle_trap_in_machine_mode
 
@@ -48,13 +70,11 @@ mentry:
   csrr a0, mcause
   bltz a0, .Linterrupt
 
-  li a1, HANDLE_TRAP_IN_MACHINE_MODE
+  li a1, HANDLE_SUPERVISOR_TRAP_IN_MACHINE_MODE
   SLL32 a1, a1, a0
   bltz a1, .Lhandle_trap_in_machine_mode
 
 .Linterrupt_in_supervisor:
-  # For now, direct all interrupts to supervisor mode.
-
   # Detect double faults.
   csrr a0, mstatus
   SLL32 a0, a0, 31 - CONST_CTZ(MSTATUS_PRV2)
@@ -78,15 +98,20 @@ mentry:
   STORE a1,11*REGBYTES(sp)
 
   csrr a0, mcause
-  li a1, CAUSE_HCALL
-  beq a0, a1, .Lhandle_trap_in_machine_mode
-  li a1, CAUSE_FAULT_LOAD
-  beq a0, a1, .Lhandle_trap_in_machine_mode
-  li a1, CAUSE_FAULT_STORE
-  beq a0, a1, .Lhandle_trap_in_machine_mode
+  li a1, HANDLE_MACHINE_TRAP_IN_MACHINE_MODE
+  SLL32 a1, a1, a0
+  bltz a1, .Lhandle_trap_in_machine_mode
 
   # Uh oh...
+.Lbad_trap:
   j bad_trap
+
+.Lsupervisor_double_fault:
+  # Return to supervisor trap entry with interrupts disabled.
+  # Set PRV2=U, IE2=1, PRV1=S (it already is), and IE1=0.
+  li a0, MSTATUS_PRV2 | MSTATUS_IE2 | MSTATUS_IE1
+  csrc mstatus, a0
+  j .Lreturn_from_supervisor_double_fault
 
   .align 6
   # Entry point for power-on reset.
@@ -111,27 +136,26 @@ mentry:
   # See if this is an IPI; register a supervisor SW interrupt if so.
   li a1, IRQ_IPI * 2
   bne a0, a1, 1f
-  csrc mstatus, MSTATUS_MSIP
+  csrrc a0, mstatus, MSTATUS_MSIP
   csrs mstatus, MSTATUS_SSIP
-  j .Lmrts
+
+  # There are three cases: PRV1=U; PRV1=S and IE1=1; and PRV1=S and IE1=0.
+  # For cases 1-2, do an MRTS; for case 3, we can't, so ERET.
+  and a0, a0, MSTATUS_PRV1 | MSTATUS_IE1
+  li a1, (MSTATUS_PRV1 & ~(MSTATUS_PRV1<<1)) * PRV_S
+  bne a0, a1, .Lmrts
+
+  # And then go back whence we came.
+  LOAD a0, 10*REGBYTES(sp)
+  LOAD a1, 11*REGBYTES(sp)
+  csrrw sp, mscratch, sp
+  eret
 1:
 
   # See if this is an HTIF interrupt; if so, handle it in machine mode.
   li a1, IRQ_HOST * 2
-  bne a0, a1, 1f
-  li a0, 12
-  j .Lhandle_trap_in_machine_mode
-1:
-
-  # We don't know how to handle this interrupt.  We're hosed.
-  j bad_trap
-
-.Lsupervisor_double_fault:
-  # Return to supervisor trap entry with interrupts disabled.
-  # Set PRV2=U, IE2=1, PRV1=S (it already is), and IE1=0.
-  li a0, MSTATUS_PRV2 | MSTATUS_IE2 | MSTATUS_IE1
-  csrc mstatus, a0
-  j .Lreturn_from_supervisor_double_fault
+  bne a0, a1, .Lbad_trap
+  li a0, 10
 
 .Lhandle_trap_in_machine_mode:
   # Preserve the registers.  Compute the address of the trap handler.
@@ -220,7 +244,7 @@ mentry:
   LOAD a0, 10*REGBYTES(sp)
   csrw mscratch, sp
   LOAD sp, 2*REGBYTES(sp)
-  mret
+  eret
 
 1:# Redirect the trap to the supervisor.
   LOAD a0, 10*REGBYTES(sp)
@@ -235,15 +259,14 @@ trap_table:
   .word bad_trap
   .word illegal_insn_trap
   .word bad_trap
-  .word bad_trap
-  .word hcall_trap
-  .word bad_trap
-  .word bad_trap
   .word misaligned_load_trap
   .word machine_page_fault
   .word misaligned_store_trap
   .word machine_page_fault
+  .word mcall_trap
+  .word bad_trap
   .word htif_interrupt
+  .word bad_trap
   .word bad_trap
   .word bad_trap
   .word bad_trap

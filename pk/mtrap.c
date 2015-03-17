@@ -1,6 +1,6 @@
 #include "mtrap.h"
 #include "frontend.h"
-#include "hcall.h"
+#include "mcall.h"
 #include "vm.h"
 #include <errno.h>
 
@@ -109,7 +109,7 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
   panic("htif: no record");
 }
 
-static uintptr_t hcall_console_putchar(uint8_t ch)
+static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   while (swap_csr(tohost, TOHOST_CMD(1, 1, ch)) != 0);
   while (1) {
@@ -127,9 +127,9 @@ static uintptr_t hcall_console_putchar(uint8_t ch)
 
 #define printm(str, ...) ({ \
   char buf[1024], *p = buf; sprintk(buf, str, __VA_ARGS__); \
-  while (*p) hcall_console_putchar(*p++); })
+  while (*p) mcall_console_putchar(*p++); })
 
-static uintptr_t hcall_dev_req(sbi_device_message *m)
+static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
   //printm("req %d %p\n", MAILBOX()->device_request_queue_size, m);
 #ifndef __riscv64
@@ -153,7 +153,7 @@ static uintptr_t hcall_dev_req(sbi_device_message *m)
 #endif
 }
 
-static uintptr_t hcall_dev_resp()
+static uintptr_t mcall_dev_resp()
 {
   htif_interrupt(0, 0);
 
@@ -168,7 +168,7 @@ static uintptr_t hcall_dev_resp()
   return (uintptr_t)m;
 }
 
-uintptr_t hcall_trap(uintptr_t mcause, uintptr_t* regs)
+uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
 {
   if (EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) < PRV_S)
     return -1;
@@ -176,17 +176,17 @@ uintptr_t hcall_trap(uintptr_t mcause, uintptr_t* regs)
   uintptr_t n = regs[10], arg0 = regs[11], retval;
   switch (n)
   {
-    case HCALL_HART_ID:
+    case MCALL_HART_ID:
       retval = 0; // TODO
       break;
-    case HCALL_CONSOLE_PUTCHAR:
-      retval = hcall_console_putchar(arg0);
+    case MCALL_CONSOLE_PUTCHAR:
+      retval = mcall_console_putchar(arg0);
       break;
-    case HCALL_SEND_DEVICE_REQUEST:
-      retval = hcall_dev_req((sbi_device_message*)arg0);
+    case MCALL_SEND_DEVICE_REQUEST:
+      retval = mcall_dev_req((sbi_device_message*)arg0);
       break;
-    case HCALL_RECEIVE_DEVICE_RESPONSE:
-      retval = hcall_dev_resp();
+    case MCALL_RECEIVE_DEVICE_RESPONSE:
+      retval = mcall_dev_resp();
       break;
     default:
       retval = -ENOSYS;

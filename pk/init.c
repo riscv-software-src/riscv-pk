@@ -44,6 +44,7 @@ static void handle_option(const char* s)
     case 'm': // memory capacity in MiB
     {
       uintptr_t mem_mb = atol(&s[2]);
+      mem_mb = 64;
       if (!mem_mb)
         goto need_nonzero_int;
       mem_size = mem_mb << 20;
@@ -94,12 +95,12 @@ uintptr_t boot_loader(struct mainvars* args)
   if (current.is_supervisor) {
     supervisor_vm_init();
     write_csr(mepc, current.entry);
-    asm volatile("mret");
+    asm volatile("eret");
     __builtin_unreachable();
   }
 
   pk_vm_init();
-  asm volatile("la t0, 1f; csrw mepc, t0; mret; 1:" ::: "t0");
+  asm volatile("la t0, 1f; csrw mepc, t0; eret; 1:" ::: "t0");
 
   // copy phdrs to user stack
   size_t stack_top = current.stack_top - current.phdr_size;

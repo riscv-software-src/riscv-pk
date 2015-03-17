@@ -1,5 +1,5 @@
 #include "encoding.h"
-#include "hcall.h"
+#include "mcall.h"
 
    .section .sbi,"ax",@progbits
   .align RISCV_PGSHIFT
@@ -12,8 +12,8 @@ sbi_base:
 
   # hart_id
   .align 4
-  li a0, HCALL_HART_ID
-  hcall
+  li a0, MCALL_HART_ID
+  ecall
   ret
 
   # num_harts
@@ -28,22 +28,22 @@ sbi_base:
   # console_putchar
   .align 4
   mv a1, a0
-  li a0, HCALL_CONSOLE_PUTCHAR
-  hcall
+  li a0, MCALL_CONSOLE_PUTCHAR
+  ecall
   ret
 
   # send_device_request
   .align 4
   mv a1, a0
-  li a0, HCALL_SEND_DEVICE_REQUEST
-  hcall
+  li a0, MCALL_SEND_DEVICE_REQUEST
+  ecall
   ret
 
   # receive_device_response
   .align 4
   mv a1, a0
-  li a0, HCALL_RECEIVE_DEVICE_RESPONSE
-  hcall
+  li a0, MCALL_RECEIVE_DEVICE_RESPONSE
+  ecall
   ret
 
   # send ipi
@@ -53,9 +53,9 @@ sbi_base:
 
   # end of SBI trampolines
 
-  .globl do_hcall
-do_hcall:
-  hcall
+  .globl do_mcall
+do_mcall:
+  ecall
   ret
 
   .align RISCV_PGSHIFT

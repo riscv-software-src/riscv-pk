@@ -48,7 +48,7 @@ extern uint32_t num_harts;
 
 struct mainvars* parse_args(struct mainvars*);
 void printk(const char* s, ...);
-void sprintk(char* out, const char* s, ...);
+int snprintf(char* out, size_t n, const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp, int user64);
 void pop_tf(trapframe_t*) __attribute__((noreturn));
 void dump_tf(trapframe_t*);

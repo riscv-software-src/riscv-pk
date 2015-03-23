@@ -126,7 +126,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 }
 
 #define printm(str, ...) ({ \
-  char buf[1024], *p = buf; sprintk(buf, str, __VA_ARGS__); \
+  char buf[128], *p = buf; snprintf(buf, sizeof(buf), str, __VA_ARGS__); \
   while (*p) mcall_console_putchar(*p++); })
 
 static uintptr_t mcall_dev_req(sbi_device_message *m)

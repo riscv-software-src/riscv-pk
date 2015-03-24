@@ -116,7 +116,7 @@ mentry:
   .align 6
   # Entry point for power-on reset.
   # TODO per-hart stacks
-  la sp, _end + RISCV_PGSIZE + 1
+  la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
   and sp, sp, t0
   j machine_init

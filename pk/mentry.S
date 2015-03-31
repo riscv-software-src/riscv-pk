@@ -2,6 +2,28 @@
 
 #include "mtrap.h"
 
+  .data
+  .align 6
+trap_table:
+  .word bad_trap
+  .word bad_trap
+  .word illegal_insn_trap
+  .word bad_trap
+  .word misaligned_load_trap
+  .word bad_trap
+  .word misaligned_store_trap
+  .word bad_trap
+  .word mcall_trap
+  .word bad_trap
+#define HTIF_INTERRUPT_VECTOR 10
+  .word htif_interrupt
+#define TRAP_FROM_MACHINE_MODE_VECTOR 11
+  .word trap_from_machine_mode
+  .word bad_trap
+  .word bad_trap
+  .word bad_trap
+  .word bad_trap
+
 #define HANDLE_USER_TRAP_IN_MACHINE_MODE 0       \
   | (0 << (31- 0)) /* IF misaligned */           \
   | (0 << (31- 1)) /* IF fault */                \
@@ -23,18 +45,6 @@
   | (0 << (31- 5)) /* load fault */              \
   | (1 << (31- 6)) /* store misaligned */        \
   | (0 << (31- 7)) /* store fault */             \
-  | (1 << (31- 8)) /* environment call */        \
-  | (0 << (31- 9)) /* breakpoint */              \
-
-#define HANDLE_MACHINE_TRAP_IN_MACHINE_MODE 0    \
-  | (0 << (31- 0)) /* IF misaligned */           \
-  | (0 << (31- 1)) /* IF fault */                \
-  | (0 << (31- 2)) /* illegal instruction */     \
-  | (0 << (31- 3)) /* reserved */                \
-  | (0 << (31- 4)) /* load misaligned */         \
-  | (1 << (31- 5)) /* load fault */              \
-  | (0 << (31- 6)) /* store misaligned */        \
-  | (1 << (31- 7)) /* store fault */             \
   | (1 << (31- 8)) /* environment call */        \
   | (0 << (31- 9)) /* breakpoint */              \
 
@@ -92,19 +102,13 @@ mentry:
   j bad_trap
 
   .align 6
+  # Entry point from machine mode.  These are rare, so punt to C code.
   csrw mscratch, sp
   addi sp, sp, -INTEGER_CONTEXT_SIZE
   STORE a0,10*REGBYTES(sp)
   STORE a1,11*REGBYTES(sp)
-
-  csrr a0, mcause
-  li a1, HANDLE_MACHINE_TRAP_IN_MACHINE_MODE
-  SLL32 a1, a1, a0
-  bltz a1, .Lhandle_trap_in_machine_mode
-
-  # Uh oh...
-.Lbad_trap:
-  j bad_trap
+  li a0, TRAP_FROM_MACHINE_MODE_VECTOR
+  j .Lhandle_trap_in_machine_mode
 
 .Lsupervisor_double_fault:
   # Return to supervisor trap entry with interrupts disabled.
@@ -119,6 +123,8 @@ mentry:
   la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
   and sp, sp, t0
+  addi sp, sp, -MENTRY_FRAME_SIZE
+  csrw mscratch, sp
   j machine_init
 
   # XXX depend on sbi_base to force its linkage
@@ -155,12 +161,12 @@ mentry:
   # See if this is an HTIF interrupt; if so, handle it in machine mode.
   li a1, IRQ_HOST * 2
   bne a0, a1, .Lbad_trap
-  li a0, 10
+  li a0, HTIF_INTERRUPT_VECTOR
 
 .Lhandle_trap_in_machine_mode:
   # Preserve the registers.  Compute the address of the trap handler.
   STORE ra, 1*REGBYTES(sp)
-  csrr ra, mscratch                # ra <- user sp
+  csrrw ra, mscratch, sp           # ra <- user sp
   STORE gp, 3*REGBYTES(sp)
   STORE tp, 4*REGBYTES(sp)
   STORE t0, 5*REGBYTES(sp)
@@ -170,7 +176,7 @@ mentry:
   STORE t2, 7*REGBYTES(sp)
   add t0, t0, t1                   # t0 <- %hi(trap_table)[mcause]
   STORE s0, 8*REGBYTES(sp)
-  lw t0, %pcrel_lo(1b)(t0)         # t0 <- handlers[mcause]
+  lw t0, %pcrel_lo(1b)(t0)         # t0 <- trap_table[mcause]
   STORE s1, 9*REGBYTES(sp)
   mv a1, sp                        # a1 <- regs
   STORE a2,12*REGBYTES(sp)
@@ -242,32 +248,19 @@ mentry:
 
   # Go back whence we came.
   LOAD a0, 10*REGBYTES(sp)
-  csrw mscratch, sp
   LOAD sp, 2*REGBYTES(sp)
   eret
 
 1:# Redirect the trap to the supervisor.
   LOAD a0, 10*REGBYTES(sp)
-  csrw mscratch, sp
   LOAD sp, 2*REGBYTES(sp)
   mrts
 
-  .data
-  .align 6
-trap_table:
-  .word bad_trap
-  .word bad_trap
-  .word illegal_insn_trap
-  .word bad_trap
-  .word misaligned_load_trap
-  .word machine_page_fault
-  .word misaligned_store_trap
-  .word machine_page_fault
-  .word mcall_trap
-  .word bad_trap
-  .word htif_interrupt
-  .word bad_trap
-  .word bad_trap
-  .word bad_trap
-  .word bad_trap
-  .word bad_trap
+  .globl test_fpu_presence
+test_fpu_presence:
+  # return nonzero FPU present; else, trap handler will cause 0 to be returned.
+  fclass.d a0, f0
+  ret
+
+.Lbad_trap:
+  j bad_trap

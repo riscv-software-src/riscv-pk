@@ -197,13 +197,12 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
   return 0;
 }
 
-uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs)
+static uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs, uintptr_t mepc)
 {
   // See if this trap occurred when emulating an instruction on behalf of
   // a lower privilege level.
   extern int32_t unprivileged_access_ranges[];
   extern int32_t unprivileged_access_ranges_end[];
-  uintptr_t mepc = read_csr(mepc);
 
   int32_t* p = unprivileged_access_ranges;
   do {
@@ -219,4 +218,36 @@ uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs)
 
   // No.  We're boned.
   bad_trap();
+}
+
+static uintptr_t machine_illegal_instruction(uintptr_t mcause, uintptr_t* regs, uintptr_t mepc)
+{
+  extern void test_fpu_presence();
+  if (mepc == (uintptr_t)&test_fpu_presence) {
+    regs[10] = 0;
+    write_csr(mepc, mepc + 4);
+    return 0;
+  }
+  bad_trap();
+}
+
+uintptr_t trap_from_machine_mode(uintptr_t dummy, uintptr_t* regs)
+{
+  uintptr_t mcause = read_csr(mcause);
+  uintptr_t mepc = read_csr(mepc);
+  // restore mscratch, since we clobbered it.
+  write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
+
+  switch (mcause)
+  {
+    case CAUSE_FAULT_LOAD:
+    case CAUSE_FAULT_STORE:
+      return machine_page_fault(mcause, regs, mepc);
+    case CAUSE_ILLEGAL_INSTRUCTION:
+      return machine_illegal_instruction(mcause, regs, mepc);
+    case CAUSE_ECALL:
+      return mcall_trap(mcause, regs);
+    default:
+      bad_trap();
+  }
 }

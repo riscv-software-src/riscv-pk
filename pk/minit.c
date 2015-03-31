@@ -49,13 +49,17 @@ static void hart_init()
 
 static void fp_init()
 {
-#ifdef __riscv_hard_float
   kassert(read_csr(mstatus) & MSTATUS_FS);
-  SET_FCSR(0);
+  extern int test_fpu_presence();
+
+#ifdef __riscv_hard_float
+  if (!test_fpu_presence())
+    panic("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
 #else
-  kassert(!(read_csr(mstatus) & MSTATUS_FS));
+  if (test_fpu_presence())
+    panic("FPU unexpectedly found; recompile pk without -msoft-float");
 #endif
 }
 

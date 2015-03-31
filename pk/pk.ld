@@ -95,7 +95,5 @@ SECTIONS
     *(.sbi)
   }
 
-  /* End of uninitialized data segment (used by syscalls.c for heap) */
-  PROVIDE( end = . );
   _end = .;
 }

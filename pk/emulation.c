@@ -224,7 +224,7 @@ DECLARE_EMULATION_FUNC(emulate_float_store)
 {
   uintptr_t val_lo, val_hi, error;
   uint64_t val;
-  uintptr_t addr = GET_RS1(insn, regs) + IMM_I(insn);
+  uintptr_t addr = GET_RS1(insn, regs) + IMM_S(insn);
   
   switch (insn & MASK_FUNCT3)
   {

@@ -44,7 +44,6 @@ static void handle_option(const char* s)
     case 'm': // memory capacity in MiB
     {
       uintptr_t mem_mb = atol(&s[2]);
-      mem_mb = 64;
       if (!mem_mb)
         goto need_nonzero_int;
       mem_size = mem_mb << 20;

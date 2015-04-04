@@ -271,11 +271,9 @@ DECLARE_EMULATION_FUNC(emulate_float_store)
 }
 
 #ifdef __riscv64
-typedef int double_int __attribute__((mode(TI)));
-typedef unsigned int double_uint __attribute__((mode(TI)));
+typedef __int128 double_int;
 #else
 typedef int64_t double_int;
-typedef uint64_t double_int;
 #endif
 
 DECLARE_EMULATION_FUNC(emulate_mul_div)

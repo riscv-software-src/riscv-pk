@@ -102,8 +102,9 @@ static pte_t* __walk_internal(uintptr_t addr, int create)
   const size_t pte_per_page = RISCV_PGSIZE/sizeof(void*);
   __maybe_create_root_page_table();
   pte_t* t = root_page_table;
+  unsigned levels = (VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS;
 
-  for (unsigned i = RISCV_PGLEVELS-1; i > 0; i--)
+  for (unsigned i = levels-1; i > 0; i--)
   {
     size_t idx = pt_idx(addr, i);
     if ((t[idx] & PTE_TYPE) == PTE_TYPE_INVALID)
@@ -444,16 +445,14 @@ void supervisor_vm_init()
   pte_t* sbi_pt = (pte_t*)(current.first_vaddr_after_user + current.bias);
   memset(sbi_pt, 0, RISCV_PGSIZE);
   pte_t* middle_pt = (void*)sbi_pt + RISCV_PGSIZE;
-#if RISCV_PGLEVELS == 2
+#ifndef __riscv64
   size_t num_middle_pts = 1;
   root_page_table = middle_pt;
-#elif RISCV_PGLEVELS == 3
+#else
   size_t num_middle_pts = (-current.first_user_vaddr - 1) / MEGAPAGE_SIZE + 1;
   root_page_table = (void*)middle_pt + num_middle_pts * RISCV_PGSIZE;
   for (size_t i = 0; i < num_middle_pts; i++)
     root_page_table[(1<<RISCV_PGLEVEL_BITS)-num_middle_pts+i] = ptd_create(((uintptr_t)middle_pt >> RISCV_PGSHIFT) + i);
-#else
-#error
 #endif
   memset(middle_pt, 0, root_page_table - middle_pt + RISCV_PGSIZE);
   write_csr(sptbr, root_page_table);

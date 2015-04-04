@@ -8,8 +8,13 @@
 #include <sys/types.h>
 
 #define SUPERPAGE_SIZE ((uintptr_t)(RISCV_PGSIZE << RISCV_PGLEVEL_BITS))
-#if RISCV_PGLEVELS > 2
+#ifdef __riscv64
+# define VM_CHOICE VM_SV39
+# define VA_BITS 39
 # define MEGAPAGE_SIZE (SUPERPAGE_SIZE << RISCV_PGLEVEL_BITS)
+#else
+# define VM_CHOICE VM_SV32
+# define VA_BITS 32
 #endif
 
 #define PROT_READ 1

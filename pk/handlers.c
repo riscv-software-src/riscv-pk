@@ -81,8 +81,6 @@ static void handle_syscall(trapframe_t* tf)
 static void handle_interrupt(trapframe_t* tf)
 {
   clear_csr(sstatus, SSTATUS_SIP);
-
-  pop_tf(tf);
 }
 
 void handle_trap(trapframe_t* tf)
@@ -107,6 +105,4 @@ void handle_trap(trapframe_t* tf)
   kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);
 
   trap_handlers[tf->cause](tf);
-
-  pop_tf(tf);
 }

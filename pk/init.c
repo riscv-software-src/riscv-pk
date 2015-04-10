@@ -98,7 +98,7 @@ uintptr_t boot_loader(struct mainvars* args)
     __builtin_unreachable();
   }
 
-  pk_vm_init();
+  uintptr_t kernel_stack_top = pk_vm_init();
   asm volatile("la t0, 1f; csrw mepc, t0; eret; 1:" ::: "t0");
 
   // copy phdrs to user stack
@@ -179,5 +179,6 @@ uintptr_t boot_loader(struct mainvars* args)
   trapframe_t tf;
   init_tf(&tf, current.entry, stack_top, current.elf64);
   __clear_cache(0, 0);
-  pop_tf(&tf);
+  write_csr(sscratch, kernel_stack_top);
+  start_user(&tf);
 }

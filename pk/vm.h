@@ -34,7 +34,7 @@
 
 void vm_init();
 void supervisor_vm_init();
-void pk_vm_init();
+uintptr_t pk_vm_init();
 int handle_page_fault(uintptr_t vaddr, int prot);
 void populate_mapping(const void* start, size_t size, int prot);
 void __map_kernel_range(uintptr_t va, uintptr_t pa, size_t len, int prot);

@@ -483,17 +483,20 @@ void supervisor_vm_init()
   flush_tlb();
 }
 
-void pk_vm_init()
+uintptr_t pk_vm_init()
 {
   __map_kernel_range(0, 0, current.first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
   __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
 
   extern char trap_entry;
   write_csr(stvec, &trap_entry);
-  write_csr(sscratch, __page_alloc() + RISCV_PGSIZE);
+  write_csr(sscratch, 0);
 
   size_t stack_size = RISCV_PGSIZE * CLAMP(mem_size/(RISCV_PGSIZE*32), 1, 256);
   current.stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   current.stack_top = current.stack_bottom + stack_size;
   kassert(current.stack_bottom != (uintptr_t)-1);
+
+  uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
+  return kernel_stack_top;
 }

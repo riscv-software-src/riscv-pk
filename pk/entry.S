@@ -37,13 +37,12 @@
   STORE  x31,31*REGBYTES(x2)
 
   # get sr, epc, badvaddr, cause
-  addi   t0,sp,320
-  csrrw  t0,sscratch,t0
-  csrr   t1,sstatus
+  csrrw  t0,sscratch,x0
+  csrr   s0,sstatus
   csrr   t2,sepc
   csrr   t3,scause
   STORE  t0,2*REGBYTES(x2)
-  STORE  t1,32*REGBYTES(x2)
+  STORE  s0,32*REGBYTES(x2)
   STORE  t2,33*REGBYTES(x2)
   STORE  t3,35*REGBYTES(x2)
 
@@ -57,15 +56,22 @@
   .global  trap_entry
 trap_entry:
   csrrw sp, sscratch, sp
-
+  bnez sp, 1f
+  csrr sp, sscratch
 1:addi sp,sp,-320
   save_tf
   move  a0,sp
-  j   handle_trap
+  jal handle_trap
+
+  mv a0,sp
+  # don't restore sstatus if trap came from kernel
+  andi s0,s0,SSTATUS_PS
+  bnez s0,start_user
+  addi sp,sp,320
+  csrw sscratch,sp
   
-  .globl  pop_tf
-pop_tf:  # write the trap frame onto the stack
-  # restore sstatus and epc
+  .globl start_user
+start_user:
   csrc sstatus, SSTATUS_IE
   li t0, SSTATUS_PS
   LOAD t1, 32*REGBYTES(a0)

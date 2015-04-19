@@ -72,7 +72,7 @@ void load_elf(const char* fn, elf_info* info)
           memset((void*)vaddr + ph[i].p_filesz, 0, ph[i].p_memsz - ph[i].p_filesz); \
         } else { \
           int flags2 = flags | (prepad ? MAP_POPULATE : 0); \
-          if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, -1, flags2, file, ph[i].p_offset - prepad) != vaddr) \
+          if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, -1, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad) \
             goto fail; \
           memset((void*)vaddr - prepad, 0, prepad); \
           size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad; \

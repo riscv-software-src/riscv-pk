@@ -485,6 +485,10 @@ void supervisor_vm_init()
 
 uintptr_t pk_vm_init()
 {
+  // keep RV32 addresses positive
+  if (!current.elf64)
+    current.mmap_max = MIN(current.mmap_max, 0x80000000);
+
   __map_kernel_range(0, 0, current.first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
   __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
 

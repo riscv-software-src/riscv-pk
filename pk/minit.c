@@ -6,11 +6,12 @@ uint32_t num_harts;
 
 static void mstatus_init()
 {
-  uintptr_t ms = read_csr(mstatus);
+  uintptr_t ms = 0;
 #ifdef __riscv64
   ms = INSERT_FIELD(ms, MSTATUS_SA, UA_RV64);
-  ms = INSERT_FIELD(ms, MSTATUS_UA, UA_RV64);
 #endif
+  ms = INSERT_FIELD(ms, MSTATUS_PRV, PRV_M);
+  ms = INSERT_FIELD(ms, MSTATUS_IE, 0);
   ms = INSERT_FIELD(ms, MSTATUS_PRV1, PRV_S);
   ms = INSERT_FIELD(ms, MSTATUS_IE1, 0);
   ms = INSERT_FIELD(ms, MSTATUS_PRV2, PRV_U);

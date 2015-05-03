@@ -27,6 +27,9 @@
 /* Define if floating-point emulation is enabled */
 #undef PK_ENABLE_FP_EMULATION
 
+/* Define if the RISC-V logo is to be displayed */
+#undef PK_ENABLE_LOGO
+
 /* Define if virtual memory support is enabled */
 #undef PK_ENABLE_VM
 

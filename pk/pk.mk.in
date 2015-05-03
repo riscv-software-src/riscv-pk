@@ -24,6 +24,7 @@ pk_c_srcs = \
 	console.c \
 	vm.c \
 	string.c \
+	logo.c \
 
 pk_asm_srcs = \
 	mentry.S \

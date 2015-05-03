@@ -93,6 +93,9 @@ uintptr_t boot_loader(struct mainvars* args)
 
   if (current.is_supervisor) {
     supervisor_vm_init();
+#ifdef PK_ENABLE_LOGO
+    print_logo();
+#endif
     write_csr(mepc, current.entry);
     asm volatile("eret");
     __builtin_unreachable();

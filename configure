@@ -1301,6 +1301,7 @@ Optional Features:
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
+  --disable-logo          Disable boot logo
   --disable-fp-emulation  Disable floating-point emulation
   --disable-atomics       Emulate atomic ops nonatomically
 
@@ -4043,6 +4044,19 @@ if test "x$enable_vm" != "xno"; then :
 
 
 $as_echo "#define PK_ENABLE_VM /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-vm was given.
+if test "${enable_vm+set}" = set; then :
+  enableval=$enable_vm;
+fi
+
+if test "x$enable_logo" != "xno"; then :
+
+
+$as_echo "#define PK_ENABLE_LOGO /**/" >>confdefs.h
 
 
 fi

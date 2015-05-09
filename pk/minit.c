@@ -66,8 +66,14 @@ static void fp_init()
 #endif
 }
 
+static void mailbox_init()
+{
+  memset(MAILBOX(), 0, MAILBOX_SIZE);
+}
+
 void machine_init()
 {
+  mailbox_init();
   file_init();
 
   struct mainvars arg_buffer;

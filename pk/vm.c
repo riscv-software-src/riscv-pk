@@ -16,7 +16,7 @@ typedef struct {
 
 #define MAX_VMR 32
 spinlock_t vm_lock = SPINLOCK_INIT;
-static vmr_t vmrs[MAX_VMR] __attribute__((aligned(PTE_TYPE+1)));
+static vmr_t vmrs[MAX_VMR];
 
 typedef uintptr_t pte_t;
 static pte_t* root_page_table;
@@ -69,12 +69,19 @@ static size_t pte_ppn(pte_t pte)
 
 static pte_t ptd_create(uintptr_t ppn)
 {
-  return (ppn << PTE_PPN_SHIFT) | PTE_TYPE_TABLE;
+  return (ppn << PTE_PPN_SHIFT) | PTE_V | PTE_TYPE_TABLE;
 }
 
-static inline pte_t pte_create(uintptr_t ppn, int kprot, int uprot)
+static inline pte_t pte_create(uintptr_t ppn, int prot, int user)
 {
-  return PTE_CREATE(ppn, uprot, kprot);
+  pte_t pte = (ppn << PTE_PPN_SHIFT) | PTE_V;
+  if (prot & PROT_WRITE)
+    pte |= PTE_TYPE_URW_SRW;
+  if (prot & PROT_EXEC)
+    pte |= PTE_TYPE_URX_SRX;
+  if (!user)
+    pte |= PTE_TYPE_SR;
+  return pte;
 }
 
 static uintptr_t ppn(uintptr_t addr)
@@ -107,7 +114,7 @@ static pte_t* __walk_internal(uintptr_t addr, int create)
   for (unsigned i = levels-1; i > 0; i--)
   {
     size_t idx = pt_idx(addr, i);
-    if ((t[idx] & PTE_TYPE) == PTE_TYPE_INVALID)
+    if (!(t[idx] & PTE_V))
     {
       if (!create)
         return 0;
@@ -115,7 +122,7 @@ static pte_t* __walk_internal(uintptr_t addr, int create)
       t[idx] = ptd_create(ppn(page));
     }
     else
-      kassert((t[idx] & PTE_TYPE) == PTE_TYPE_TABLE);
+      kassert(PTE_TABLE(t[idx]));
     t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
   return &t[pt_idx(addr, 0)];
@@ -173,11 +180,10 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
 
   pte_t* pte = __walk(vaddr);
 
-  if (pte == 0 || *pte == 0)
+  if (pte == 0 || *pte == 0 || !__valid_user_range(vaddr, 1))
     return -1;
-  else if ((*pte & PTE_TYPE) == PTE_TYPE_INVALID)
+  else if (!(*pte & PTE_V))
   {
-    kassert(__valid_user_range(vaddr, 1));
     uintptr_t ppn = vpn;
 
     vmr_t* v = (vmr_t*)*pte;
@@ -194,10 +200,10 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     else
       memset((void*)vaddr, 0, RISCV_PGSIZE);
     __vmr_decref(v, 1);
-    *pte = pte_create(ppn, v->prot, v->prot);
+    *pte = pte_create(ppn, v->prot, 1);
   }
 
-  pte_t perms = pte_create(0, prot, prot);
+  pte_t perms = pte_create(0, prot, 1);
   if ((*pte & perms) != perms)
     return -1;
 
@@ -221,7 +227,7 @@ static void __do_munmap(uintptr_t addr, size_t len)
     if (pte == 0 || *pte == 0)
       continue;
 
-    if ((*pte & PTE_TYPE) == PTE_TYPE_INVALID)
+    if (!(*pte & PTE_V))
       __vmr_decref((vmr_t*)*pte, 1);
 
     *pte = 0;
@@ -372,7 +378,7 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
         break;
       }
   
-      if ((*pte & PTE_TYPE) == PTE_TYPE_INVALID) {
+      if (!(*pte & PTE_V)) {
         vmr_t* v = (vmr_t*)*pte;
         if((v->prot ^ prot) & ~v->prot){
           //TODO:look at file to find perms
@@ -381,14 +387,13 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
         }
         v->prot = prot;
       } else {
-        if (((prot & PROT_READ) && !PTE_UR(*pte))
-            || ((prot & PROT_WRITE) && !PTE_UW(*pte))
+        if (((prot & PROT_WRITE) && !PTE_UW(*pte))
             || ((prot & PROT_EXEC) && !PTE_UX(*pte))) {
           //TODO:look at file to find perms
           res = -EACCES;
           break;
         }
-        *pte = pte_create(pte_ppn(*pte), prot, prot);
+        *pte = pte_create(pte_ppn(*pte), prot, 1);
       }
     }
   spinlock_unlock(&vm_lock);
@@ -487,7 +492,7 @@ uintptr_t pk_vm_init()
 {
   // keep RV32 addresses positive
   if (!current.elf64)
-    current.mmap_max = MIN(current.mmap_max, 0x80000000);
+    current.mmap_max = MIN(current.mmap_max, 0x80000000U);
 
   __map_kernel_range(0, 0, current.first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
   __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);

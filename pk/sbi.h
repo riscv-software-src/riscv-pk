@@ -11,6 +11,7 @@ unsigned long sbi_query_memory(unsigned long id, memory_block_info *p);
 
 unsigned long sbi_hart_id(void);
 unsigned long sbi_num_harts(void);
+unsigned long sbi_timebase(void);
 void sbi_send_ipi(uintptr_t hart_id);
 void sbi_console_putchar(unsigned char ch);
 

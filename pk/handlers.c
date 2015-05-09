@@ -80,7 +80,7 @@ static void handle_syscall(trapframe_t* tf)
 
 static void handle_interrupt(trapframe_t* tf)
 {
-  clear_csr(sstatus, SSTATUS_SIP);
+  clear_csr(sip, SIP_SSIP);
 }
 
 void handle_trap(trapframe_t* tf)
@@ -94,7 +94,7 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_MISALIGNED_FETCH] = handle_misaligned_fetch,
     [CAUSE_FAULT_FETCH] = handle_fault_fetch,
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
-    [CAUSE_ECALL] = handle_syscall,
+    [CAUSE_USER_ECALL] = handle_syscall,
     [CAUSE_BREAKPOINT] = handle_breakpoint,
     [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,

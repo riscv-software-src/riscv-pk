@@ -63,7 +63,7 @@ void __attribute__((noreturn)) bad_trap()
 
 uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
 {
-  uintptr_t fromhost = swap_csr(fromhost, 0);
+  uintptr_t fromhost = swap_csr(mfromhost, 0);
   if (!fromhost)
     return 0;
 
@@ -98,7 +98,7 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
       MAILBOX()->device_response_queue_tail = m;
 
       // signal software interrupt
-      set_csr(mstatus, MSTATUS_SSIP);
+      set_csr(mip, MIP_SSIP);
       return 0;
     }
 
@@ -111,15 +111,15 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
 {
-  while (swap_csr(tohost, TOHOST_CMD(1, 1, ch)) != 0);
+  while (swap_csr(mtohost, TOHOST_CMD(1, 1, ch)) != 0);
   while (1) {
-    uintptr_t fromhost = read_csr(fromhost);
+    uintptr_t fromhost = read_csr(mfromhost);
     if (FROMHOST_DEV(fromhost) != 1 || FROMHOST_CMD(fromhost) != 1) {
       if (fromhost)
         htif_interrupt(0, 0);
       continue;
     }
-    write_csr(fromhost, 0);
+    write_csr(mfromhost, 0);
     break;
   }
   return 0;
@@ -132,9 +132,6 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
   //printm("req %d %p\n", MAILBOX()->device_request_queue_size, m);
-#ifndef __riscv64
-  return -ENOSYS; // TODO: RV32 HTIF?
-#else
   if (!supervisor_paddr_valid(m, sizeof(*m))
       && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) != PRV_M)
     return -EFAULT;
@@ -142,7 +139,7 @@ static uintptr_t mcall_dev_req(sbi_device_message *m)
   if ((m->dev > 0xFFU) | (m->cmd > 0xFFU) | (m->data > 0x0000FFFFFFFFFFFFU))
     return -EINVAL;
 
-  while (swap_csr(tohost, TOHOST_CMD(m->dev, m->cmd, m->data)) != 0)
+  while (swap_csr(mtohost, TOHOST_CMD(m->dev, m->cmd, m->data)) != 0)
     ;
 
   m->sbi_private_data = (uintptr_t)MAILBOX()->device_request_queue_head;
@@ -150,7 +147,6 @@ static uintptr_t mcall_dev_req(sbi_device_message *m)
   MAILBOX()->device_request_queue_size++;
 
   return 0;
-#endif
 }
 
 static uintptr_t mcall_dev_resp()
@@ -168,11 +164,16 @@ static uintptr_t mcall_dev_resp()
   return (uintptr_t)m;
 }
 
+static uintptr_t mcall_send_ipi(uintptr_t recipient)
+{
+  if (recipient >= num_harts)
+    return -1;
+  write_csr(send_ipi, recipient);
+  return 0;
+}
+
 uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
 {
-  if (EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) < PRV_S)
-    return -1;
-
   uintptr_t n = regs[10], arg0 = regs[11], retval;
   switch (n)
   {
@@ -187,6 +188,9 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
       break;
     case MCALL_RECEIVE_DEVICE_RESPONSE:
       retval = mcall_dev_resp();
+      break;
+    case MCALL_SEND_IPI:
+      retval = mcall_send_ipi(arg0);
       break;
     default:
       retval = -ENOSYS;
@@ -222,12 +226,6 @@ static uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs, uintptr_t
 
 static uintptr_t machine_illegal_instruction(uintptr_t mcause, uintptr_t* regs, uintptr_t mepc)
 {
-  extern void test_fpu_presence();
-  if (mepc == (uintptr_t)&test_fpu_presence) {
-    regs[10] = 0;
-    write_csr(mepc, mepc + 4);
-    return 0;
-  }
   bad_trap();
 }
 
@@ -245,7 +243,7 @@ uintptr_t trap_from_machine_mode(uintptr_t dummy, uintptr_t* regs)
       return machine_page_fault(mcause, regs, mepc);
     case CAUSE_ILLEGAL_INSTRUCTION:
       return machine_illegal_instruction(mcause, regs, mepc);
-    case CAUSE_ECALL:
+    case CAUSE_MACHINE_ECALL:
       return mcall_trap(mcause, regs);
     default:
       bad_trap();

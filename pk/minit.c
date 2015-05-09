@@ -6,30 +6,19 @@ uint32_t num_harts;
 
 static void mstatus_init()
 {
+  if (!supports_extension('S'))
+    panic("supervisor support is required");
+
   uintptr_t ms = 0;
-#ifdef __riscv64
-  ms = INSERT_FIELD(ms, MSTATUS_SA, UA_RV64);
-#endif
   ms = INSERT_FIELD(ms, MSTATUS_PRV, PRV_M);
-  ms = INSERT_FIELD(ms, MSTATUS_IE, 0);
   ms = INSERT_FIELD(ms, MSTATUS_PRV1, PRV_S);
-  ms = INSERT_FIELD(ms, MSTATUS_IE1, 0);
   ms = INSERT_FIELD(ms, MSTATUS_PRV2, PRV_U);
   ms = INSERT_FIELD(ms, MSTATUS_IE2, 1);
-  ms = INSERT_FIELD(ms, MSTATUS_MPRV, PRV_M);
   ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
   ms = INSERT_FIELD(ms, MSTATUS_FS, 3);
   ms = INSERT_FIELD(ms, MSTATUS_XS, 3);
   write_csr(mstatus, ms);
   ms = read_csr(mstatus);
-
-  if (EXTRACT_FIELD(ms, MSTATUS_PRV1) != PRV_S) {
-    ms = INSERT_FIELD(ms, MSTATUS_PRV1, PRV_U);
-    ms = INSERT_FIELD(ms, MSTATUS_IE1, 1);
-    write_csr(mstatus, ms);
-
-    panic("supervisor support is required");
-  }
 
   if (EXTRACT_FIELD(ms, MSTATUS_VM) != VM_CHOICE)
     have_vm = 0;
@@ -53,15 +42,14 @@ static void hart_init()
 static void fp_init()
 {
   kassert(read_csr(mstatus) & MSTATUS_FS);
-  extern int test_fpu_presence();
 
 #ifdef __riscv_hard_float
-  if (!test_fpu_presence())
+  if (!supports_extension('D'))
     panic("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
 #else
-  if (test_fpu_presence())
+  if (supports_extension('D'))
     panic("FPU unexpectedly found; recompile pk without -msoft-float");
 #endif
 }

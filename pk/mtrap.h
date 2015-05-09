@@ -19,11 +19,10 @@
 #define unpriv_mem_access_base(mstatus, mepc, code, o0, o1, i0, i1, i2) ({ \
   register uintptr_t result asm("t0"); \
   uintptr_t unused1, unused2 __attribute__((unused)); \
-  uintptr_t scratch = ~(mstatus) & MSTATUS_PRV1; \
-  scratch <<= CONST_CTZ32(MSTATUS_MPRV) - CONST_CTZ32(MSTATUS_PRV1); \
-  asm volatile ("csrrc %[result], mstatus, %[scratch]\n" \
+  uintptr_t scratch = MSTATUS_MPRV; \
+  asm volatile ("csrrs %[result], mstatus, %[scratch]\n" \
                 "98: " code "\n" \
-                "99: csrs mstatus, %[scratch]\n" \
+                "99: csrc mstatus, %[scratch]\n" \
                 ".pushsection .unpriv,\"a\",@progbits\n" \
                 ".word 98b; .word 99b\n" \
                 ".popsection" \
@@ -202,6 +201,23 @@ static insn_fetch_t __attribute__((always_inline))
   }
 
   return fetch;
+}
+
+static inline long __attribute__((pure)) cpuid()
+{
+  long res;
+  asm ("csrr %0, mcpuid" : "=r"(res)); // not volatile, so don't use read_csr()
+  return res;
+}
+
+static inline int supports_extension(char ext)
+{
+  return cpuid() & (1 << (ext - 'A'));
+}
+
+static inline int xlen()
+{
+  return cpuid() < 0 ? 64 : 32;
 }
 
 typedef struct {

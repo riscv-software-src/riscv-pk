@@ -48,7 +48,14 @@ sbi_base:
 
   # send ipi
   .align 4
-  csrw send_ipi, a0
+  mv a1, a0
+  li a0, MCALL_SEND_IPI
+  ecall
+  ret
+
+  # timebase
+  .align 4
+  li a0, 1000000000 # or, you know, we could provide the correct answer
   ret
 
   # end of SBI trampolines

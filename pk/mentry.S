@@ -13,14 +13,14 @@ trap_table:
   .word bad_trap
   .word misaligned_store_trap
   .word bad_trap
+  .word bad_trap
   .word mcall_trap
   .word bad_trap
-#define HTIF_INTERRUPT_VECTOR 10
+  .word bad_trap
+#define HTIF_INTERRUPT_VECTOR 12
   .word htif_interrupt
-#define TRAP_FROM_MACHINE_MODE_VECTOR 11
+#define TRAP_FROM_MACHINE_MODE_VECTOR 13
   .word trap_from_machine_mode
-  .word bad_trap
-  .word bad_trap
   .word bad_trap
   .word bad_trap
 
@@ -28,31 +28,31 @@ trap_table:
   | (0 << (31- 0)) /* IF misaligned */           \
   | (0 << (31- 1)) /* IF fault */                \
   | (1 << (31- 2)) /* illegal instruction */     \
-  | (1 << (31- 3)) /* reserved */                \
+  | (0 << (31- 3)) /* breakpoint */              \
   | (1 << (31- 4)) /* load misaligned */         \
   | (0 << (31- 5)) /* load fault */              \
   | (1 << (31- 6)) /* store misaligned */        \
   | (0 << (31- 7)) /* store fault */             \
-  | (0 << (31- 8)) /* environment call */        \
-  | (0 << (31- 9)) /* breakpoint */              \
+  | (0 << (31- 8)) /* user environment call */   \
+  | (0 << (31- 9)) /* super environment call */  \
 
 #define HANDLE_SUPERVISOR_TRAP_IN_MACHINE_MODE 0 \
   | (0 << (31- 0)) /* IF misaligned */           \
   | (0 << (31- 1)) /* IF fault */                \
   | (1 << (31- 2)) /* illegal instruction */     \
-  | (1 << (31- 3)) /* reserved */                \
+  | (0 << (31- 3)) /* breakpoint */              \
   | (1 << (31- 4)) /* load misaligned */         \
   | (0 << (31- 5)) /* load fault */              \
   | (1 << (31- 6)) /* store misaligned */        \
   | (0 << (31- 7)) /* store fault */             \
-  | (1 << (31- 8)) /* environment call */        \
-  | (0 << (31- 9)) /* breakpoint */              \
+  | (0 << (31- 8)) /* user environment call */   \
+  | (1 << (31- 9)) /* super environment call */  \
 
   .section .text.init,"ax",@progbits
   .globl mentry
 mentry:
-  # Entry point from user mode.
   .align 6
+  # Entry point from user mode (mtvec + 0x000)
   csrrw sp, mscratch, sp
   STORE a0, 10*REGBYTES(sp)
   STORE a1, 11*REGBYTES(sp)
@@ -72,7 +72,7 @@ mentry:
   mrts
 
   .align 6
-  # Entry point from supervisor mode.
+  # Entry point from supervisor mode (mtvec + 0x040)
   csrrw sp, mscratch, sp
   STORE a0, 10*REGBYTES(sp)
   STORE a1, 11*REGBYTES(sp)
@@ -98,11 +98,13 @@ mentry:
   mrts
 
   .align 6
-  # Entry point from hypervisor mode.  Not implemented.
+  # Entry point from hypervisor mode (mtvec + 0x080)
+  # Not implemented.
   j bad_trap
 
   .align 6
-  # Entry point from machine mode.  These are rare, so punt to C code.
+  # Entry point from machine mode (mtvec + 0x0C0)
+  # These are rare, so punt to C code.
   csrw mscratch, sp
   addi sp, sp, -INTEGER_CONTEXT_SIZE
   STORE a0,10*REGBYTES(sp)
@@ -117,8 +119,18 @@ mentry:
   csrc mstatus, a0
   j .Lreturn_from_supervisor_double_fault
 
-  .align 6
-  # Entry point for power-on reset.
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+
+  # Entry point for NMIs (mtvec + 0x0FC)
+  # Not implemented.
+  j bad_trap
+
+  # Entry point for power-on reset (mtvec + 0x100)
   # TODO per-hart stacks
   la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
@@ -127,23 +139,21 @@ mentry:
   csrw mscratch, sp
   j machine_init
 
-  # XXX depend on sbi_base to force its linkage
-  la x0, sbi_base
-
 .Linterrupt:
   sll a0, a0, 1    # discard MSB
 
-#if IRQ_TIMER != 0
-#error
-#endif
+  li a1, IRQ_TIMER * 2
   # Send timer interrupts to the OS.
-  beqz a0, .Lmrts
+  beq a0, a1, .Lmrts
 
   # See if this is an IPI; register a supervisor SW interrupt if so.
-  li a1, IRQ_IPI * 2
-  bne a0, a1, 1f
-  csrrc a0, mstatus, MSTATUS_MSIP
-  csrs mstatus, MSTATUS_SSIP
+#if IRQ_SOFT != 0
+#error
+#endif
+  bnez a0, 1f
+  csrr a0, mstatus
+  csrc mip, MIP_MSIP
+  csrs mip, MIP_SSIP
 
   # There are three cases: PRV1=U; PRV1=S and IE1=1; and PRV1=S and IE1=0.
   # For cases 1-2, do an MRTS; for case 3, we can't, so ERET.
@@ -256,11 +266,8 @@ mentry:
   LOAD sp, 2*REGBYTES(sp)
   mrts
 
-  .globl test_fpu_presence
-test_fpu_presence:
-  # return nonzero FPU present; else, trap handler will cause 0 to be returned.
-  fclass.d a0, f0
-  ret
-
 .Lbad_trap:
   j bad_trap
+
+  # XXX depend on sbi_base to force its linkage
+  la x0, sbi_base

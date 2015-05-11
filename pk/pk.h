@@ -59,7 +59,8 @@ void handle_misaligned_load(trapframe_t*);
 void handle_misaligned_store(trapframe_t*);
 void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);
-uintptr_t boot_loader(struct mainvars*);
+void boot_loader(struct mainvars*);
+void run_loaded_program(struct mainvars*);
 
 typedef struct {
   int elf64;

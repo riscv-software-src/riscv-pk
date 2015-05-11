@@ -1,6 +1,6 @@
 #include "pk.h"
 #include "file.h"
-#include "syscall.h"
+#include "frontend.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -138,7 +138,7 @@ void do_panic(const char* s, ...)
   va_start(vl, s);
 
   vprintk(s, vl);
-  sys_exit(-1);
+  die(-1);
 
   va_end(vl);
 }

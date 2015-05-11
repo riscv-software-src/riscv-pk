@@ -60,7 +60,6 @@
 
 #define AT_FDCWD -100
 
-void sys_exit(int code) __attribute__((noreturn));
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned long n);
 
 #endif

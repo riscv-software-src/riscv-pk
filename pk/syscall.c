@@ -50,8 +50,7 @@ void sys_exit(int code)
     }
   }
 
-  frontend_syscall(SYS_exit, code, 0, 0, 0, 0, 0, 0);
-  while (1);
+  die(code);
 }
 
 ssize_t sys_read(int fd, char* buf, size_t n)

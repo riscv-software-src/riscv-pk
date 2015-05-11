@@ -36,4 +36,5 @@ pk_asm_srcs = \
 pk_test_srcs =
 
 pk_install_prog_srcs = \
-	pk.S \
+	pk.c \
+	bbl.c \

@@ -71,7 +71,7 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -Werror -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
+AC_SUBST([CFLAGS],  ["-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
 AC_SUBST([LIBS],  ["-lgcc"])
 
 #-------------------------------------------------------------------------

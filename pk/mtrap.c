@@ -172,9 +172,16 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
   return 0;
 }
 
+static uintptr_t mcall_shutdown()
+{
+  while (1)
+    write_csr(mtohost, 1);
+  return 0;
+}
+
 uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
 {
-  uintptr_t n = regs[10], arg0 = regs[11], retval;
+  uintptr_t n = regs[17], arg0 = regs[10], retval;
   switch (n)
   {
     case MCALL_HART_ID:
@@ -191,6 +198,9 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
       break;
     case MCALL_SEND_IPI:
       retval = mcall_send_ipi(arg0);
+      break;
+    case MCALL_SHUTDOWN:
+      retval = mcall_shutdown();
       break;
     default:
       retval = -ENOSYS;

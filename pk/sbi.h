@@ -14,6 +14,7 @@ unsigned long sbi_num_harts(void);
 unsigned long sbi_timebase(void);
 void sbi_send_ipi(uintptr_t hart_id);
 void sbi_console_putchar(unsigned char ch);
+void sbi_shutdown(void);
 
 typedef struct {
   unsigned long dev;

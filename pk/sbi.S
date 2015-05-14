@@ -6,3 +6,4 @@
 .globl sbi_receive_device_response; sbi_receive_device_response = -1968
 .globl sbi_send_ipi; sbi_send_ipi = -1952
 .globl sbi_timebase; sbi_timebase = -1936
+.globl sbi_shutdown; sbi_shutdown = -1920

@@ -12,7 +12,7 @@ sbi_base:
 
   # hart_id
   .align 4
-  li a0, MCALL_HART_ID
+  li a7, MCALL_HART_ID
   ecall
   ret
 
@@ -27,29 +27,25 @@ sbi_base:
 
   # console_putchar
   .align 4
-  mv a1, a0
-  li a0, MCALL_CONSOLE_PUTCHAR
+  li a7, MCALL_CONSOLE_PUTCHAR
   ecall
   ret
 
   # send_device_request
   .align 4
-  mv a1, a0
-  li a0, MCALL_SEND_DEVICE_REQUEST
+  li a7, MCALL_SEND_DEVICE_REQUEST
   ecall
   ret
 
   # receive_device_response
   .align 4
-  mv a1, a0
-  li a0, MCALL_RECEIVE_DEVICE_RESPONSE
+  li a7, MCALL_RECEIVE_DEVICE_RESPONSE
   ecall
   ret
 
   # send ipi
   .align 4
-  mv a1, a0
-  li a0, MCALL_SEND_IPI
+  li a7, MCALL_SEND_IPI
   ecall
   ret
 
@@ -58,10 +54,18 @@ sbi_base:
   li a0, 1000000000 # or, you know, we could provide the correct answer
   ret
 
+  # shutdown
+  .align 4
+  li a7, MCALL_SHUTDOWN
+  ecall
+
   # end of SBI trampolines
 
   .globl do_mcall
 do_mcall:
+  mv a7, a0
+  mv a0, a1
+  mv a1, a2
   ecall
   ret
 

@@ -330,37 +330,9 @@ uintptr_t do_brk(size_t addr)
   return addr;
 }
 
-uintptr_t __do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
-{
-  for (size_t i = 0; i < MAX_VMR; i++)
-  {
-    if (vmrs[i].refcnt && addr == vmrs[i].addr && old_size == vmrs[i].length)
-    {
-      size_t old_npage = (vmrs[i].length-1)/RISCV_PGSIZE+1;
-      size_t new_npage = (new_size-1)/RISCV_PGSIZE+1;
-      if (new_size < old_size)
-        __do_munmap(addr + new_size, old_size - new_size);
-      else if (new_size > old_size)
-        __do_mmap(addr + old_size, new_size - old_size, vmrs[i].prot, 0,
-                  vmrs[i].file, vmrs[i].offset + new_size - old_size);
-      __vmr_decref(&vmrs[i], old_npage - new_npage);
-      return addr;
-    }
-  }
-  return -1;
-}
-
 uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 {
-  if (((addr | old_size | new_size) & (RISCV_PGSIZE-1)) ||
-      (flags & MREMAP_FIXED))
-    return -EINVAL;
-
-  spinlock_lock(&vm_lock);
-    uintptr_t res = __do_mremap(addr, old_size, new_size, flags);
-  spinlock_unlock(&vm_lock);
- 
-  return res;
+  return -ENOSYS;
 }
 
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)

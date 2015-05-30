@@ -49,6 +49,12 @@ sbi_base:
   ecall
   ret
 
+  # send ipi
+  .align 4
+  li a7, MCALL_CLEAR_IPI
+  ecall
+  ret
+
   # timebase
   .align 4
   li a0, 1000000000 # or, you know, we could provide the correct answer

@@ -71,9 +71,9 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
   uintptr_t cmd = FROMHOST_CMD(fromhost);
   uintptr_t data = FROMHOST_DATA(fromhost);
 
-  sbi_device_message* m = MAILBOX()->device_request_queue_head;
+  sbi_device_message* m = HLS()->device_request_queue_head;
   sbi_device_message* prev = NULL;
-  for (size_t i = 0, n = MAILBOX()->device_request_queue_size; i < n; i++) {
+  for (size_t i = 0, n = HLS()->device_request_queue_size; i < n; i++) {
     if (!supervisor_paddr_valid(m, sizeof(*m))
         && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) != PRV_M)
       panic("htif: page fault");
@@ -86,16 +86,16 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
       if (prev)
         prev->sbi_private_data = (uintptr_t)next;
       else
-        MAILBOX()->device_request_queue_head = next;
-      MAILBOX()->device_request_queue_size = n-1;
+        HLS()->device_request_queue_head = next;
+      HLS()->device_request_queue_size = n-1;
       m->sbi_private_data = 0;
 
       // enqueue to response queue
-      if (MAILBOX()->device_response_queue_tail)
-        MAILBOX()->device_response_queue_tail->sbi_private_data = (uintptr_t)m;
+      if (HLS()->device_response_queue_tail)
+        HLS()->device_response_queue_tail->sbi_private_data = (uintptr_t)m;
       else
-        MAILBOX()->device_response_queue_head = m;
-      MAILBOX()->device_response_queue_tail = m;
+        HLS()->device_response_queue_head = m;
+      HLS()->device_response_queue_tail = m;
 
       // signal software interrupt
       set_csr(mip, MIP_SSIP);
@@ -107,6 +107,11 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
   }
 
   panic("htif: no record");
+}
+
+static uintptr_t mcall_hart_id()
+{
+  return HLS()->hart_id;
 }
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
@@ -131,7 +136,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 
 static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
-  //printm("req %d %p\n", MAILBOX()->device_request_queue_size, m);
+  //printm("req %d %p\n", HLS()->device_request_queue_size, m);
   if (!supervisor_paddr_valid(m, sizeof(*m))
       && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) != PRV_M)
     return -EFAULT;
@@ -142,9 +147,9 @@ static uintptr_t mcall_dev_req(sbi_device_message *m)
   while (swap_csr(mtohost, TOHOST_CMD(m->dev, m->cmd, m->data)) != 0)
     ;
 
-  m->sbi_private_data = (uintptr_t)MAILBOX()->device_request_queue_head;
-  MAILBOX()->device_request_queue_head = m;
-  MAILBOX()->device_request_queue_size++;
+  m->sbi_private_data = (uintptr_t)HLS()->device_request_queue_head;
+  HLS()->device_request_queue_head = m;
+  HLS()->device_request_queue_size++;
 
   return 0;
 }
@@ -153,13 +158,20 @@ static uintptr_t mcall_dev_resp()
 {
   htif_interrupt(0, 0);
 
-  sbi_device_message* m = MAILBOX()->device_response_queue_head;
+  sbi_device_message* m = HLS()->device_response_queue_head;
   if (m) {
     //printm("resp %p\n", m);
     sbi_device_message* next = (void*)atomic_read(&m->sbi_private_data);
-    MAILBOX()->device_response_queue_head = next;
-    if (!next)
-      MAILBOX()->device_response_queue_tail = 0;
+    HLS()->device_response_queue_head = next;
+    if (!next) {
+      HLS()->device_response_queue_tail = 0;
+
+      // only clear SSIP if no other events are pending
+      clear_csr(mip, MIP_SSIP);
+      mb();
+      if (HLS()->ipi_pending)
+        set_csr(mip, MIP_SSIP);
+    }
   }
   return (uintptr_t)m;
 }
@@ -168,8 +180,24 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
 {
   if (recipient >= num_harts)
     return -1;
-  write_csr(send_ipi, recipient);
+
+  if (atomic_swap(&OTHER_HLS(recipient)->ipi_pending, 1) == 0) {
+    mb();
+    write_csr(send_ipi, recipient);
+  }
+
   return 0;
+}
+
+static uintptr_t mcall_clear_ipi()
+{
+  // only clear SSIP if no other events are pending
+  if (HLS()->device_response_queue_head == NULL) {
+    clear_csr(mip, MIP_SSIP);
+    mb();
+  }
+
+  return atomic_swap(&HLS()->ipi_pending, 0);
 }
 
 static uintptr_t mcall_shutdown()
@@ -185,7 +213,7 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
   switch (n)
   {
     case MCALL_HART_ID:
-      retval = 0; // TODO
+      retval = mcall_hart_id();
       break;
     case MCALL_CONSOLE_PUTCHAR:
       retval = mcall_console_putchar(arg0);
@@ -198,6 +226,9 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
       break;
     case MCALL_SEND_IPI:
       retval = mcall_send_ipi(arg0);
+      break;
+    case MCALL_CLEAR_IPI:
+      retval = mcall_clear_ipi();
       break;
     case MCALL_SHUTDOWN:
       retval = mcall_shutdown();

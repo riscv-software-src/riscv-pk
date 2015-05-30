@@ -46,4 +46,12 @@ uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
 
+typedef uintptr_t pte_t;
+extern pte_t* root_page_table;
+
+static inline void flush_tlb()
+{
+  asm volatile("sfence.vm");
+}
+
 #endif

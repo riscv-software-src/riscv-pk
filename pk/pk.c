@@ -97,3 +97,10 @@ void run_loaded_program(struct mainvars* args)
   write_csr(sscratch, kernel_stack_top);
   start_user(&tf);
 }
+
+void boot_other_hart()
+{
+  // stall all harts besides hart 0
+  while (1)
+    wfi();
+}

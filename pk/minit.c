@@ -3,6 +3,7 @@
 
 uintptr_t mem_size;
 uint32_t num_harts;
+uint32_t num_harts_booted = 1;
 
 static void mstatus_init()
 {
@@ -22,21 +23,18 @@ static void mstatus_init()
 
   if (EXTRACT_FIELD(ms, MSTATUS_VM) != VM_CHOICE)
     have_vm = 0;
+
+  clear_csr(mip, MIP_MSIP);
+  set_csr(mie, MIP_MSIP);
 }
 
 static void memory_init()
 {
   if (mem_size == 0)
     panic("could not determine memory capacity");
-}
 
-static void hart_init()
-{
   if (num_harts == 0)
     panic("could not determine number of harts");
-
-  if (num_harts != 1)
-    panic("TODO: SMP support");
 }
 
 static void fp_init()
@@ -54,23 +52,47 @@ static void fp_init()
 #endif
 }
 
-static void mailbox_init()
+static void hls_init(uint32_t hart_id)
 {
-  memset(MAILBOX(), 0, MAILBOX_SIZE);
+  memset(HLS(), 0, sizeof(*HLS()));
+  HLS()->hart_id = hart_id;
 }
 
-void machine_init()
+static void init_first_hart()
 {
-  mailbox_init();
   file_init();
 
   struct mainvars arg_buffer;
   struct mainvars *args = parse_args(&arg_buffer);
 
-  mstatus_init();
   memory_init();
-  hart_init();
-  fp_init();
   vm_init();
   boot_loader(args);
+}
+
+static void init_other_hart()
+{
+  // wait until virtual memory is enabled
+  while (root_page_table == NULL)
+    asm volatile ("" ::: "memory");
+  mb();
+  write_csr(sptbr, root_page_table);
+
+  // then make sure we're in bounds
+  if (HLS()->hart_id >= num_harts)
+    panic("too many harts");
+
+  boot_other_hart();
+}
+
+void machine_init(uint32_t hart_id)
+{
+  hls_init(hart_id);
+  mstatus_init();
+  fp_init();
+
+  if (hart_id == 0)
+    init_first_hart();
+  else
+    init_other_hart();
 }

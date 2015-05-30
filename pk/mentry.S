@@ -131,12 +131,32 @@ mentry:
   j bad_trap
 
   # Entry point for power-on reset (mtvec + 0x100)
-  # TODO per-hart stacks
+
+  # sp <- end of first full page after the end of the binary
   la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
   and sp, sp, t0
   addi sp, sp, -MENTRY_FRAME_SIZE
+
+  csrr a0, mhartid
+  bnez a0, .LmultiHart
+
+  # boot hart 0
   csrw mscratch, sp
+  j machine_init
+
+.LmultiHart:
+  # mhartid may not be contiguous, so generate a hart id using AMOs
+  la a0, num_harts_booted
+  la a1, 1
+  amoadd.w a0, a1, (a0)
+
+  # allocate stack
+  sll t0, a0, RISCV_PGSHIFT
+  add sp, sp, t0
+  csrw mscratch, sp
+
+  # boot this hart
   j machine_init
 
 .Linterrupt:

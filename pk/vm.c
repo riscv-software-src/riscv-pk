@@ -18,8 +18,7 @@ typedef struct {
 spinlock_t vm_lock = SPINLOCK_INIT;
 static vmr_t vmrs[MAX_VMR];
 
-typedef uintptr_t pte_t;
-static pte_t* root_page_table;
+pte_t* root_page_table;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
@@ -159,11 +158,6 @@ static uintptr_t __vm_alloc(size_t npage)
     return a;
   }
   return 0;
-}
-
-static void flush_tlb()
-{
-  asm volatile("sfence.vm");
 }
 
 int __valid_user_range(uintptr_t vaddr, size_t len)
@@ -402,7 +396,7 @@ static uintptr_t sbi_top_paddr()
   return ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
 }
 
-#define first_free_paddr() (sbi_top_paddr() + RISCV_PGSIZE /* boot stack */)
+#define first_free_paddr() (sbi_top_paddr() + num_harts * RISCV_PGSIZE)
 
 void vm_init()
 {
@@ -424,15 +418,14 @@ void supervisor_vm_init()
   pte_t* middle_pt = (void*)sbi_pt + RISCV_PGSIZE;
 #ifndef __riscv64
   size_t num_middle_pts = 1;
-  root_page_table = middle_pt;
+  pte_t* root_pt = middle_pt;
 #else
   size_t num_middle_pts = (-current.first_user_vaddr - 1) / MEGAPAGE_SIZE + 1;
-  root_page_table = (void*)middle_pt + num_middle_pts * RISCV_PGSIZE;
+  pte_t* root_pt = (void*)middle_pt + num_middle_pts * RISCV_PGSIZE;
   for (size_t i = 0; i < num_middle_pts; i++)
-    root_page_table[(1<<RISCV_PGLEVEL_BITS)-num_middle_pts+i] = ptd_create(((uintptr_t)middle_pt >> RISCV_PGSHIFT) + i);
+    root_pt[(1<<RISCV_PGLEVEL_BITS)-num_middle_pts+i] = ptd_create(((uintptr_t)middle_pt >> RISCV_PGSHIFT) + i);
 #endif
-  memset(middle_pt, 0, root_page_table - middle_pt + RISCV_PGSIZE);
-  write_csr(sptbr, root_page_table);
+  memset(middle_pt, 0, root_pt - middle_pt + RISCV_PGSIZE);
 
   for (uintptr_t vaddr = current.first_user_vaddr, paddr = vaddr + current.bias, end = current.first_vaddr_after_user;
        paddr < mem_size; vaddr += SUPERPAGE_SIZE, paddr += SUPERPAGE_SIZE) {
@@ -441,7 +434,7 @@ void supervisor_vm_init()
     l2_idx += ((vaddr - current.first_user_vaddr) >> l2_shift);
     middle_pt[l2_idx] = pte_create(paddr >> RISCV_PGSHIFT, PROT_READ|PROT_WRITE|PROT_EXEC, 0);
   }
-  current.first_vaddr_after_user += (void*)root_page_table + RISCV_PGSIZE - (void*)sbi_pt;
+  current.first_vaddr_after_user += (void*)root_pt + RISCV_PGSIZE - (void*)sbi_pt;
 
   // map SBI at top of vaddr space
   uintptr_t num_sbi_pages = sbi_top_paddr() / RISCV_PGSIZE;
@@ -457,7 +450,9 @@ void supervisor_vm_init()
   kassert(next_free_page == 0);
   free_pages = 0;
 
-  flush_tlb();
+  mb();
+  root_page_table = root_pt;
+  write_csr(sptbr, root_pt);
 }
 
 uintptr_t pk_vm_init()

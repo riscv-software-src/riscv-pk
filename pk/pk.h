@@ -45,6 +45,7 @@ extern "C" {
 extern uintptr_t mem_size;
 extern int have_vm;
 extern uint32_t num_harts;
+extern uint32_t num_harts_booted;
 
 struct mainvars* parse_args(struct mainvars*);
 void printk(const char* s, ...);
@@ -61,6 +62,7 @@ void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);
 void boot_loader(struct mainvars*);
 void run_loaded_program(struct mainvars*);
+void boot_other_hart();
 
 typedef struct {
   int elf64;
@@ -98,6 +100,11 @@ static inline int insn_len(long insn)
 extern int uarch_counters_enabled;
 extern long uarch_counters[NUM_COUNTERS];
 extern char* uarch_counter_names[NUM_COUNTERS];
+
+static inline void wfi()
+{
+  asm volatile ("wfi" ::: "memory");
+}
 
 #ifdef __cplusplus
 }

@@ -225,25 +225,31 @@ typedef struct {
   size_t device_request_queue_size;
   sbi_device_message* device_response_queue_head;
   sbi_device_message* device_response_queue_tail;
-} mailbox_t;
+
+  int hart_id;
+  int ipi_pending;
+} hls_t;
 
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \
   (void*)((sp + RISCV_PGSIZE) & -RISCV_PGSIZE); })
-#define MAILBOX() ((mailbox_t*)(MACHINE_STACK_TOP() - MAILBOX_SIZE))
+
+// hart-local storage, at top of stack
+#define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
+#define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - HLS()->hart_id)))
 
 #endif // !__ASSEMBLER__
 
 #define MACHINE_STACK_SIZE RISCV_PGSIZE
 #define MENTRY_FRAME_SIZE (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE \
-                           + MAILBOX_SIZE)
+                           + HLS_SIZE)
 
 #ifdef __riscv_hard_float
 # define SOFT_FLOAT_CONTEXT_SIZE 0
 #else
 # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)
 #endif
-#define MAILBOX_SIZE 64
+#define HLS_SIZE 64
 #define INTEGER_CONTEXT_SIZE (32 * REGBYTES)
 
 #endif

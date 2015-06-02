@@ -259,9 +259,6 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
     for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
       kassert(__handle_page_fault(a, prot) == 0);
 
-  if (current.brk_min != 0 && addr < current.brk_max)
-    current.brk_max = ROUNDUP(addr + length, RISCV_PGSIZE);
-
   return addr;
 }
 
@@ -288,6 +285,9 @@ uintptr_t do_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, of
 
   spinlock_lock(&vm_lock);
     addr = __do_mmap(addr, length, prot, flags, f, offset);
+
+    if (addr < current.brk_max)
+      current.brk_max = ROUNDUP(addr + length, RISCV_PGSIZE);
   spinlock_unlock(&vm_lock);
 
   if (f) file_decref(f);

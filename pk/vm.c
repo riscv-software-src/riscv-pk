@@ -419,13 +419,14 @@ void supervisor_vm_init()
 #ifndef __riscv64
   size_t num_middle_pts = 1;
   pte_t* root_pt = middle_pt;
+  memset(root_pt, 0, RISCV_PGSIZE);
 #else
   size_t num_middle_pts = (-current.first_user_vaddr - 1) / MEGAPAGE_SIZE + 1;
   pte_t* root_pt = (void*)middle_pt + num_middle_pts * RISCV_PGSIZE;
+  memset(middle_pt, 0, (num_middle_pts + 1) * RISCV_PGSIZE);
   for (size_t i = 0; i < num_middle_pts; i++)
     root_pt[(1<<RISCV_PGLEVEL_BITS)-num_middle_pts+i] = ptd_create(((uintptr_t)middle_pt >> RISCV_PGSHIFT) + i);
 #endif
-  memset(middle_pt, 0, root_pt - middle_pt + RISCV_PGSIZE);
 
   for (uintptr_t vaddr = current.first_user_vaddr, paddr = vaddr + current.bias, end = current.first_vaddr_after_user;
        paddr < mem_size; vaddr += SUPERPAGE_SIZE, paddr += SUPERPAGE_SIZE) {

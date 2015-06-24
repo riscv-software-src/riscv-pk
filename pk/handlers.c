@@ -53,20 +53,18 @@ static void segfault(trapframe_t* tf, uintptr_t addr, const char* type)
 
 static void handle_fault_fetch(trapframe_t* tf)
 {
-  if (handle_page_fault(tf->epc, PROT_EXEC) != 0)
-    segfault(tf, tf->epc, "fetch");
+  if (handle_page_fault(tf->badvaddr, PROT_EXEC) != 0)
+    segfault(tf, tf->badvaddr, "fetch");
 }
 
 void handle_fault_load(trapframe_t* tf)
 {
-  tf->badvaddr = read_csr(sbadaddr);
   if (handle_page_fault(tf->badvaddr, PROT_READ) != 0)
     segfault(tf, tf->badvaddr, "load");
 }
 
 void handle_fault_store(trapframe_t* tf)
 {
-  tf->badvaddr = read_csr(sbadaddr);
   if (handle_page_fault(tf->badvaddr, PROT_WRITE) != 0)
     segfault(tf, tf->badvaddr, "store");
 }

@@ -39,11 +39,13 @@
   # get sr, epc, badvaddr, cause
   csrrw  t0,sscratch,x0
   csrr   s0,sstatus
-  csrr   t2,sepc
+  csrr   t1,sepc
+  csrr   t2,sbadaddr
   csrr   t3,scause
   STORE  t0,2*REGBYTES(x2)
   STORE  s0,32*REGBYTES(x2)
-  STORE  t2,33*REGBYTES(x2)
+  STORE  t1,33*REGBYTES(x2)
+  STORE  t2,34*REGBYTES(x2)
   STORE  t3,35*REGBYTES(x2)
 
   # get faulting insn, if it wasn't a fetch-related trap

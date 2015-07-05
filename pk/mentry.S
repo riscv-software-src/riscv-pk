@@ -162,23 +162,21 @@ mentry:
 .Linterrupt:
   sll a0, a0, 1    # discard MSB
 
+  # See if this is a timer interrupt; post a supervisor interrupt if so.
   li a1, IRQ_TIMER * 2
-  # Send timer interrupts to the OS.
-  beq a0, a1, .Lmrts
+  bne a0, a1, 1f
+  li a0, MIP_MTIP
+  csrc mip, a0
+  li a1, MIP_STIP
+  csrc mie, a0
+  csrs mip, a1
 
-  # See if this is an IPI; register a supervisor SW interrupt if so.
-#if IRQ_SOFT != 0
-#error
-#endif
-  bnez a0, 1f
-  csrr a0, mstatus
-  csrc mip, MIP_MSIP
-  csrs mip, MIP_SSIP
-
+.Linterrupt_supervisor:
   # There are three cases: PRV1=U; PRV1=S and IE1=1; and PRV1=S and IE1=0.
   # For cases 1-2, do an MRTS; for case 3, we can't, so ERET.
-  and a0, a0, MSTATUS_PRV1 | MSTATUS_IE1
+  csrr a0, mstatus
   li a1, (MSTATUS_PRV1 & ~(MSTATUS_PRV1<<1)) * PRV_S
+  and a0, a0, MSTATUS_PRV1 | MSTATUS_IE1
   bne a0, a1, .Lmrts
 
   # And then go back whence we came.
@@ -186,6 +184,16 @@ mentry:
   LOAD a1, 11*REGBYTES(sp)
   csrrw sp, mscratch, sp
   eret
+
+1:
+  # See if this is an IPI; register a supervisor SW interrupt if so.
+#if IRQ_SOFT != 0
+#error
+#endif
+  bnez a0, 1f
+  csrc mip, MIP_MSIP
+  csrs mip, MIP_SSIP
+  j .Linterrupt_supervisor
 1:
 
   # See if this is an HTIF interrupt; if so, handle it in machine mode.

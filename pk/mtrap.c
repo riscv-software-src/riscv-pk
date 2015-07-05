@@ -207,6 +207,18 @@ static uintptr_t mcall_shutdown()
   return 0;
 }
 
+static uintptr_t mcall_set_timer(unsigned long long when)
+{
+  // bbl/pk don't use the timer, so there's no need to virtualize it
+  write_csr(mtimecmp, when);
+#ifndef __riscv64
+  write_csr(mtimecmph, when >> 32);
+#endif
+  clear_csr(mip, MIP_STIP);
+  set_csr(mie, MIP_MTIP);
+  return 0;
+}
+
 uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
 {
   uintptr_t n = regs[17], arg0 = regs[10], retval;
@@ -232,6 +244,9 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
       break;
     case MCALL_SHUTDOWN:
       retval = mcall_shutdown();
+      break;
+    case MCALL_SET_TIMER:
+      retval = mcall_set_timer(arg0);
       break;
     default:
       retval = -ENOSYS;

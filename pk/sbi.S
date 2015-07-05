@@ -8,3 +8,4 @@
 .globl sbi_clear_ipi; sbi_clear_ipi = -1936
 .globl sbi_timebase; sbi_timebase = -1920
 .globl sbi_shutdown; sbi_shutdown = -1904
+.globl sbi_set_timer; sbi_set_timer = -1888

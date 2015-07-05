@@ -8,6 +8,7 @@
 #define MCALL_SEND_IPI 4
 #define MCALL_CLEAR_IPI 5
 #define MCALL_SHUTDOWN 6
+#define MCALL_SET_TIMER 7
 
 #ifndef __ASSEMBLER__
 

@@ -65,6 +65,12 @@ sbi_base:
   li a7, MCALL_SHUTDOWN
   ecall
 
+  # set_timer
+  .align 4
+  li a7, MCALL_SET_TIMER
+  ecall
+  ret
+
   # end of SBI trampolines
 
   .globl do_mcall

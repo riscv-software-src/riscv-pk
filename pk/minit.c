@@ -79,8 +79,10 @@ static void init_other_hart()
   write_csr(sptbr, root_page_table);
 
   // then make sure we're in bounds
-  if (HLS()->hart_id >= num_harts)
-    panic("too many harts");
+  if (HLS()->hart_id >= num_harts) {
+    while (1)
+      wfi();
+  }
 
   boot_other_hart();
 }

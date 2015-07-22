@@ -287,7 +287,7 @@ uintptr_t do_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, of
     addr = __do_mmap(addr, length, prot, flags, f, offset);
 
     if (addr < current.brk_max)
-      current.brk_max = ROUNDUP(addr + length, RISCV_PGSIZE);
+      current.brk_max = addr;
   spinlock_unlock(&vm_lock);
 
   if (f) file_decref(f);

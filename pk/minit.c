@@ -67,7 +67,8 @@ static void init_first_hart()
 
   memory_init();
   vm_init();
-  boot_loader(args);
+  load_program(args);
+  run_loaded_program(args);
 }
 
 static void init_other_hart()

@@ -84,7 +84,7 @@ struct mainvars* parse_args(struct mainvars* args)
   return (struct mainvars*)&args->argv[a0-1];
 }
 
-void boot_loader(struct mainvars* args)
+void load_program(struct mainvars* args)
 {
   // load program named by argv[0]
   long phdrs[128];
@@ -93,6 +93,4 @@ void boot_loader(struct mainvars* args)
   if (!args->argc)
     panic("tell me what ELF to load!");
   load_elf((char*)(uintptr_t)args->argv[0], &current);
-
-  run_loaded_program(args);
 }

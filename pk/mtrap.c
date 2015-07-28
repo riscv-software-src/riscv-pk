@@ -56,11 +56,6 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
   return f(mcause, regs, fetch.insn, mstatus, mepc);
 }
 
-void __attribute__((noreturn)) bad_trap()
-{
-  panic("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
-}
-
 uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
 {
   uintptr_t fromhost = swap_csr(mfromhost, 0);
@@ -133,6 +128,9 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 #define printm(str, ...) ({ \
   char buf[128], *p = buf; snprintf(buf, sizeof(buf), str, __VA_ARGS__); \
   while (*p) mcall_console_putchar(*p++); })
+
+#define mputs(str) ({ \
+    char *p = str; while (*p) mcall_console_putchar(*p++); })
 
 static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
@@ -217,6 +215,63 @@ static uintptr_t mcall_set_timer(unsigned long long when)
   clear_csr(mip, MIP_STIP);
   set_csr(mie, MIP_MTIP);
   return 0;
+}
+
+void __attribute__((noreturn)) bad_trap()
+{
+  printm("machine mode: unhandlable trap %ld @ 0x%lx\n",
+         read_csr(mcause),
+         read_csr(mepc));
+
+  switch (read_csr(mcause)) {
+  case 0:
+      printm("  instruction address misaligned: 0x%lx\n",
+             read_csr(mbadaddr));
+      break;
+  case 1:
+      mputs("  instruction access fault\n");
+      break;
+  case 2:
+      mputs("  illegal instruction\n");
+      break;
+  case 3:
+      mputs("  breakpoint\n");
+      break;
+  case 4:
+      printm("  load address misaligned: 0x%lx\n",
+             read_csr(mbadaddr));
+      break;
+  case 5:
+      printm("  load access fault: 0x%lx\n",
+             read_csr(mbadaddr));
+      break;
+  case 6:
+      printm("  store/AMO address misaligned: 0x%lx\n",
+             read_csr(mbadaddr));
+      break;
+  case 7:
+      printm("  store/AMO access fault: 0x%lx\n",
+             read_csr(mbadaddr));
+      break;
+  case 8:
+      mputs("  ecall from U-mode\n");
+      break;
+  case 9:
+      mputs("  ecall from S-mode\n");
+      break;
+  case 10:
+      mputs("  ecall from H-mode\n");
+      break;
+  case 11:
+      mputs("  ecall from M-mode\n");
+      break;
+
+  default:
+      printm("  unknown trap number: %ld\n", read_csr(mcause));
+      break;
+  }
+
+  panic("  unable to recover, panicing", "");
 }
 
 uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)

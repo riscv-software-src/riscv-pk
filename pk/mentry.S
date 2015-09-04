@@ -48,6 +48,7 @@ trap_table:
   | (0 << (31- 8)) /* user environment call */   \
   | (1 << (31- 9)) /* super environment call */  \
 
+  .option norvc
   .section .text.init,"ax",@progbits
   .globl mentry
 mentry:

@@ -175,10 +175,9 @@ static insn_fetch_t __attribute__((always_inline))
   insn_fetch_t fetch;
   insn_t insn;
 
-#ifdef __rvc
+#ifdef __riscv_compressed
   int rvc_mask = 3, insn_hi;
   fetch.error = unpriv_mem_access(mstatus, mepc,
-                                  "mv %[insn], %[rvc_mask];"
                                   "lhu %[insn], 0(%[mepc]);"
                                   "and %[insn_hi], %[insn], %[rvc_mask];"
                                   "bne %[insn_hi], %[rvc_mask], 1f;"

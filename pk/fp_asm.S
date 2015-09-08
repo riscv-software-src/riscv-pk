@@ -13,6 +13,7 @@
 #endif
 
   .text
+  .option norvc
   .globl get_f32_reg
   get_f32_reg:
     get_f32(f0)

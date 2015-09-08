@@ -1,7 +1,8 @@
 #include "encoding.h"
 #include "mcall.h"
 
-   .section .sbi,"ax",@progbits
+  .section .sbi,"ax",@progbits
+  .option norvc
   .align RISCV_PGSHIFT
   .globl sbi_base
 sbi_base:

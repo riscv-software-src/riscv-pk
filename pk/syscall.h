@@ -43,6 +43,10 @@
 #define SYS_readlinkat 78
 #define SYS_rt_sigprocmask 135
 #define SYS_ioctl 29
+#define SYS_getrlimit 163
+#define SYS_setrlimit 164
+#define SYS_getrusage 165
+#define SYS_clock_gettime 113
 
 #define OLD_SYSCALL_THRESHOLD 1024
 #define SYS_open 1024

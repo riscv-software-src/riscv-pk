@@ -451,6 +451,10 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_readlinkat] = sys_stub_nosys,
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_ioctl] = sys_stub_nosys,
+    [SYS_clock_gettime] = sys_stub_nosys,
+    [SYS_getrusage] = sys_stub_nosys,
+    [SYS_getrlimit] = sys_stub_nosys,
+    [SYS_setrlimit] = sys_stub_nosys,
   };
 
   const static void* old_syscall_table[] = {

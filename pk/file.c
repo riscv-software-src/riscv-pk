@@ -145,6 +145,11 @@ int file_stat(file_t* f, struct stat* s)
   return frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)s, 0, 0, 0, 0, 0);
 }
 
+int file_truncate(file_t* f, off_t len)
+{
+  return frontend_syscall(SYS_ftruncate, f->kfd, len, 0, 0, 0, 0, 0);
+}
+
 ssize_t file_lseek(file_t* f, size_t ptr, int dir)
 {
   return frontend_syscall(SYS_lseek, f->kfd, ptr, dir, 0, 0, 0, 0);

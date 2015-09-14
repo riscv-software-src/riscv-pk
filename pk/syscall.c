@@ -165,6 +165,20 @@ int sys_fcntl(int fd, int cmd, int arg)
   return r;
 }
 
+int sys_ftruncate(int fd, off_t len)
+{
+  int r = -EBADF;
+  file_t* f = file_get(fd);
+
+  if (f)
+  {
+    r = file_truncate(f, len);
+    file_decref(f);
+  }
+
+  return r;
+}
+
 int sys_dup(int fd)
 {
   int r = -EBADF;
@@ -446,6 +460,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_writev] = sys_writev,
     [SYS_faccessat] = sys_faccessat,
     [SYS_fcntl] = sys_fcntl,
+    [SYS_ftruncate] = sys_ftruncate,
     [SYS_getdents] = sys_getdents,
     [SYS_dup] = sys_dup,
     [SYS_readlinkat] = sys_stub_nosys,

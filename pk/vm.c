@@ -14,9 +14,9 @@ typedef struct {
   int prot;
 } vmr_t;
 
-#define MAX_VMR 32
+#define MAX_VMR (RISCV_PGSIZE / sizeof(vmr_t))
 spinlock_t vm_lock = SPINLOCK_INIT;
-static vmr_t vmrs[MAX_VMR];
+static vmr_t* vmrs;
 
 pte_t* root_page_table;
 static uintptr_t first_free_page;
@@ -34,10 +34,15 @@ static uintptr_t __page_alloc()
 static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
                           size_t offset, unsigned refcnt, int prot)
 {
-  for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++)
-  {
-    if (v->refcnt == 0)
-    {
+  if (!vmrs) {
+    spinlock_lock(&vm_lock);
+      if (!vmrs)
+        vmrs = (vmr_t*)__page_alloc();
+    spinlock_unlock(&vm_lock);
+  }
+
+  for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
+    if (v->refcnt == 0) {
       if (file)
         file_incref(file);
       v->addr = addr;

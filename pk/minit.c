@@ -24,6 +24,7 @@ static void mstatus_init()
   if (EXTRACT_FIELD(ms, MSTATUS_VM) != VM_CHOICE)
     have_vm = 0;
 
+  write_csr(mtimecmp, 0);
   clear_csr(mip, MIP_MSIP);
   set_csr(mie, MIP_MSIP);
 }

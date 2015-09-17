@@ -47,6 +47,7 @@ static void fp_init()
     panic("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
+  write_csr(fcsr, 0);
 #else
   if (supports_extension('D'))
     panic("FPU unexpectedly found; recompile pk without -msoft-float");

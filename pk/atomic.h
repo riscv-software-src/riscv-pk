@@ -23,19 +23,19 @@ typedef struct { int lock; } spinlock_t;
 #else
 # define atomic_add(ptr, inc) ({ \
   long flags = disable_irqsave(); \
-  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  typeof(*(ptr)) res = *(volatile typeof(*(ptr)) *)(ptr); \
   *(volatile typeof(ptr))(ptr) = res + (inc); \
   enable_irqrestore(flags); \
   res; })
 # define atomic_swap(ptr, swp) ({ \
   long flags = disable_irqsave(); \
-  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  typeof(*(ptr)) res = *(volatile typeof(*(ptr)) *)(ptr); \
   *(volatile typeof(ptr))(ptr) = (swp); \
   enable_irqrestore(flags); \
   res; })
 # define atomic_cas(ptr, cmp, swp) ({ \
   long flags = disable_irqsave(); \
-  typeof(ptr) res = *(volatile typeof(ptr))(ptr); \
+  typeof(*(ptr)) res = *(volatile typeof(*(ptr)) *)(ptr); \
   if (res == (cmp)) *(volatile typeof(ptr))(ptr) = (swp); \
   enable_irqrestore(flags); \
   res; })

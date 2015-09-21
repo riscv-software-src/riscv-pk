@@ -9,7 +9,11 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
   asm (".pushsection .rodata\n"
        "illegal_insn_trap_table:\n"
        "  .word truly_illegal_insn\n"
+#ifdef PK_ENABLE_FP_EMULATION
        "  .word emulate_float_load\n"
+#else
+       "  .word truly_illegal_insn\n"
+#endif
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
@@ -17,18 +21,30 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
+#ifdef PK_ENABLE_FP_EMULATION
        "  .word emulate_float_store\n"
+#else
+       "  .word truly_illegal_insn\n"
+#endif
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word emulate_mul_div\n"
        "  .word truly_illegal_insn\n"
        "  .word emulate_mul_div32\n"
        "  .word truly_illegal_insn\n"
+#ifdef PK_ENABLE_FP_EMULATION
        "  .word emulate_fmadd\n"
        "  .word emulate_fmsub\n"
        "  .word emulate_fnmsub\n"
        "  .word emulate_fnmadd\n"
        "  .word emulate_fp\n"
+#else
+       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn\n"
+#endif
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
@@ -36,7 +52,11 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
+#ifdef PK_ENABLE_FP_EMULATION
        "  .word emulate_system\n"
+#else
+       "  .word truly_illegal_insn\n"
+#endif
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"

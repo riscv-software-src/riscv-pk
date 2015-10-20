@@ -79,12 +79,30 @@ static pte_t ptd_create(uintptr_t ppn)
 static inline pte_t pte_create(uintptr_t ppn, int prot, int user)
 {
   pte_t pte = (ppn << PTE_PPN_SHIFT) | PTE_V;
-  if (prot & PROT_WRITE)
-    pte |= PTE_TYPE_URW_SRW;
-  if (prot & PROT_EXEC)
-    pte |= PTE_TYPE_URX_SRX;
-  if (!user)
-    pte |= PTE_TYPE_SR;
+  prot &= PROT_READ|PROT_WRITE|PROT_EXEC;
+  if (user) {
+    switch (prot) {
+      case PROT_NONE: pte |= PTE_TYPE_SR; break;
+      case PROT_READ: pte |= PTE_TYPE_UR_SR; break;
+      case PROT_WRITE: pte |= PTE_TYPE_URW_SRW; break;
+      case PROT_EXEC: pte |= PTE_TYPE_URX_SRX; break;
+      case PROT_READ|PROT_WRITE: pte |= PTE_TYPE_URW_SRW; break;
+      case PROT_READ|PROT_EXEC: pte |= PTE_TYPE_URX_SRX; break;
+      case PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_URWX_SRWX; break;
+      case PROT_READ|PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_URWX_SRWX; break;
+    }
+  } else {
+    switch (prot) {
+      case PROT_NONE: kassert(0); break;
+      case PROT_READ: pte |= PTE_TYPE_SR; break;
+      case PROT_WRITE: pte |= PTE_TYPE_SRW; break;
+      case PROT_EXEC: pte |= PTE_TYPE_SRX; break;
+      case PROT_READ|PROT_WRITE: pte |= PTE_TYPE_SRW; break;
+      case PROT_READ|PROT_EXEC: pte |= PTE_TYPE_SRX; break;
+      case PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_SRWX; break;
+      case PROT_READ|PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_SRWX; break;
+    }
+  }
   return pte;
 }
 

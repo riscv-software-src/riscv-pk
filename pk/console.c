@@ -145,5 +145,6 @@ void do_panic(const char* s, ...)
 
 void kassert_fail(const char* s)
 {
-  do_panic("assertion failed: %s\n", s);
+  register uintptr_t ra asm ("ra");
+  do_panic("assertion failed @ %p: %s\n", ra, s);
 }

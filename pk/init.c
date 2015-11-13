@@ -44,31 +44,10 @@ static void handle_option(const char* s)
       uarch_counters_enabled = 1;
       break;
 
-    case 'm': // memory capacity in MiB
-    {
-      uintptr_t mem_mb = atol(&s[2]);
-      if (!mem_mb)
-        goto need_nonzero_int;
-      mem_size = mem_mb << 20;
-      if ((mem_size >> 20) < mem_mb)
-        mem_size = (typeof(mem_size))-1 & -RISCV_PGSIZE;
-      break;
-    }
-
-    case 'p': // number of harts
-      num_harts = atol(&s[2]);
-      if (!num_harts)
-        goto need_nonzero_int;
-      break;
-
     default:
       panic("unrecognized option: `%c'", s[1]);
       break;
   }
-  return;
-
-need_nonzero_int:
-  panic("the -%c flag requires a nonzero argument", s[1]);
 }
 
 struct mainvars* parse_args(struct mainvars* args)

@@ -25,6 +25,7 @@ pk_c_srcs = \
 	vm.c \
 	string.c \
 	logo.c \
+	devicetree.c \
 
 pk_asm_srcs = \
 	mentry.S \

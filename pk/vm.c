@@ -423,6 +423,7 @@ static uintptr_t sbi_top_paddr()
 
 void vm_init()
 {
+  mem_size = mem_size / SUPERPAGE_SIZE * SUPERPAGE_SIZE;
   current.first_free_paddr = first_free_paddr();
 
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;

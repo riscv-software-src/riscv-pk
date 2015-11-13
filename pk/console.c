@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-static int vsnprintf(char* out, size_t n, const char* s, va_list vl)
+int vsnprintf(char* out, size_t n, const char* s, va_list vl)
 {
   bool format = false;
   bool longarg = false;

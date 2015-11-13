@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "mtrap.h"
+#include "devicetree.h"
 
 uintptr_t mem_size;
 uint32_t num_harts;
@@ -54,15 +55,19 @@ static void fp_init()
 #endif
 }
 
-static void hls_init(uint32_t hart_id)
+void hls_init(uint32_t hart_id, uintptr_t* csrs)
 {
-  memset(HLS(), 0, sizeof(*HLS()));
-  HLS()->hart_id = hart_id;
+  hls_t* hls = OTHER_HLS(hart_id);
+  memset(hls, 0, sizeof(*hls));
+  hls->hart_id = hart_id;
+  hls->csrs = csrs;
 }
 
 static void init_first_hart()
 {
+  memset(HLS(), 0, sizeof(*HLS()));
   file_init();
+  parse_device_tree();
 
   struct mainvars arg_buffer;
   struct mainvars *args = parse_args(&arg_buffer);
@@ -72,16 +77,17 @@ static void init_first_hart()
   boot_loader(args);
 }
 
-static void init_other_hart()
+static void init_other_hart(uint32_t hart_id)
 {
   // wait until virtual memory is enabled
-  while (root_page_table == NULL)
-    asm volatile ("" ::: "memory");
-  mb();
+  do {
+    mb();
+  } while (root_page_table == NULL);
+
   write_csr(sptbr, root_page_table);
 
   // then make sure we're in bounds
-  if (HLS()->hart_id >= num_harts) {
+  if (hart_id >= num_harts) {
     while (1)
       wfi();
   }
@@ -91,12 +97,11 @@ static void init_other_hart()
 
 void machine_init(uint32_t hart_id)
 {
-  hls_init(hart_id);
   mstatus_init();
   fp_init();
 
   if (hart_id == 0)
     init_first_hart();
   else
-    init_other_hart();
+    init_other_hart(hart_id);
 }

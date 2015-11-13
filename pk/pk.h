@@ -5,9 +5,12 @@
 
 #ifndef __ASSEMBLER__
 
+#define debug_printk(s, ...) //printk(s, __VA_ARGS__)
+
+#include "encoding.h"
 #include <stdint.h>
 #include <string.h>
-#include "encoding.h"
+#include <stdarg.h>
 
 typedef struct
 {
@@ -49,6 +52,8 @@ extern uint32_t num_harts_booted;
 
 struct mainvars* parse_args(struct mainvars*);
 void printk(const char* s, ...);
+void printm(const char* s, ...);
+int vsnprintf(char* out, size_t n, const char* s, va_list vl);
 int snprintf(char* out, size_t n, const char* s, ...);
 void init_tf(trapframe_t*, long pc, long sp, int user64);
 void start_user(trapframe_t* tf) __attribute__((noreturn));

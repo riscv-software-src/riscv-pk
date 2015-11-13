@@ -130,9 +130,19 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
   return 0;
 }
 
-#define printm(str, ...) ({ \
-  char buf[128], *p = buf; snprintf(buf, sizeof(buf), str, __VA_ARGS__); \
-  while (*p) mcall_console_putchar(*p++); })
+void printm(const char* s, ...)
+{
+  char buf[128];
+  va_list vl;
+
+  va_start(vl, s);
+  vsnprintf(buf, sizeof buf, s, vl);
+  va_end(vl);
+
+  char* p = buf;
+  while (*p)
+    mcall_console_putchar(*p++);
+}
 
 static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
@@ -183,7 +193,7 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
 
   if (atomic_swap(&OTHER_HLS(recipient)->ipi_pending, 1) == 0) {
     mb();
-    write_csr(send_ipi, recipient);
+    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 0;
   }
 
   return 0;

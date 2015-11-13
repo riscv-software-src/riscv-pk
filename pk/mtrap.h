@@ -225,9 +225,12 @@ typedef struct {
   sbi_device_message* device_response_queue_head;
   sbi_device_message* device_response_queue_tail;
 
+  uintptr_t* csrs;
   int hart_id;
   int ipi_pending;
 } hls_t;
+
+void hls_init(uint32_t hart_id, uintptr_t* csrs);
 
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \

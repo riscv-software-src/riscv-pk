@@ -4,7 +4,6 @@
 
 uintptr_t mem_size;
 uint32_t num_harts;
-uint32_t num_harts_booted = 1;
 
 static void mstatus_init()
 {
@@ -55,16 +54,29 @@ static void fp_init()
 #endif
 }
 
-void hls_init(uint32_t hart_id, uintptr_t* csrs)
+void hls_init(uint32_t id, uintptr_t* csrs)
 {
-  hls_t* hls = OTHER_HLS(hart_id);
+  hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));
-  hls->hart_id = hart_id;
+  hls->hart_id = id;
   hls->csrs = csrs;
+
+  // tell the hart where its stack is, then wake it up
+  csrs[CSR_MSCRATCH] = (uintptr_t)(OTHER_STACK_TOP(id) - MENTRY_FRAME_SIZE);
+  mb();
+  csrs[CSR_MIPI] = 0;
 }
 
-static void init_first_hart()
+static void init_hart()
 {
+  mstatus_init();
+  fp_init();
+}
+
+void init_first_hart()
+{
+  init_hart();
+
   memset(HLS(), 0, sizeof(*HLS()));
   file_init();
   parse_device_tree();
@@ -77,8 +89,10 @@ static void init_first_hart()
   boot_loader(args);
 }
 
-static void init_other_hart(uint32_t hart_id)
+void init_other_hart()
 {
+  init_hart();
+
   // wait until virtual memory is enabled
   do {
     mb();
@@ -86,22 +100,5 @@ static void init_other_hart(uint32_t hart_id)
 
   write_csr(sptbr, root_page_table);
 
-  // then make sure we're in bounds
-  if (hart_id >= num_harts) {
-    while (1)
-      wfi();
-  }
-
   boot_other_hart();
-}
-
-void machine_init(uint32_t hart_id)
-{
-  mstatus_init();
-  fp_init();
-
-  if (hart_id == 0)
-    init_first_hart();
-  else
-    init_other_hart(hart_id);
 }

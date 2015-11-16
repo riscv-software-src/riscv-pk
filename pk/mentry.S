@@ -175,23 +175,20 @@ mentry:
   csrr a0, mhartid
   bnez a0, .LmultiHart
 
-  # boot hart 0
   csrw mscratch, sp
-  j machine_init
+  j init_first_hart
 
 .LmultiHart:
-  # mhartid may not be contiguous, so generate a hart id using AMOs
-  la a0, num_harts_booted
-  la a1, 1
-  amoadd.w a0, a1, (a0)
 
-  # allocate stack
-  sll t0, a0, RISCV_PGSHIFT
-  add sp, sp, t0
-  csrw mscratch, sp
+  # wait for IPI to signal that it's time to boot
+  wfi
+  csrr a0, mip
+  andi a0, a0, MIP_MSIP
+  beqz a0, .LmultiHart
 
-  # boot this hart
-  j machine_init
+  fence
+  csrr sp, mscratch
+  j init_other_hart
 
 .Linterrupt:
   sll a0, a0, 1    # discard MSB

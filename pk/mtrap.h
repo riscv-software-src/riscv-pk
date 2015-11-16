@@ -238,6 +238,7 @@ void hls_init(uint32_t hart_id, uintptr_t* csrs);
 
 // hart-local storage, at top of stack
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
+#define OTHER_STACK_TOP(id) (MACHINE_STACK_TOP() + RISCV_PGSIZE * ((id) - HLS()->hart_id))
 #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - HLS()->hart_id)))
 
 #endif // !__ASSEMBLER__

@@ -48,7 +48,6 @@ extern "C" {
 extern uintptr_t mem_size;
 extern int have_vm;
 extern uint32_t num_harts;
-extern uint32_t num_harts_booted;
 
 struct mainvars* parse_args(struct mainvars*);
 void printk(const char* s, ...);

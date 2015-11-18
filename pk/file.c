@@ -107,7 +107,7 @@ int fd_close(int fd)
   file_t* f = file_get(fd);
   if (!f)
     return -1;
-  file_t* old = atomic_cas(&fds[fd], (long)f, 0);
+  file_t* old = atomic_cas(&fds[fd], f, 0);
   file_decref(f);
   if (old != f)
     return -1;

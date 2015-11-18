@@ -1,5 +1,6 @@
 #include "pk.h"
 #include "vm.h"
+#include "config.h"
 
 volatile int elf_loaded;
 

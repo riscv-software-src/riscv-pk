@@ -2,8 +2,9 @@
 #include "encoding.h"
 #include "pk.h"
 #include "mtrap.h"
-#include <arpa/inet.h>
 #include <stdbool.h>
+
+#define ntohl(x) __builtin_bswap32(x)
 
 static uintptr_t max_hart_id;
 

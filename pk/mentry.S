@@ -166,28 +166,35 @@ mentry:
   li x30, 0
   li x31, 0
 
+  csrr a0, mhartid
+  bnez a0, .LmultiHart
+
   # sp <- end of first full page after the end of the binary
   la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
   and sp, sp, t0
   addi sp, sp, -MENTRY_FRAME_SIZE
 
-  csrr a0, mhartid
-  bnez a0, .LmultiHart
-
   csrw mscratch, sp
   j init_first_hart
 
 .LmultiHart:
+  # make sure our hart id is within a valid range
+  li a1, MAX_HARTS
+  bgeu a0, a1, .LmultiHart
 
-  # wait for IPI to signal that it's time to boot
-  wfi
-  csrr a0, mip
-  andi a0, a0, MIP_MSIP
-  beqz a0, .LmultiHart
-
+  # signal we're ready to boot
+  csrw mscratch, x0
   fence
-  csrr sp, mscratch
+  li a1, 1
+  sll a1, a1, a0
+  la a2, booted_harts_mask
+  amoor.w x0, a1, (a2)
+
+  # wait for main hart to grant us a stack
+1:csrr sp, mscratch
+  beqz sp, 1b
+
   j init_other_hart
 
 .Linterrupt:

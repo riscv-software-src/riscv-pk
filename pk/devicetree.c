@@ -21,6 +21,7 @@ static void fdt_handle_cpu(const char* isa, uint32_t* reg_addr, uint32_t reg_len
   uintptr_t* base_addr = (uintptr_t*)(uintptr_t)fdt_read_uint64(reg_addr);
   debug_printk("at %p, ", base_addr);
   uintptr_t hart_id = *(uintptr_t*)(base_addr + CSR_MHARTID);
+  kassert(hart_id < MAX_HARTS);
   debug_printk("found hart %ld\n", hart_id);
   hls_init(hart_id, base_addr);
   num_harts++;

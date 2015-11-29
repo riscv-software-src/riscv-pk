@@ -2,6 +2,7 @@
 #include "mtrap.h"
 #include "devicetree.h"
 
+volatile uint32_t booted_harts_mask;
 uintptr_t mem_size;
 uint32_t num_harts;
 
@@ -61,10 +62,13 @@ void hls_init(uint32_t id, uintptr_t* csrs)
   hls->hart_id = id;
   hls->csrs = csrs;
 
-  // tell the hart where its stack is, then wake it up
-  csrs[CSR_MSCRATCH] = (uintptr_t)(OTHER_STACK_TOP(id) - MENTRY_FRAME_SIZE);
-  mb();
-  csrs[CSR_MIPI] = 0;
+  if (id != 0) {
+    while (((booted_harts_mask >> id) & 1) == 0)
+      ;
+    mb();
+    // wake up the hart by granting it a stack
+    csrs[CSR_MSCRATCH] = (uintptr_t)(OTHER_STACK_TOP(id) - MENTRY_FRAME_SIZE);
+  }
 }
 
 static void init_hart()
@@ -94,10 +98,9 @@ void init_other_hart()
   init_hart();
 
   // wait until virtual memory is enabled
-  do {
-    mb();
-  } while (root_page_table == NULL);
-
+  while (*(pte_t* volatile*)&root_page_table == NULL)
+    ;
+  mb();
   write_csr(sptbr, root_page_table);
 
   boot_other_hart();

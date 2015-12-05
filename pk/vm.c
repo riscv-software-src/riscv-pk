@@ -2,6 +2,7 @@
 #include "file.h"
 #include "atomic.h"
 #include "pk.h"
+#include "devicetree.h"
 #include <stdint.h>
 #include <errno.h>
 
@@ -43,8 +44,9 @@ static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
 
   for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
     if (v->refcnt == 0) {
-      if (file)
+      if (file) {
         file_incref(file);
+      }
       v->addr = addr;
       v->length = length;
       v->file = file;
@@ -201,21 +203,35 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     return -1;
   else if (!(*pte & PTE_V))
   {
-    uintptr_t ppn = vpn;
-
+    uintptr_t ppn;
     vmr_t* v = (vmr_t*)*pte;
+
+    if (v->file && v->file->typ == FILE_DEVICE) {
+      device_t *dev = (device_t *) v->file;
+      uintptr_t pstart = dev->base + v->offset;
+      uintptr_t voff = v->addr - vaddr;
+      debug_printk("device file map %lx -> %lx\n", vaddr, pstart + voff);
+      // make sure we're still within the device bounds
+      if ((pstart + voff) >= (dev->base + dev->size)) {
+        debug_printk("memory access %lu outside device bounds\n", vaddr);
+        return -1;
+      }
+      ppn = (pstart + voff) >> RISCV_PGSHIFT;
+    } else ppn = vpn;
+
     *pte = pte_create(ppn, PROT_READ|PROT_WRITE, 0);
     flush_tlb();
-    if (v->file)
-    {
+
+    if (!v->file) {
+      memset((void*)vaddr, 0, RISCV_PGSIZE);
+    } else if (v->file->typ == FILE_HOST) {
       size_t flen = MIN(RISCV_PGSIZE, v->length - (vaddr - v->addr));
       ssize_t ret = file_pread(v->file, (void*)vaddr, flen, vaddr - v->addr + v->offset);
       kassert(ret > 0);
       if (ret < RISCV_PGSIZE)
         memset((void*)vaddr + ret, 0, RISCV_PGSIZE - ret);
     }
-    else
-      memset((void*)vaddr, 0, RISCV_PGSIZE);
+
     __vmr_decref(v, 1);
     *pte = pte_create(ppn, v->prot, 1);
   }
@@ -488,6 +504,7 @@ uintptr_t pk_vm_init()
 
   __map_kernel_range(0, 0, current.first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
   __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
+  __map_kernel_range(fdt_base, fdt_base, fdt_size, PROT_READ);
 
   size_t stack_size = RISCV_PGSIZE * CLAMP(mem_size/(RISCV_PGSIZE*32), 1, 256);
   current.stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);

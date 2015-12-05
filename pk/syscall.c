@@ -102,7 +102,9 @@ static int at_kfd(int dirfd)
   file_t* dir = file_get(dirfd);
   if (dir == NULL)
     return -1;
-  return dir->kfd;
+  if (dir->typ != FILE_HOST)
+    return -1;
+  return ((host_file_t*) dir)->kfd;
 }
 
 int sys_openat(int dirfd, const char* name, int flags, int mode)
@@ -156,9 +158,10 @@ int sys_fcntl(int fd, int cmd, int arg)
   int r = -EBADF;
   file_t* f = file_get(fd);
 
-  if (f)
+  if (f && f->typ == FILE_HOST)
   {
-    r = frontend_syscall(SYS_fcntl, f->kfd, cmd, arg, 0, 0, 0, 0);
+    host_file_t *hf = (host_file_t *) f;
+    r = frontend_syscall(SYS_fcntl, hf->kfd, cmd, arg, 0, 0, 0, 0);
     file_decref(f);
   }
 

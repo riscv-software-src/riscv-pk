@@ -32,6 +32,14 @@ struct fdt_reserve_entry {
   uint64_t size;
 };
 
+struct fdt_table_entry {
+  const char *dev_type;
+  uint64_t base;
+  uint64_t size;
+  int prot;
+};
+
 void parse_device_tree();
+struct fdt_table_entry *fdt_find_device(const char *dev_type, int pos);
 
 #endif

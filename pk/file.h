@@ -8,11 +8,33 @@
 #include <stdint.h>
 #include "atomic.h"
 
+enum file_type
+{
+  FILE_HOST,
+  FILE_DEVICE
+};
+
 typedef struct file
 {
-  int kfd; // file descriptor on the host side of the HTIF
+  enum file_type typ;
   uint32_t refcnt;
+  uint64_t padding[1]; // padding to make room for device parameters
 } file_t;
+
+typedef struct host_file
+{
+  enum file_type typ;
+  uint32_t refcnt;
+  int32_t kfd; // file descriptor on the host side of the HTIF
+} host_file_t;
+
+typedef struct device
+{
+  enum file_type typ;
+  uint32_t refcnt;
+  uint64_t base;
+  uint64_t size;
+} device_t;
 
 extern file_t files[];
 #define stdin  (files + 0)
@@ -36,5 +58,9 @@ int file_stat(file_t* f, struct stat* s);
 int fd_close(int fd);
 
 void file_init();
+
+device_t *device_open(const char *name, int flags);
+ssize_t device_pread(device_t *dev, void *buf, size_t size, off_t offset);
+ssize_t device_pwrite(device_t *dev, void *buf, size_t size, off_t offset);
 
 #endif

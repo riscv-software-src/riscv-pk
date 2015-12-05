@@ -47,12 +47,19 @@ size_t strlen(const char *s)
 
 int strcmp(const char* s1, const char* s2)
 {
+  return strncmp(s1, s2, -1);
+}
+
+int strncmp(const char *s1, const char *s2, size_t n)
+{
   unsigned char c1, c2;
+  int i = 0;
 
   do {
     c1 = *s1++;
     c2 = *s2++;
-  } while (c1 != 0 && c1 == c2);
+    i++;
+  } while (c1 != 0 && c1 == c2 && (n == -1 || i < n));
 
   return c1 - c2;
 }

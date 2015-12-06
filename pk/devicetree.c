@@ -11,9 +11,6 @@
 struct fdt_table_entry fdt_table[FDT_TABLE_CAP];
 int fdt_table_size = 0;
 
-uintptr_t fdt_base;
-size_t fdt_size;
-
 static uintptr_t max_hart_id;
 
 static uint64_t fdt_read_uint64(uint32_t* addr) {
@@ -50,19 +47,21 @@ static void fdt_handle_device(const char *dev_type,
     uint32_t *reg_addr, uint32_t reg_len, int prot)
 {
   struct fdt_table_entry *entry;
+  int dev_type_len = strlen(dev_type);
 
   kassert(reg_len == 16);
+  kassert(dev_type_len < FDT_DEV_NAME_SIZE);
   kassert(fdt_table_size < FDT_TABLE_CAP);
 
   entry = &fdt_table[fdt_table_size];
 
-  entry->dev_type = dev_type;
+  strcpy(entry->dev_type, dev_type);
   entry->base = fdt_read_uint64(reg_addr);
   entry->size = fdt_read_uint64(reg_addr + 2);
   entry->prot = prot;
 
   debug_printk("found device %s@%lx (size: %ld, prot: %d)\n",
-		  dev_type, entry->base, entry->size, prot);
+		  entry->dev_type, entry->base, entry->size, prot);
 
   fdt_table_size++;
 }
@@ -137,11 +136,10 @@ out:
 
 void parse_device_tree()
 {
-  fdt_base = read_csr(miobase);
-  struct fdt_header* hdr = (struct fdt_header*) fdt_base;
+  uintptr_t iobase = read_csr(miobase);
+  struct fdt_header* hdr = (struct fdt_header*) iobase;
   debug_printk("reading device tree at %p\n", hdr);
   kassert(ntohl(hdr->magic) == FDT_MAGIC);
-  fdt_size = ntohl(hdr->totalsize);
   char* strings = (char*)hdr + ntohl(hdr->off_dt_strings);
   uint32_t* root = (uint32_t*)((char*)hdr + ntohl(hdr->off_dt_struct));
   while (ntohl(*root++) != FDT_BEGIN_NODE);

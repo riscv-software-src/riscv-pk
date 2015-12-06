@@ -32,11 +32,13 @@ struct fdt_reserve_entry {
   uint64_t size;
 };
 
+#define FDT_DEV_NAME_SIZE 12
+
 struct fdt_table_entry {
-  const char *dev_type;
+  char dev_type[FDT_DEV_NAME_SIZE];
+  int prot;
   uint64_t base;
   uint64_t size;
-  int prot;
 };
 
 void parse_device_tree();

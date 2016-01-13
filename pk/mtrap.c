@@ -213,7 +213,7 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
 
   if (atomic_swap(&OTHER_HLS(recipient)->ipi_pending, 1) == 0) {
     mb();
-    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 0;
+    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 1;
   }
 
   return 0;

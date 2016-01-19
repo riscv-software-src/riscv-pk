@@ -16,6 +16,7 @@
 #define SYS_linkat 37
 #define SYS_unlinkat 35
 #define SYS_mkdirat 34
+#define SYS_renameat 38
 #define SYS_chdir 49
 #define SYS_getcwd 17
 #define SYS_fstat 80

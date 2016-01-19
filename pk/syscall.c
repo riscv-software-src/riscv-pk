@@ -137,6 +137,18 @@ int sys_close(int fd)
   return ret;
 }
 
+int sys_renameat(int old_fd, const char *old_path, int new_fd, const char *new_path) {
+  int old_kfd = at_kfd(old_fd);
+  int new_kfd = at_kfd(new_fd);
+  if(old_kfd != -1 && new_kfd != -1) {
+    size_t old_size = strlen(old_path)+1;
+    size_t new_size = strlen(new_path)+1;
+    return frontend_syscall(SYS_renameat, old_kfd, (uintptr_t)old_path, old_size,
+                                           new_kfd, (uintptr_t)new_path, new_size, 0);
+  }
+  return -EBADF;
+}
+
 int sys_fstat(int fd, void* st)
 {
   int r = -EBADF;
@@ -442,6 +454,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_linkat] = sys_linkat,
     [SYS_unlinkat] = sys_unlinkat,
     [SYS_mkdirat] = sys_mkdirat,
+    [SYS_renameat] = sys_renameat,
     [SYS_getcwd] = sys_getcwd,
     [SYS_brk] = sys_brk,
     [SYS_uname] = sys_uname,

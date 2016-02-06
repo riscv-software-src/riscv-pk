@@ -74,14 +74,10 @@ trap_entry:
   
   .globl start_user
 start_user:
-  csrc sstatus, SSTATUS_IE
-  li t0, SSTATUS_PS
-  LOAD t1, 32*REGBYTES(a0)
-  LOAD t2, 33*REGBYTES(a0)
-  csrc sstatus, t0
-  and t0, t0, t1
-  csrs sstatus, t0
-  csrw sepc, t2
+  LOAD t0, 32*REGBYTES(a0)
+  LOAD t1, 33*REGBYTES(a0)
+  csrw sstatus, t0
+  csrw sepc, t1
 
   # restore x registers
   LOAD  x1,1*REGBYTES(a0)

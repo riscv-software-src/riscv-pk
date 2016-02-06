@@ -6,8 +6,9 @@
 #include "config.h"
 #include "encoding.h"
 
-#define disable_irqsave() clear_csr(sstatus, SSTATUS_IE)
-#define enable_irqrestore(flags) set_csr(sstatus, (flags) & SSTATUS_IE)
+// Currently, interrupts are always disabled when in pk/bbl.
+#define disable_irqsave() (0)
+#define enable_irqrestore(flags) ((void) (flags))
 
 typedef struct { int lock; } spinlock_t;
 #define SPINLOCK_INIT {0}

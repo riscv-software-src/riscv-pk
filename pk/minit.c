@@ -12,13 +12,8 @@ static void mstatus_init()
     panic("supervisor support is required");
 
   uintptr_t ms = 0;
-  ms = INSERT_FIELD(ms, MSTATUS_PRV, PRV_M);
-  ms = INSERT_FIELD(ms, MSTATUS_PRV1, PRV_S);
-  ms = INSERT_FIELD(ms, MSTATUS_PRV2, PRV_U);
-  ms = INSERT_FIELD(ms, MSTATUS_IE2, 1);
   ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
-  ms = INSERT_FIELD(ms, MSTATUS_FS, 3);
-  ms = INSERT_FIELD(ms, MSTATUS_XS, 3);
+  ms = INSERT_FIELD(ms, MSTATUS_FS, 1);
   write_csr(mstatus, ms);
   ms = read_csr(mstatus);
 
@@ -27,7 +22,24 @@ static void mstatus_init()
 
   write_csr(mtimecmp, 0);
   clear_csr(mip, MIP_MSIP);
-  set_csr(mie, MIP_MSIP);
+  write_csr(mie, -1);
+}
+
+static void delegate_traps()
+{
+  uintptr_t interrupts = MIP_SSIP | MIP_STIP;
+  uintptr_t exceptions =
+    (1U << CAUSE_MISALIGNED_FETCH) |
+    (1U << CAUSE_FAULT_FETCH | CAUSE_BREAKPOINT) |
+    (1U << CAUSE_FAULT_LOAD) |
+    (1U << CAUSE_FAULT_STORE) |
+    (1U << CAUSE_BREAKPOINT) |
+    (1U << CAUSE_USER_ECALL);
+
+  write_csr(mideleg, interrupts);
+  write_csr(medeleg, exceptions);
+  kassert(read_csr(mideleg) == interrupts);
+  kassert(read_csr(medeleg) == exceptions);
 }
 
 static void memory_init()
@@ -71,18 +83,19 @@ void hls_init(uint32_t id, uintptr_t* csrs)
   }
 }
 
-static void init_hart()
+static void hart_init()
 {
   mstatus_init();
   fp_init();
+  delegate_traps();
 }
 
 void init_first_hart()
 {
-  init_hart();
+  file_init();
+  hart_init();
 
   memset(HLS(), 0, sizeof(*HLS()));
-  file_init();
   parse_device_tree();
 
   struct mainvars arg_buffer;
@@ -95,7 +108,7 @@ void init_first_hart()
 
 void init_other_hart()
 {
-  init_hart();
+  hart_init();
 
   // wait until virtual memory is enabled
   while (*(pte_t* volatile*)&root_page_table == NULL)

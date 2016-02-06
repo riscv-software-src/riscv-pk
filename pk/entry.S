@@ -66,8 +66,8 @@ trap_entry:
   jal handle_trap
 
   mv a0,sp
-  # don't restore sstatus if trap came from kernel
-  andi s0,s0,SSTATUS_PS
+  # don't restore sscratch if trap came from kernel
+  andi s0,s0,SSTATUS_SPP
   bnez s0,start_user
   addi sp,sp,320
   csrw sscratch,sp

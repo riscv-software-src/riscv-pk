@@ -4,7 +4,7 @@
 #include "vm.h"
 #include <errno.h>
 
-uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
+void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   asm (".pushsection .rodata\n"
        "illegal_insn_trap_table:\n"
@@ -34,9 +34,9 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
        "  .word truly_illegal_insn\n"
 #ifdef PK_ENABLE_FP_EMULATION
        "  .word emulate_fmadd\n"
-       "  .word emulate_fmsub\n"
-       "  .word emulate_fnmsub\n"
-       "  .word emulate_fnmadd\n"
+       "  .word emulate_fmadd\n"
+       "  .word emulate_fmadd\n"
+       "  .word emulate_fmadd\n"
        "  .word emulate_fp\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -63,17 +63,17 @@ uintptr_t illegal_insn_trap(uintptr_t mcause, uintptr_t* regs)
        "  .popsection");
 
   uintptr_t mstatus = read_csr(mstatus);
-  uintptr_t mepc = read_csr(mepc);
 
-  insn_fetch_t fetch = get_insn(mcause, mstatus, mepc);
+  insn_t insn = get_insn(mepc);
 
-  if (fetch.error || (fetch.insn & 3) != 3)
-    return -1;
+  if ((insn & 3) != 3)
+    return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+  write_csr(mepc, mepc + 4);
 
   extern int32_t illegal_insn_trap_table[];
-  int32_t* pf = (void*)illegal_insn_trap_table + (fetch.insn & 0x7c);
+  int32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
   emulation_func f = (emulation_func)(uintptr_t)*pf;
-  return f(mcause, regs, fetch.insn, mstatus, mepc);
+  f(regs, mcause, mepc, mstatus, insn);
 }
 
 void __attribute__((noreturn)) bad_trap()
@@ -81,11 +81,11 @@ void __attribute__((noreturn)) bad_trap()
   panic("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
 }
 
-uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
+void htif_interrupt()
 {
   uintptr_t fromhost = swap_csr(mfromhost, 0);
   if (!fromhost)
-    return 0;
+    return;
 
   uintptr_t dev = FROMHOST_DEV(fromhost);
   uintptr_t cmd = FROMHOST_CMD(fromhost);
@@ -95,7 +95,7 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
   sbi_device_message* prev = NULL;
   for (size_t i = 0, n = HLS()->device_request_queue_size; i < n; i++) {
     if (!supervisor_paddr_valid(m, sizeof(*m))
-        && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) != PRV_M)
+        && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_MPP) != PRV_M)
       panic("htif: page fault");
 
     sbi_device_message* next = (void*)m->sbi_private_data;
@@ -119,7 +119,7 @@ uintptr_t htif_interrupt(uintptr_t mcause, uintptr_t* regs)
 
       // signal software interrupt
       set_csr(mip, MIP_SSIP);
-      return 0;
+      return;
     }
 
     prev = m;
@@ -141,7 +141,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
     uintptr_t fromhost = read_csr(mfromhost);
     if (FROMHOST_DEV(fromhost) != 1 || FROMHOST_CMD(fromhost) != 1) {
       if (fromhost)
-        htif_interrupt(0, 0);
+        htif_interrupt();
       continue;
     }
     write_csr(mfromhost, 0);
@@ -168,7 +168,7 @@ static uintptr_t mcall_dev_req(sbi_device_message *m)
 {
   //printm("req %d %p\n", HLS()->device_request_queue_size, m);
   if (!supervisor_paddr_valid(m, sizeof(*m))
-      && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_PRV1) != PRV_M)
+      && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_MPP) != PRV_M)
     return -EFAULT;
 
   if ((m->dev > 0xFFU) | (m->cmd > 0xFFU) | (m->data > 0x0000FFFFFFFFFFFFU))
@@ -186,7 +186,7 @@ static uintptr_t mcall_dev_req(sbi_device_message *m)
 
 static uintptr_t mcall_dev_resp()
 {
-  htif_interrupt(0, 0);
+  htif_interrupt();
 
   sbi_device_message* m = HLS()->device_response_queue_head;
   if (m) {
@@ -249,7 +249,7 @@ static uintptr_t mcall_set_timer(unsigned long long when)
   return 0;
 }
 
-uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
+void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   uintptr_t n = regs[17], arg0 = regs[10], retval;
   switch (n)
@@ -283,25 +283,22 @@ uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
       break;
   }
   regs[10] = retval;
-  write_csr(mepc, read_csr(mepc) + 4);
-  return 0;
+  write_csr(mepc, mepc + 4);
 }
 
-static uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs, uintptr_t mepc)
+static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)
 {
   // See if this trap occurred when emulating an instruction on behalf of
   // a lower privilege level.
   extern int32_t unprivileged_access_ranges[];
   extern int32_t unprivileged_access_ranges_end[];
-
   int32_t* p = unprivileged_access_ranges;
   do {
     if (mepc >= p[0] && mepc < p[1]) {
-      // Yes.  Skip to the end of the unprivileged access region.
-      // Mark t0 zero so the emulation routine knows this occurred.
-      regs[5] = 0;
-      write_csr(mepc, p[1]);
-      return 0;
+      // Yes.  Redirect the trap to the supervisor.
+      write_csr(sbadaddr, read_csr(mbadaddr));
+      redirect_trap(regs[14], regs[5]);
+      return;
     }
     p += 2;
   } while (p < unprivileged_access_ranges_end);
@@ -310,15 +307,9 @@ static uintptr_t machine_page_fault(uintptr_t mcause, uintptr_t* regs, uintptr_t
   bad_trap();
 }
 
-static uintptr_t machine_illegal_instruction(uintptr_t mcause, uintptr_t* regs, uintptr_t mepc)
-{
-  bad_trap();
-}
-
-uintptr_t trap_from_machine_mode(uintptr_t dummy, uintptr_t* regs)
+void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
   uintptr_t mcause = read_csr(mcause);
-  uintptr_t mepc = read_csr(mepc);
   // restore mscratch, since we clobbered it.
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
 
@@ -326,11 +317,11 @@ uintptr_t trap_from_machine_mode(uintptr_t dummy, uintptr_t* regs)
   {
     case CAUSE_FAULT_LOAD:
     case CAUSE_FAULT_STORE:
-      return machine_page_fault(mcause, regs, mepc);
+      return machine_page_fault(regs, mepc);
     case CAUSE_ILLEGAL_INSTRUCTION:
-      return machine_illegal_instruction(mcause, regs, mepc);
+      return bad_trap();
     case CAUSE_MACHINE_ECALL:
-      return mcall_trap(mcause, regs);
+      return mcall_trap(regs, dummy, mepc);
     default:
       bad_trap();
   }

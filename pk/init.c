@@ -19,7 +19,7 @@ char* uarch_counter_names[NUM_COUNTERS];
 void init_tf(trapframe_t* tf, long pc, long sp)
 {
   memset(tf, 0, sizeof(*tf));
-  tf->status = read_csr(sstatus);
+  tf->status = (read_csr(sstatus) &~ SSTATUS_SPP &~ SSTATUS_SIE) | SSTATUS_SPIE;
   tf->gpr[2] = sp;
   tf->epc = pc;
 }
@@ -67,4 +67,12 @@ void boot_loader(struct mainvars* args)
   load_elf((char*)(uintptr_t)args->argv[0], &current);
 
   run_loaded_program(args);
+}
+
+void prepare_supervisor_mode()
+{
+  uintptr_t mstatus = read_csr(mstatus);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
+  write_csr(mstatus, mstatus);
 }

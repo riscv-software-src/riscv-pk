@@ -11,72 +11,34 @@
 
 #define GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
 
-#define unpriv_mem_access(a, b, c, d, ...) GET_MACRO(__VA_ARGS__, unpriv_mem_access3, unpriv_mem_access2, unpriv_mem_access1, unpriv_mem_access0)(a, b, c, d, __VA_ARGS__)
-#define unpriv_mem_access0(a, b, c, d, e) ({ uintptr_t z = 0, z1 = 0, z2 = 0; unpriv_mem_access_base(a, b, c, d, e, z, z1, z2); })
-#define unpriv_mem_access1(a, b, c, d, e, f) ({ uintptr_t z = 0, z1 = 0; unpriv_mem_access_base(a, b, c, d, e, f, z, z1); })
-#define unpriv_mem_access2(a, b, c, d, e, f, g) ({ uintptr_t z = 0; unpriv_mem_access_base(a, b, c, d, e, f, g, z); })
-#define unpriv_mem_access3(a, b, c, d, e, f, g, h) unpriv_mem_access_base(a, b, c, d, e, f, g, h)
-#define unpriv_mem_access_base(mstatus, mepc, code, o0, o1, i0, i1, i2) ({ \
-  register uintptr_t result asm("t0"); \
-  uintptr_t unused1, unused2 __attribute__((unused)); \
-  uintptr_t scratch = MSTATUS_MPRV; \
-  asm volatile ("csrrs %[result], mstatus, %[scratch]\n" \
+#define unpriv_mem_access(a, b, c, ...) GET_MACRO(__VA_ARGS__, unpriv_mem_access3, unpriv_mem_access2, unpriv_mem_access1, unpriv_mem_access0)(a, b, c, __VA_ARGS__)
+#define unpriv_mem_access0(a, b, c, d) ({ uintptr_t z = 0, z1 = 0, z2 = 0; unpriv_mem_access_base(a, b, c, d, z, z1, z2); })
+#define unpriv_mem_access1(a, b, c, d, e) ({ uintptr_t z = 0, z1 = 0; unpriv_mem_access_base(a, b, c, d, e, z, z1); })
+#define unpriv_mem_access2(a, b, c, d, e, f) ({ uintptr_t z = 0; unpriv_mem_access_base(a, b, c, d, e, f, z); })
+#define unpriv_mem_access3(a, b, c, d, e, f, g) unpriv_mem_access_base(a, b, c, d, e, f, g)
+#define unpriv_mem_access_base(code, o0, o1, o2, i0, i1, i2) ({ \
+  register uintptr_t scratch asm ("t0") = MSTATUS_MPRV; \
+  register uintptr_t __mepc asm ("a4") = mepc; \
+  uintptr_t unused1, unused2, unused3 __attribute__((unused)); \
+  asm volatile ("csrrs %[scratch], mstatus, %[scratch]\n" \
                 "98: " code "\n" \
-                "99: csrc mstatus, %[scratch]\n" \
+                "99: csrw mstatus, %[scratch]\n" \
                 ".pushsection .unpriv,\"a\",@progbits\n" \
                 ".word 98b; .word 99b\n" \
                 ".popsection" \
-                : [o0] "=&r"(o0), [o1] "=&r"(o1), \
-                  [result] "+&r"(result) \
+                : [o0] "=&r"(o0), [o1] "=&r"(o1), [o2] "=&r"(o2), \
+                  [scratch] "+&r"(scratch) \
                 : [i0] "rJ"(i0), [i1] "rJ"(i1), [i2] "rJ"(i2), \
-                  [scratch] "r"(scratch), [mepc] "r"(mepc)); \
-  unlikely(!result); })
-
-#define restore_mstatus(mstatus, mepc) ({ \
-  uintptr_t scratch; \
-  uintptr_t mask = MSTATUS_PRV1 | MSTATUS_IE1 | MSTATUS_PRV2 | MSTATUS_IE2 | MSTATUS_PRV3 | MSTATUS_IE3; \
-  asm volatile("csrc mstatus, %[mask];" \
-               "csrw mepc, %[mepc];" \
-               "and %[scratch], %[mask], %[mstatus];" \
-               "csrs mstatus, %[scratch]" \
-               : [scratch] "=r"(scratch) \
-               : [mstatus] "r"(mstatus), [mepc] "r"(mepc), \
-                 [mask] "r"(mask)); })
-
-#define unpriv_load_1(ptr, dest, mstatus, mepc, type, insn) ({ \
-  type value, dummy; void* addr = (ptr); \
-  uintptr_t res = unpriv_mem_access(mstatus, mepc, insn " %[value], (%[addr])", value, dummy, addr); \
-  (dest) = (typeof(dest))(uintptr_t)value; \
-  res; })
-#define unpriv_load(ptr, dest) ({ \
-  uintptr_t res; \
-  uintptr_t mstatus = read_csr(mstatus), mepc = read_csr(mepc); \
-  if (sizeof(*ptr) == 1) res = unpriv_load_1(ptr, dest, mstatus, mepc, int8_t, "lb"); \
-  else if (sizeof(*ptr) == 2) res = unpriv_load_1(ptr, dest, mstatus, mepc, int16_t, "lh"); \
-  else if (sizeof(*ptr) == 4) res = unpriv_load_1(ptr, dest, mstatus, mepc, int32_t, "lw"); \
-  else if (sizeof(uintptr_t) == 8 && sizeof(*ptr) == 8) res = unpriv_load_1(ptr, dest, mstatus, mepc, int64_t, "ld"); \
-  else __builtin_trap(); \
-  if (res) restore_mstatus(mstatus, mepc); \
-  res; })
-
-#define unpriv_store_1(ptr, src, mstatus, mepc, type, insn) ({ \
-  type dummy1, dummy2, value = (type)(uintptr_t)(src); void* addr = (ptr); \
-  uintptr_t res = unpriv_mem_access(mstatus, mepc, insn " %z[value], (%[addr])", dummy1, dummy2, addr, value); \
-  res; })
-#define unpriv_store(ptr, src) ({ \
-  uintptr_t res; \
-  uintptr_t mstatus = read_csr(mstatus), mepc = read_csr(mepc); \
-  if (sizeof(*ptr) == 1) res = unpriv_store_1(ptr, src, mstatus, mepc, int8_t, "sb"); \
-  else if (sizeof(*ptr) == 2) res = unpriv_store_1(ptr, src, mstatus, mepc, int16_t, "sh"); \
-  else if (sizeof(*ptr) == 4) res = unpriv_store_1(ptr, src, mstatus, mepc, int32_t, "sw"); \
-  else if (sizeof(uintptr_t) == 8 && sizeof(*ptr) == 8) res = unpriv_store_1(ptr, src, mstatus, mepc, int64_t, "sd"); \
-  else __builtin_trap(); \
-  if (res) restore_mstatus(mstatus, mepc); \
-  res; })
+                  "r"(__mepc)); \
+})
 
 typedef uint32_t insn_t;
-typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, uintptr_t);
-#define DECLARE_EMULATION_FUNC(name) uintptr_t name(uintptr_t mcause, uintptr_t* regs, insn_t insn, uintptr_t mstatus, uintptr_t mepc)
+typedef void (*emulation_func)(uintptr_t*, uintptr_t, uintptr_t, uintptr_t, insn_t);
+#define DECLARE_EMULATION_FUNC(name) void name(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc, uintptr_t mstatus, insn_t insn)
+
+void truly_illegal_insn(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc, uintptr_t mstatus, insn_t insn);
+void redirect_trap(uintptr_t epc, uintptr_t mstatus);
+void leave();
 
 #define GET_REG(insn, pos, regs) ({ \
   int mask = (1 << (5+LOG_REGBYTES)) - (1 << LOG_REGBYTES); \
@@ -127,7 +89,7 @@ typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, ui
 # define SETUP_STATIC_ROUNDING(insn) ({ \
   register long tp asm("tp") = read_csr(frm); \
   if (likely(((insn) & MASK_FUNCT3) == MASK_FUNCT3)) ; \
-  else if (GET_RM(insn) > 4) return -1; \
+  else if (GET_RM(insn) > 4) return truly_illegal_insn(regs, mcause, mepc, mstatus, insn); \
   else tp = GET_RM(insn); \
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) set_csr(fflags, which)
@@ -147,7 +109,7 @@ typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, ui
 # define SETUP_STATIC_ROUNDING(insn) ({ \
   register int tp asm("tp"); tp &= 0xFF; \
   if (likely(((insn) & MASK_FUNCT3) == MASK_FUNCT3)) tp |= tp << 8; \
-  else if (GET_RM(insn) > 4) return -1; \
+  else if (GET_RM(insn) > 4) return truly_illegal_insn(regs, mcause, mepc, mstatus, insn); \
   else tp |= GET_RM(insn) << 13; \
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) ({ asm volatile ("or tp, tp, %0" :: "rI"(which)); })
@@ -164,42 +126,26 @@ typedef uintptr_t (*emulation_func)(uintptr_t, uintptr_t*, insn_t, uintptr_t, ui
 #define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 7, regs, val), SET_FS_DIRTY())
 #define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 
-typedef struct {
-  uintptr_t error;
-  insn_t insn;
-} insn_fetch_t;
-
-static insn_fetch_t __attribute__((always_inline))
-  get_insn(uintptr_t mcause, uintptr_t mstatus, uintptr_t mepc)
+static insn_t __attribute__((always_inline)) get_insn(uintptr_t mepc)
 {
-  insn_fetch_t fetch;
   insn_t insn;
 
 #ifdef __riscv_compressed
   int rvc_mask = 3, insn_hi;
-  fetch.error = unpriv_mem_access(mstatus, mepc,
-                                  "lhu %[insn], 0(%[mepc]);"
-                                  "and %[insn_hi], %[insn], %[rvc_mask];"
-                                  "bne %[insn_hi], %[rvc_mask], 1f;"
-                                  "lh %[insn_hi], 2(%[mepc]);"
-                                  "sll %[insn_hi], %[insn_hi], 16;"
-                                  "or %[insn], %[insn], %[insn_hi];"
-                                  "1:",
-                                  insn, insn_hi, rvc_mask);
+  unpriv_mem_access("lhu %[insn], 0(%[mepc]);"
+                    "and %[insn_hi], %[insn], %[rvc_mask];"
+                    "bne %[insn_hi], %[rvc_mask], 1f;"
+                    "lh %[insn_hi], 2(%[mepc]);"
+                    "sll %[insn_hi], %[insn_hi], 16;"
+                    "or %[insn], %[insn], %[insn_hi];"
+                    "1:",
+                    insn, insn_hi, unused1, mepc, rvc_mask);
 #else
-  fetch.error = unpriv_mem_access(mstatus, mepc,
-                                  "lw %[insn], 0(%[mepc])",
-                                  insn, unused1);
+  unpriv_mem_access("lw %[insn], 0(%[mepc])",
+                    insn, unused1, unused2, mepc);
 #endif
-  fetch.insn = insn;
 
-  if (unlikely(fetch.error)) {
-    // we've messed up mstatus, mepc, and mcause, so restore them all
-    restore_mstatus(mstatus, mepc);
-    write_csr(mcause, mcause);
-  }
-
-  return fetch;
+  return insn;
 }
 
 static inline long __attribute__((pure)) cpuid()

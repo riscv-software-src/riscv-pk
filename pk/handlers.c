@@ -47,7 +47,7 @@ void handle_misaligned_store(trapframe_t* tf)
 static void segfault(trapframe_t* tf, uintptr_t addr, const char* type)
 {
   dump_tf(tf);
-  const char* who = (tf->status & MSTATUS_PRV1) ? "Kernel" : "User";
+  const char* who = (tf->status & SSTATUS_SPP) ? "Kernel" : "User";
   panic("%s %s segfault @ %p", who, type, addr);
 }
 

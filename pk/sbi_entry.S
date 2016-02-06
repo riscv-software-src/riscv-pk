@@ -72,6 +72,14 @@ sbi_base:
   ecall
   ret
 
+  # mask_interrupt
+  .align 4
+  j __sbi_mask_interrupt
+
+  # unmask_interrupt
+  .align 4
+  j __sbi_unmask_interrupt
+
   # end of SBI trampolines
 
   .globl do_mcall

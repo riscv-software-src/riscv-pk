@@ -9,3 +9,5 @@
 .globl sbi_timebase; sbi_timebase = -1920
 .globl sbi_shutdown; sbi_shutdown = -1904
 .globl sbi_set_timer; sbi_set_timer = -1888
+.globl sbi_mask_interrupt; sbi_mask_interrupt = -1872
+.globl sbi_unmask_interrupt; sbi_unmask_interrupt = -1856

@@ -28,4 +28,7 @@ typedef struct {
 unsigned long sbi_send_device_request(unsigned long req);
 unsigned long sbi_receive_device_response(void);
 
+unsigned long sbi_mask_interrupt(unsigned long which);
+unsigned long sbi_unmask_interrupt(unsigned long which);
+
 #endif

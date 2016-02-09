@@ -192,6 +192,7 @@ DECLARE_EMULATION_FUNC(emulate_mul_div)
 {
   uintptr_t rs1 = GET_RS1(insn, regs), rs2 = GET_RS2(insn, regs), val;
 
+#ifndef __riscv_muldiv
   // If compiled with -mno-multiply, GCC will expand these out
   if ((insn & MASK_MUL) == MATCH_MUL)
     val = rs1 * rs2;
@@ -210,6 +211,7 @@ DECLARE_EMULATION_FUNC(emulate_mul_div)
   else if ((insn & MASK_MULHSU) == MATCH_MULHSU)
     val = ((double_int)(intptr_t)rs1 * (double_int)rs2) >> (8 * sizeof(rs1));
   else
+#endif
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
   SET_RD(insn, regs, val);
@@ -217,13 +219,10 @@ DECLARE_EMULATION_FUNC(emulate_mul_div)
 
 DECLARE_EMULATION_FUNC(emulate_mul_div32)
 {
-#ifndef __riscv64
-  return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
-#endif
-
   uint32_t rs1 = GET_RS1(insn, regs), rs2 = GET_RS2(insn, regs);
   int32_t val;
 
+#if defined(__riscv64) && !defined(__riscv_muldiv)
   // If compiled with -mno-multiply, GCC will expand these out
   if ((insn & MASK_MULW) == MATCH_MULW)
     val = rs1 * rs2;
@@ -236,6 +235,7 @@ DECLARE_EMULATION_FUNC(emulate_mul_div32)
   else if ((insn & MASK_REMUW) == MATCH_REMUW)
     val = rs1 % rs2;
   else
+#endif
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
   SET_RD(insn, regs, val);
@@ -245,6 +245,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
 {
   switch (num)
   {
+#ifndef __riscv_hard_float
     case CSR_FRM:
       if ((mstatus & MSTATUS_FS) == 0) break;
       *result = GET_FRM();
@@ -257,6 +258,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
       if ((mstatus & MSTATUS_FS) == 0) break;
       *result = GET_FCSR();
       return 0;
+#endif
   }
   return -1;
 }
@@ -265,9 +267,11 @@ static inline void emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus
 {
   switch (num)
   {
+#ifndef __riscv_hard_float
     case CSR_FRM: SET_FRM(value); return;
     case CSR_FFLAGS: SET_FFLAGS(value); return;
     case CSR_FCSR: SET_FCSR(value); return;
+#endif
   }
 }
 

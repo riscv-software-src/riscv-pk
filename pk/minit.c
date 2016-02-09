@@ -47,6 +47,9 @@ static void memory_init()
   if (mem_size == 0)
     panic("could not determine memory capacity");
 
+  if ((intptr_t)mem_size < 0)
+    mem_size = INTPTR_MIN;
+
   if (num_harts == 0)
     panic("could not determine number of harts");
 }

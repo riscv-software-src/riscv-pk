@@ -225,15 +225,15 @@ DECLARE_EMULATION_FUNC(emulate_mul_div32)
   int32_t val;
 
   // If compiled with -mno-multiply, GCC will expand these out
-  if ((insn & MASK_MUL) == MATCH_MULW)
+  if ((insn & MASK_MULW) == MATCH_MULW)
     val = rs1 * rs2;
-  else if ((insn & MASK_DIV) == MATCH_DIV)
+  else if ((insn & MASK_DIVW) == MATCH_DIVW)
     val = (int32_t)rs1 / (int32_t)rs2;
-  else if ((insn & MASK_DIVU) == MATCH_DIVU)
+  else if ((insn & MASK_DIVUW) == MATCH_DIVUW)
     val = rs1 / rs2;
-  else if ((insn & MASK_REM) == MATCH_REM)
+  else if ((insn & MASK_REMW) == MATCH_REMW)
     val = (int32_t)rs1 % (int32_t)rs2;
-  else if ((insn & MASK_REMU) == MATCH_REMU)
+  else if ((insn & MASK_REMUW) == MATCH_REMUW)
     val = rs1 % rs2;
   else
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);

@@ -3,7 +3,11 @@
 #ifndef _PK_H
 #define _PK_H
 
-#define MAX_HARTS 32 // coupled to width of booted_harts_mask
+#ifdef __riscv_atomic
+# define MAX_HARTS 32 // coupled to width of booted_harts_mask
+#else
+# define MAX_HARTS 1
+#endif
 
 #ifndef __ASSEMBLER__
 

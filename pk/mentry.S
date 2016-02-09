@@ -125,6 +125,7 @@ mentry:
   j init_first_hart
 
 .LmultiHart:
+#if MAX_HARTS > 1
   # make sure our hart id is within a valid range
   li a1, MAX_HARTS
   bgeu a0, a1, .LmultiHart
@@ -142,6 +143,9 @@ mentry:
   beqz sp, 1b
 
   j init_other_hart
+#else
+  j .LmultiHart
+#endif
 
 .Linterrupt:
   sll a1, a1, 1    # discard MSB

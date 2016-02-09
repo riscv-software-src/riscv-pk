@@ -31,17 +31,10 @@ static void handle_misaligned_fetch(trapframe_t* tf)
   panic("Misaligned instruction access!");
 }
 
-void handle_misaligned_load(trapframe_t* tf)
-{
-  // TODO emulate misaligned loads and stores
-  dump_tf(tf);
-  panic("Misaligned load!");
-}
-
 void handle_misaligned_store(trapframe_t* tf)
 {
   dump_tf(tf);
-  panic("Misaligned store!");
+  panic("Misaligned AMO!");
 }
 
 static void segfault(trapframe_t* tf, uintptr_t addr, const char* type)
@@ -94,7 +87,6 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
     [CAUSE_USER_ECALL] = handle_syscall,
     [CAUSE_BREAKPOINT] = handle_breakpoint,
-    [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,
     [CAUSE_FAULT_LOAD] = handle_fault_load,
     [CAUSE_FAULT_STORE] = handle_fault_store,

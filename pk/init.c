@@ -68,11 +68,3 @@ void boot_loader(struct mainvars* args)
 
   run_loaded_program(args);
 }
-
-void prepare_supervisor_mode()
-{
-  uintptr_t mstatus = read_csr(mstatus);
-  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
-  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
-  write_csr(mstatus, mstatus);
-}

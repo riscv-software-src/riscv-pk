@@ -62,9 +62,8 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
        "  .popsection");
 
-  uintptr_t mstatus = read_csr(mstatus);
-
-  insn_t insn = get_insn(mepc);
+  uintptr_t mstatus;
+  insn_t insn = get_insn(mepc, &mstatus);
 
   if ((insn & 3) != 3)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
@@ -288,40 +287,26 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 
 static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)
 {
-  // See if this trap occurred when emulating an instruction on behalf of
-  // a lower privilege level.
-  extern int32_t unprivileged_access_ranges[];
-  extern int32_t unprivileged_access_ranges_end[];
-  int32_t* p = unprivileged_access_ranges;
-  do {
-    if (mepc >= p[0] && mepc < p[1]) {
-      // Yes.  Redirect the trap to the supervisor.
-      write_csr(sbadaddr, read_csr(mbadaddr));
-      redirect_trap(regs[14], regs[5]);
-      return;
-    }
-    p += 2;
-  } while (p < unprivileged_access_ranges_end);
-
-  // No.  We're boned.
+  // MPRV=1 iff this trap occurred while emulating an instruction on behalf
+  // of a lower privilege level, MPRV=1. In that case, a2=epc and a3=mstatus.
+  if (read_csr(mstatus) & MSTATUS_MPRV) {
+    write_csr(sbadaddr, read_csr(mbadaddr));
+    return redirect_trap(regs[12], regs[13]);
+  }
   bad_trap();
 }
 
 void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
   uintptr_t mcause = read_csr(mcause);
-  // restore mscratch, since we clobbered it.
-  write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
 
   switch (mcause)
   {
     case CAUSE_FAULT_LOAD:
     case CAUSE_FAULT_STORE:
       return machine_page_fault(regs, mepc);
-    case CAUSE_ILLEGAL_INSTRUCTION:
-      return bad_trap();
     case CAUSE_MACHINE_ECALL:
-      return mcall_trap(regs, dummy, mepc);
+      return mcall_trap(regs, mcause, mepc);
     default:
       bad_trap();
   }

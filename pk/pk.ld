@@ -1,6 +1,6 @@
 OUTPUT_ARCH( "riscv" )
 
-ENTRY( mentry )
+ENTRY( reset_vector )
 
 SECTIONS
 {
@@ -10,7 +10,7 @@ SECTIONS
   /*--------------------------------------------------------------------*/
 
   /* Begining of code and text segment */
-  . = 0x100;
+  . = 0;
   _ftext = .;
   PROVIDE( eprol = . );
 
@@ -34,10 +34,6 @@ SECTIONS
     *(.rodata)
     *(.rodata.*)
     *(.gnu.linkonce.r.*)
-
-    unprivileged_access_ranges = .;
-    *(.unpriv)
-    unprivileged_access_ranges_end = .;
   }
 
   /* End of code and read-only segment */

@@ -1,6 +1,5 @@
 #include "devicetree.h"
 #include "encoding.h"
-#include "pk.h"
 #include "mtrap.h"
 #include <stdbool.h>
 

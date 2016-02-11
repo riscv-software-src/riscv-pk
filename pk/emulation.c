@@ -16,7 +16,9 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus)
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
   write_csr(mstatus, mstatus);
-  leave();
+
+  extern void __redirect_trap();
+  return __redirect_trap();
 }
 
 void __attribute__((noinline)) truly_illegal_insn(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc, uintptr_t mstatus, insn_t insn)
@@ -26,8 +28,8 @@ void __attribute__((noinline)) truly_illegal_insn(uintptr_t* regs, uintptr_t mca
 
 void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
-  uintptr_t mstatus = read_csr(mstatus);
-  insn_t insn = get_insn(mepc);
+  uintptr_t mstatus;
+  insn_t insn = get_insn(mepc, &mstatus);
 
   int shift = 0, fp = 0, len;
   if ((insn & MASK_LW) == MATCH_LW)
@@ -74,8 +76,8 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 
 void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
-  uintptr_t mstatus = read_csr(mstatus);
-  insn_t insn = get_insn(mepc);
+  uintptr_t mstatus;
+  insn_t insn = get_insn(mepc, &mstatus);
 
   uintptr_t val = GET_RS2(insn, regs), error;
   int len;
@@ -118,7 +120,7 @@ DECLARE_EMULATION_FUNC(emulate_float_load)
         return misaligned_load_trap(regs, mcause, mepc);
 
       unpriv_mem_access("lw %[val_lo], (%[addr])",
-                        val_lo, unused1, unused2, addr, mstatus/*X*/);
+                        val_lo, unused1, unused2, addr, mepc/*X*/);
       SET_F32_RD(insn, regs, val_lo);
       break;
 
@@ -128,11 +130,11 @@ DECLARE_EMULATION_FUNC(emulate_float_load)
 
 #ifdef __riscv64
       unpriv_mem_access("ld %[val], (%[addr])",
-                        val, val_hi/*X*/, unused1, addr, mstatus/*X*/);
+                        val, val_hi/*X*/, unused1, addr, mepc/*X*/);
 #else
       unpriv_mem_access("lw %[val_lo], (%[addr]);"
                         "lw %[val_hi], 4(%[addr])",
-                        val_lo, val_hi, unused1, addr, mstatus/*X*/);
+                        val_lo, val_hi, unused1, addr, mepc/*X*/);
       val = val_lo | ((uint64_t)val_hi << 32);
 #endif
       SET_F64_RD(insn, regs, val);
@@ -592,6 +594,9 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_if)
       else
         result = (uint64_t)uint_val;
       break;
+
+    default:
+      __builtin_unreachable();
   }
 
   if (uint_val > limit) {

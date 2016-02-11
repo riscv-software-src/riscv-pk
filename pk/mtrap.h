@@ -17,19 +17,17 @@
 #define unpriv_mem_access2(a, b, c, d, e, f) ({ uintptr_t z = 0; unpriv_mem_access_base(a, b, c, d, e, f, z); })
 #define unpriv_mem_access3(a, b, c, d, e, f, g) unpriv_mem_access_base(a, b, c, d, e, f, g)
 #define unpriv_mem_access_base(code, o0, o1, o2, i0, i1, i2) ({ \
-  register uintptr_t scratch asm ("t0") = MSTATUS_MPRV; \
-  register uintptr_t __mepc asm ("a4") = mepc; \
+  register uintptr_t mstatus asm ("a3") = MSTATUS_MPRV; \
+  register uintptr_t __mepc asm ("a2") = mepc; \
   uintptr_t unused1, unused2, unused3 __attribute__((unused)); \
-  asm volatile ("csrrs %[scratch], mstatus, %[scratch]\n" \
-                "98: " code "\n" \
-                "99: csrw mstatus, %[scratch]\n" \
-                ".pushsection .unpriv,\"a\",@progbits\n" \
-                ".word 98b; .word 99b\n" \
-                ".popsection" \
+  asm volatile ("csrrs %[mstatus], mstatus, %[mstatus]\n" \
+                code "\n" \
+                "csrw mstatus, %[mstatus]\n" \
                 : [o0] "=&r"(o0), [o1] "=&r"(o1), [o2] "=&r"(o2), \
-                  [scratch] "+&r"(scratch) \
+                  [mstatus] "+&r"(mstatus) \
                 : [i0] "rJ"(i0), [i1] "rJ"(i1), [i2] "rJ"(i2), \
                   "r"(__mepc)); \
+  (mstatus); \
 })
 
 typedef uint32_t insn_t;
@@ -38,7 +36,6 @@ typedef void (*emulation_func)(uintptr_t*, uintptr_t, uintptr_t, uintptr_t, insn
 
 void truly_illegal_insn(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc, uintptr_t mstatus, insn_t insn);
 void redirect_trap(uintptr_t epc, uintptr_t mstatus);
-void leave();
 
 #define GET_REG(insn, pos, regs) ({ \
   int mask = (1 << (5+LOG_REGBYTES)) - (1 << LOG_REGBYTES); \
@@ -126,23 +123,23 @@ void leave();
 #define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 7, regs, val), SET_FS_DIRTY())
 #define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 
-static insn_t __attribute__((always_inline)) get_insn(uintptr_t mepc)
+static insn_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t* mstatus)
 {
   insn_t insn;
 
 #ifdef __riscv_compressed
   int rvc_mask = 3, insn_hi;
-  unpriv_mem_access("lhu %[insn], 0(%[mepc]);"
-                    "and %[insn_hi], %[insn], %[rvc_mask];"
-                    "bne %[insn_hi], %[rvc_mask], 1f;"
-                    "lh %[insn_hi], 2(%[mepc]);"
-                    "sll %[insn_hi], %[insn_hi], 16;"
-                    "or %[insn], %[insn], %[insn_hi];"
-                    "1:",
-                    insn, insn_hi, unused1, mepc, rvc_mask);
+  *mstatus = unpriv_mem_access("lhu %[insn], 0(%[mepc]);"
+                               "and %[insn_hi], %[insn], %[rvc_mask];"
+                               "bne %[insn_hi], %[rvc_mask], 1f;"
+                               "lh %[insn_hi], 2(%[mepc]);"
+                               "sll %[insn_hi], %[insn_hi], 16;"
+                               "or %[insn], %[insn], %[insn_hi];"
+                               "1:",
+                               insn, insn_hi, unused1, mepc, rvc_mask);
 #else
-  unpriv_mem_access("lw %[insn], 0(%[mepc])",
-                    insn, unused1, unused2, mepc);
+  *mstatus = unpriv_mem_access("lw %[insn], 0(%[mepc])",
+                               insn, unused1, unused2, mepc);
 #endif
 
   return insn;
@@ -186,6 +183,8 @@ void hls_init(uint32_t hart_id, uintptr_t* csrs);
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
 #define OTHER_STACK_TOP(id) (MACHINE_STACK_TOP() + RISCV_PGSIZE * ((id) - HLS()->hart_id))
 #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - HLS()->hart_id)))
+
+#define printk printm
 
 #endif // !__ASSEMBLER__
 

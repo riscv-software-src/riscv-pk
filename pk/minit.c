@@ -117,7 +117,7 @@ void init_other_hart()
   while (*(pte_t* volatile*)&root_page_table == NULL)
     ;
   mb();
-  write_csr(sptbr, root_page_table);
+  write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
 
   boot_other_hart();
 }

@@ -123,7 +123,7 @@ static void __maybe_create_root_page_table()
     return;
   root_page_table = (void*)__page_alloc();
   if (have_vm)
-    write_csr(sptbr, root_page_table);
+    write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
 }
 
 static pte_t* __walk_internal(uintptr_t addr, int create)
@@ -477,7 +477,7 @@ void supervisor_vm_init()
 
   mb();
   root_page_table = root_pt;
-  write_csr(sptbr, root_pt);
+  write_csr(sptbr, (uintptr_t)root_pt >> RISCV_PGSHIFT);
 }
 
 uintptr_t pk_vm_init()

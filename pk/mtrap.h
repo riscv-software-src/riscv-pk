@@ -163,11 +163,17 @@ static inline int xlen()
 }
 
 typedef struct {
+  void (*func)(uintptr_t);
+  uintptr_t arg;
+} rpc_func_t;
+
+typedef struct {
   sbi_device_message* device_request_queue_head;
   size_t device_request_queue_size;
   sbi_device_message* device_response_queue_head;
   sbi_device_message* device_response_queue_tail;
 
+  rpc_func_t* rpc_func;
   uintptr_t* csrs;
   int hart_id;
   int ipi_pending;

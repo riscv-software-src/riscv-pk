@@ -248,9 +248,73 @@ static uintptr_t mcall_set_timer(unsigned long long when)
   return 0;
 }
 
+void software_interrupt()
+{
+  clear_csr(mip, MIP_MSIP);
+  __sync_synchronize();
+
+  if (HLS()->ipi_pending)
+    set_csr(mip, MIP_SSIP);
+
+  if (HLS()->rpc_func) {
+    __sync_synchronize();
+    rpc_func_t f = *HLS()->rpc_func;
+    (f.func)(f.arg);
+    __sync_synchronize();
+    HLS()->rpc_func = (void*)1;
+  }
+}
+
+static void call_func_all(uintptr_t* mask, void (*func)(uintptr_t), uintptr_t arg)
+{
+  kassert(MAX_HARTS <= 8*sizeof(*mask));
+  kassert(supervisor_paddr_valid((uintptr_t)mask, sizeof(uintptr_t)));
+
+  rpc_func_t f = {func, arg};
+
+  uintptr_t harts = *mask;
+  for (ssize_t i = num_harts-1; i >= 0; i--) {
+    if (((harts >> i) & 1) == 0)
+      continue;
+
+    if (HLS()->hart_id == i) {
+      func(arg);
+    } else {
+      rpc_func_t** p = &OTHER_HLS(i)->rpc_func;
+      uintptr_t* mipi = &OTHER_HLS(i)->csrs[CSR_MIPI];
+
+      while (atomic_cas(p, 0, &f) != &f)
+        software_interrupt();
+
+      __sync_synchronize();
+      *mipi = 1;
+      __sync_synchronize();
+
+      while (atomic_cas(p, (void*)1, 0) != (void*)1)
+        ;
+    }
+  }
+}
+
+static uintptr_t mcall_remote_sfence_vm(uintptr_t* hart_mask, uintptr_t asid)
+{
+  void sfence_vm(uintptr_t arg) {
+    asm volatile ("csrrw %0, sasid, %0; sfence.vm; csrw sasid, %0" : "+r"(arg));
+  }
+  call_func_all(hart_mask, &sfence_vm, asid);
+  return 0;
+}
+
+static uintptr_t mcall_remote_fence_i(uintptr_t* hart_mask)
+{
+  void fence_i(uintptr_t arg) { asm volatile ("fence.i"); }
+  call_func_all(hart_mask, &fence_i, 0);
+  return 0;
+}
+
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
-  uintptr_t n = regs[17], arg0 = regs[10], retval;
+  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval;
   switch (n)
   {
     case MCALL_HART_ID:
@@ -276,6 +340,12 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
       break;
     case MCALL_SET_TIMER:
       retval = mcall_set_timer(arg0);
+      break;
+    case MCALL_REMOTE_SFENCE_VM:
+      retval = mcall_remote_sfence_vm((uintptr_t*)arg0, arg1);
+      break;
+    case MCALL_REMOTE_FENCE_I:
+      retval = mcall_remote_fence_i((uintptr_t*)arg0);
       break;
     default:
       retval = -ENOSYS;

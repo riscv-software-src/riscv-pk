@@ -9,6 +9,8 @@
 #define MCALL_CLEAR_IPI 5
 #define MCALL_SHUTDOWN 6
 #define MCALL_SET_TIMER 7
+#define MCALL_REMOTE_SFENCE_VM 8
+#define MCALL_REMOTE_FENCE_I 9
 
 #ifndef __ASSEMBLER__
 

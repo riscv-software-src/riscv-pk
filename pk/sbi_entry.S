@@ -80,6 +80,24 @@ sbi_base:
   .align 4
   j __sbi_unmask_interrupt
 
+  # remote_sfence_vm
+  .align 4
+  li a7, MCALL_REMOTE_SFENCE_VM
+  ecall
+  ret
+
+  # remote_sfence_vm_range
+  .align 4
+  li a7, MCALL_REMOTE_SFENCE_VM
+  ecall
+  ret
+
+  # remote_fence_i
+  .align 4
+  li a7, MCALL_REMOTE_FENCE_I
+  ecall
+  ret
+
   # end of SBI trampolines
 
   .globl do_mcall

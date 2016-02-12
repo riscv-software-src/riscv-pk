@@ -11,3 +11,6 @@
 .globl sbi_set_timer; sbi_set_timer = -1888
 .globl sbi_mask_interrupt; sbi_mask_interrupt = -1872
 .globl sbi_unmask_interrupt; sbi_unmask_interrupt = -1856
+.globl sbi_remote_sfence_vm; sbi_remote_sfence_vm = -1840
+.globl sbi_remote_sfence_vm_range; sbi_remote_sfence_vm_range = -1824
+.globl sbi_remote_fence_i; sbi_remote_fence_i = -1808

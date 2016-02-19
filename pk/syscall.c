@@ -212,18 +212,22 @@ ssize_t sys_lseek(int fd, size_t ptr, int dir)
 
 long sys_lstat(const char* name, void* st)
 {
+  struct frontend_stat buf;
   size_t name_size = strlen(name)+1;
-  populate_mapping(st, sizeof(struct stat), PROT_WRITE);
-  return frontend_syscall(SYS_lstat, (uintptr_t)name, name_size, (uintptr_t)st, 0, 0, 0, 0);
+  long ret = frontend_syscall(SYS_lstat, (uintptr_t)name, name_size, (uintptr_t)&buf, 0, 0, 0, 0);
+  copy_stat(st, &buf);
+  return ret;
 }
 
 long sys_fstatat(int dirfd, const char* name, void* st, int flags)
 {
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
+    struct frontend_stat buf;
     size_t name_size = strlen(name)+1;
-    populate_mapping(st, sizeof(struct stat), PROT_WRITE);
-    return frontend_syscall(SYS_fstatat, kfd, (uintptr_t)name, name_size, (uintptr_t)st, flags, 0, 0);
+    long ret = frontend_syscall(SYS_fstatat, kfd, (uintptr_t)name, name_size, (uintptr_t)&buf, flags, 0, 0);
+    copy_stat(st, &buf);
+    return ret;
   }
   return -EBADF;
 }

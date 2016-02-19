@@ -51,3 +51,20 @@ void die(int code)
   frontend_syscall(SYS_exit, code, 0, 0, 0, 0, 0, 0);
   while (1);
 }
+
+void copy_stat(struct stat* dest, struct frontend_stat* src)
+{
+  dest->st_dev = src->dev;
+  dest->st_ino = src->ino;
+  dest->st_mode = src->mode;
+  dest->st_nlink = src->nlink;
+  dest->st_uid = src->uid;
+  dest->st_gid = src->gid;
+  dest->st_rdev = src->rdev;
+  dest->st_size = src->size;
+  dest->st_blksize = src->blksize;
+  dest->st_blocks = src->blocks;
+  dest->st_atime = src->atime;
+  dest->st_mtime = src->mtime;
+  dest->st_ctime = src->ctime;
+}

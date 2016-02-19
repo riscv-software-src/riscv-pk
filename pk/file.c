@@ -141,8 +141,10 @@ ssize_t file_pwrite(file_t* f, const void* buf, size_t size, off_t offset)
 
 int file_stat(file_t* f, struct stat* s)
 {
-  populate_mapping(s, sizeof(*s), PROT_WRITE);
-  return frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)s, 0, 0, 0, 0, 0);
+  struct frontend_stat buf;
+  long ret = frontend_syscall(SYS_fstat, f->kfd, (uintptr_t)&buf, 0, 0, 0, 0, 0);
+  copy_stat(s, &buf);
+  return ret;
 }
 
 int file_truncate(file_t* f, off_t len)

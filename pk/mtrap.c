@@ -358,7 +358,7 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)
 {
   // MPRV=1 iff this trap occurred while emulating an instruction on behalf
-  // of a lower privilege level, MPRV=1. In that case, a2=epc and a3=mstatus.
+  // of a lower privilege level. In that case, a2=epc and a3=mstatus.
   if (read_csr(mstatus) & MSTATUS_MPRV) {
     write_csr(sbadaddr, read_csr(mbadaddr));
     return redirect_trap(regs[12], regs[13]);

@@ -66,10 +66,7 @@ void run_loaded_program(struct mainvars* args)
     } \
   } while (0)
 
-  if (current.elf64)
-    STACK_INIT(uint64_t);
-  else
-    STACK_INIT(uint32_t);
+  STACK_INIT(uintptr_t);
 
   if (current.t0) // start timer if so requested
     current.t0 = rdcycle();
@@ -92,7 +89,7 @@ void run_loaded_program(struct mainvars* args)
   }
 
   trapframe_t tf;
-  init_tf(&tf, current.entry, stack_top, current.elf64);
+  init_tf(&tf, current.entry, stack_top);
   __clear_cache(0, 0);
   write_csr(sscratch, kernel_stack_top);
   start_user(&tf);

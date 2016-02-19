@@ -57,7 +57,7 @@ void printk(const char* s, ...);
 void printm(const char* s, ...);
 int vsnprintf(char* out, size_t n, const char* s, va_list vl);
 int snprintf(char* out, size_t n, const char* s, ...);
-void init_tf(trapframe_t*, long pc, long sp, int user64);
+void init_tf(trapframe_t*, long pc, long sp);
 void start_user(trapframe_t* tf) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
 void print_logo();
@@ -72,7 +72,6 @@ void run_loaded_program(struct mainvars*);
 void boot_other_hart();
 
 typedef struct {
-  int elf64;
   int phent;
   int phnum;
   int is_supervisor;

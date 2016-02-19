@@ -84,15 +84,20 @@ void load_elf(const char* fn, elf_info* info)
     } \
   } while(0)
 
-  info->elf64 = IS_ELF64(eh64);
-  if (info->elf64)
+  if (IS_ELF64(eh64))
   {
+#ifndef __riscv64
+    panic("can't run 64-bit ELF on 32-bit arch");
+#endif
     Elf64_Ehdr* eh;
     Elf64_Phdr* ph;
     LOAD_ELF;
   }
   else if (IS_ELF32(eh64))
   {
+#ifdef __riscv64
+    panic("can't run 32-bit ELF on 64-bit arch");
+#endif
     Elf32_Ehdr* eh;
     Elf32_Phdr* ph;
     LOAD_ELF;

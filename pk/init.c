@@ -16,16 +16,9 @@ int uarch_counters_enabled;
 long uarch_counters[NUM_COUNTERS];
 char* uarch_counter_names[NUM_COUNTERS];
 
-void init_tf(trapframe_t* tf, long pc, long sp, int user64)
+void init_tf(trapframe_t* tf, long pc, long sp)
 {
   memset(tf, 0, sizeof(*tf));
-#ifdef __riscv64
-  if (!user64)
-    panic("can't run 32-bit ELF on 64-bit pk");
-#else
-  if (user64)
-    panic("can't run 64-bit ELF on 32-bit pk");
-#endif
   tf->status = read_csr(sstatus);
   tf->gpr[2] = sp;
   tf->epc = pc;

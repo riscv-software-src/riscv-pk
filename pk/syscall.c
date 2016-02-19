@@ -10,15 +10,6 @@
 
 typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
-#define long_bytes (4 + 4*current.elf64)
-#define get_long(base, i) ({ long res; \
-  if (current.elf64) res = ((long*)base)[i]; \
-  else res = ((int*)base)[i]; \
-  res; })
-#define put_long(base, i, data) ({ long res; \
-  if (current.elf64) ((long*)base)[i] = (data); \
-  else ((int*)base)[i] = (data); })
-
 #define CLOCK_FREQ 1000000000
 
 void sys_exit(int code)
@@ -363,59 +354,46 @@ uintptr_t sys_mprotect(uintptr_t addr, size_t length, int prot)
 int sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
 {
   if (oact)
-  {
-    size_t sz = long_bytes * 3;
-    populate_mapping(oact, sz, PROT_WRITE);
-    memset(oact, 0, sz);
-  }
+    memset(oact, 0, sizeof(long) * 3);
 
   return 0;
 }
 
-long sys_time(void* loc)
+long sys_time(long* loc)
 {
   uintptr_t t = rdcycle() / CLOCK_FREQ;
   if (loc)
-  {
-    populate_mapping(loc, long_bytes, PROT_WRITE);
-    put_long(loc, 0, t);
-  }
+    *loc = t;
   return t;
 }
 
-int sys_times(void* restrict loc)
+int sys_times(long* loc)
 {
-  populate_mapping(loc, 4*long_bytes, PROT_WRITE);
-
   uintptr_t t = rdcycle();
   kassert(CLOCK_FREQ % 1000000 == 0);
-  put_long(loc, 0, t / (CLOCK_FREQ / 1000000));
-  put_long(loc, 1, 0);
-  put_long(loc, 2, 0);
-  put_long(loc, 3, 0);
+  loc[0] = t / (CLOCK_FREQ / 1000000);
+  loc[1] = 0;
+  loc[2] = 0;
+  loc[3] = 0;
   
   return 0;
 }
 
 int sys_gettimeofday(long* loc)
 {
-  populate_mapping(loc, 2*long_bytes, PROT_WRITE);
-
   uintptr_t t = rdcycle();
-  put_long(loc, 0, t/CLOCK_FREQ);
-  put_long(loc, 1, (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000));
+  loc[0] = t / CLOCK_FREQ;
+  loc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000);
   
   return 0;
 }
 
-ssize_t sys_writev(int fd, const void* iov, int cnt)
+ssize_t sys_writev(int fd, const long* iov, int cnt)
 {
-  populate_mapping(iov, cnt*2*long_bytes, PROT_READ);
-
   ssize_t ret = 0;
   for (int i = 0; i < cnt; i++)
   {
-    ssize_t r = sys_write(fd, (void*)get_long(iov, 2*i), get_long(iov, 2*i+1));
+    ssize_t r = sys_write(fd, (void*)iov[2*i], iov[2*i+1]);
     if (r < 0)
       return r;
     ret += r;

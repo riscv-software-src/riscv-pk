@@ -198,11 +198,19 @@ static uintptr_t mcall_dev_resp()
       // only clear SSIP if no other events are pending
       clear_csr(mip, MIP_SSIP);
       mb();
-      if (HLS()->ipi_pending)
+      if (HLS()->ipi_pending & IPI_SOFT)
         set_csr(mip, MIP_SSIP);
     }
   }
   return (uintptr_t)m;
+}
+
+static void send_ipi(uintptr_t recipient, int event)
+{
+  if ((atomic_or(&OTHER_HLS(recipient)->ipi_pending, event) & event) == 0) {
+    mb();
+    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 1;
+  }
 }
 
 static uintptr_t mcall_send_ipi(uintptr_t recipient)
@@ -210,11 +218,7 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
   if (recipient >= num_harts)
     return -1;
 
-  if (atomic_swap(&OTHER_HLS(recipient)->ipi_pending, 1) == 0) {
-    mb();
-    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 1;
-  }
-
+  send_ipi(recipient, IPI_SOFT);
   return 0;
 }
 
@@ -251,64 +255,52 @@ static uintptr_t mcall_set_timer(unsigned long long when)
 void software_interrupt()
 {
   clear_csr(mip, MIP_MSIP);
-  __sync_synchronize();
+  mb();
+  int ipi_pending = atomic_swap(&HLS()->ipi_pending, 0);
 
-  if (HLS()->ipi_pending)
+  if (ipi_pending & IPI_SOFT)
     set_csr(mip, MIP_SSIP);
 
-  if (HLS()->rpc_func) {
-    __sync_synchronize();
-    rpc_func_t f = *HLS()->rpc_func;
-    (f.func)(f.arg);
-    __sync_synchronize();
-    HLS()->rpc_func = (void*)1;
-  }
+  if (ipi_pending & IPI_FENCE_I)
+    asm volatile ("fence.i");
+
+  if (ipi_pending & IPI_SFENCE_VM)
+    asm volatile ("sfence.vm");
 }
 
-static void call_func_all(uintptr_t* mask, void (*func)(uintptr_t), uintptr_t arg)
+static void send_ipi_many(uintptr_t* pmask, int event)
 {
-  kassert(MAX_HARTS <= 8*sizeof(*mask));
-  kassert(supervisor_paddr_valid((uintptr_t)mask, sizeof(uintptr_t)));
-
-  rpc_func_t f = {func, arg};
-
-  uintptr_t harts = *mask;
-  for (ssize_t i = num_harts-1; i >= 0; i--) {
-    if (((harts >> i) & 1) == 0)
-      continue;
-
-    if (HLS()->hart_id == i) {
-      func(arg);
-    } else {
-      rpc_func_t** p = &OTHER_HLS(i)->rpc_func;
-      uintptr_t* mipi = &OTHER_HLS(i)->csrs[CSR_MIPI];
-
-      while (atomic_cas(p, 0, &f) != &f)
-        software_interrupt();
-
-      __sync_synchronize();
-      *mipi = 1;
-      __sync_synchronize();
-
-      while (atomic_cas(p, (void*)1, 0) != (void*)1)
-        ;
-    }
+  kassert(MAX_HARTS <= 8 * sizeof(*pmask));
+  uintptr_t mask = -1;
+  if (pmask) {
+    kassert(supervisor_paddr_valid((uintptr_t)pmask, sizeof(uintptr_t)));
+    mask = *pmask;
   }
+
+  // send IPIs to everyone
+  for (ssize_t i = num_harts-1; i >= 0; i--)
+    if ((mask >> i) & 1)
+      send_ipi(i, event);
+
+  // wait until all events have been handled.
+  // prevent deadlock while spinning by handling any IPIs from other harts.
+  for (ssize_t i = num_harts-1; i >= 0; i--)
+    if ((mask >> i) & 1)
+      while (OTHER_HLS(i)->ipi_pending & event)
+        software_interrupt();
 }
 
 static uintptr_t mcall_remote_sfence_vm(uintptr_t* hart_mask, uintptr_t asid)
 {
-  void sfence_vm(uintptr_t arg) {
-    asm volatile ("csrrw %0, sasid, %0; sfence.vm; csrw sasid, %0" : "+r"(arg));
-  }
-  call_func_all(hart_mask, &sfence_vm, asid);
+  // ignore the ASID and do a global flush.
+  // this allows us to avoid queueing a message.
+  send_ipi_many(hart_mask, IPI_SFENCE_VM);
   return 0;
 }
 
 static uintptr_t mcall_remote_fence_i(uintptr_t* hart_mask)
 {
-  void fence_i(uintptr_t arg) { asm volatile ("fence.i"); }
-  call_func_all(hart_mask, &fence_i, 0);
+  send_ipi_many(hart_mask, IPI_FENCE_I);
   return 0;
 }
 

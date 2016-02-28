@@ -179,6 +179,9 @@ mentry:
   j init_first_hart
 
 .LmultiHart:
+#ifndef PK_ENABLE_ATOMICS
+  j .LmultiHart
+#else
   # make sure our hart id is within a valid range
   li a1, MAX_HARTS
   bgeu a0, a1, .LmultiHart
@@ -196,6 +199,7 @@ mentry:
   beqz sp, 1b
 
   j init_other_hart
+#endif
 
 .Linterrupt:
   sll a0, a0, 1    # discard MSB

@@ -247,6 +247,29 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
 {
   switch (num)
   {
+    case CSR_TIME:
+      *result = read_csr(mtime) + HLS()->stime_delta;
+      return 0;
+    case CSR_CYCLE:
+      *result = read_csr(mcycle) + HLS()->scycle_delta;
+      return 0;
+    case CSR_INSTRET:
+      *result = read_csr(minstret) + HLS()->sinstret_delta;
+      return 0;
+#ifdef __riscv32
+    case CSR_TIMEH:
+      *result = (((uint64_t)read_csr(mtimeh) << 32) + read_csr(mtime)
+                 + HLS()->stime_delta) >> 32;
+      return 0;
+    case CSR_CYCLEH:
+      *result = (((uint64_t)read_csr(mcycleh) << 32) + read_csr(mcycle)
+                 + HLS()->scycle_delta) >> 32;
+      return 0;
+    case CSR_INSTRETH:
+      *result = (((uint64_t)read_csr(minstreth) << 32) + read_csr(minstret)
+                 + HLS()->sinstret_delta) >> 32;
+      return 0;
+#endif
 #ifndef __riscv_hard_float
     case CSR_FRM:
       if ((mstatus & MSTATUS_FS) == 0) break;
@@ -265,16 +288,17 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
   return -1;
 }
 
-static inline void emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
+static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
 {
   switch (num)
   {
 #ifndef __riscv_hard_float
-    case CSR_FRM: SET_FRM(value); return;
-    case CSR_FFLAGS: SET_FFLAGS(value); return;
-    case CSR_FCSR: SET_FCSR(value); return;
+    case CSR_FRM: SET_FRM(value); return 0;
+    case CSR_FFLAGS: SET_FFLAGS(value); return 0;
+    case CSR_FCSR: SET_FCSR(value); return 0;
 #endif
   }
+  return -1;
 }
 
 DECLARE_EMULATION_FUNC(emulate_system)
@@ -300,8 +324,8 @@ DECLARE_EMULATION_FUNC(emulate_system)
     case 7: new_csr_val = csr_val & ~rs1_num; break;
   }
 
-  if (do_write)
-    emulate_write_csr(csr_num, new_csr_val, mstatus);
+  if (do_write && emulate_write_csr(csr_num, new_csr_val, mstatus))
+    return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
   SET_RD(insn, regs, csr_val);
 }

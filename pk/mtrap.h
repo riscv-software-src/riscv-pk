@@ -164,6 +164,9 @@ static inline int xlen()
 
 typedef struct {
   volatile uintptr_t* csrs;
+  uint64_t stime_delta;
+  uint64_t scycle_delta;
+  uint64_t sinstret_delta;
   int hart_id;
   volatile int mipi_pending;
   volatile int sipi_pending;

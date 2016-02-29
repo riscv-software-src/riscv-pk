@@ -85,7 +85,7 @@ out:
 
 void parse_device_tree()
 {
-  struct fdt_header* hdr = (struct fdt_header*)read_csr(miobase);
+  struct fdt_header* hdr = (struct fdt_header*)read_csr(mcfgaddr);
   debug_printk("reading device tree at %p\n", hdr);
   kassert(ntohl(hdr->magic) == FDT_MAGIC);
   char* strings = (char*)hdr + ntohl(hdr->off_dt_strings);

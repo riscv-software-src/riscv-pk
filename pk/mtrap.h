@@ -145,21 +145,21 @@ static insn_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t*
   return insn;
 }
 
-static inline long __attribute__((pure)) cpuid()
+static inline long __attribute__((pure)) isa()
 {
   long res;
-  asm ("csrr %0, mcpuid" : "=r"(res)); // not volatile, so don't use read_csr()
+  asm ("csrr %0, misa" : "=r"(res)); // not volatile, so don't use read_csr()
   return res;
 }
 
 static inline int supports_extension(char ext)
 {
-  return cpuid() & (1 << (ext - 'A'));
+  return isa() & (1 << (ext - 'A'));
 }
 
 static inline int xlen()
 {
-  return cpuid() < 0 ? 64 : 32;
+  return isa() < 0 ? 64 : 32;
 }
 
 typedef struct {

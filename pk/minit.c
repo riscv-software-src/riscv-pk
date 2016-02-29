@@ -76,6 +76,7 @@ void hls_init(uint32_t id, uintptr_t* csrs)
   memset(hls, 0, sizeof(*hls));
   hls->hart_id = id;
   hls->csrs = csrs;
+  hls->console_ibuf = -1;
 
   if (id != 0) {
     while (((booted_harts_mask >> id) & 1) == 0)
@@ -106,6 +107,7 @@ void init_first_hart()
 
   memory_init();
   vm_init();
+  request_htif_keyboard_interrupt();
   boot_loader(args);
 }
 

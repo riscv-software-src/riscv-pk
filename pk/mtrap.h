@@ -163,19 +163,18 @@ static inline int xlen()
 }
 
 typedef struct {
-  sbi_device_message* device_request_queue_head;
-  size_t device_request_queue_size;
-  sbi_device_message* device_response_queue_head;
-  sbi_device_message* device_response_queue_tail;
-
   volatile uintptr_t* csrs;
   int hart_id;
-  volatile int ipi_pending;
+  volatile int mipi_pending;
+  volatile int sipi_pending;
+  int console_ibuf;
 } hls_t;
 
 #define IPI_SOFT      0x1
 #define IPI_FENCE_I   0x2
 #define IPI_SFENCE_VM 0x4
+
+void request_htif_keyboard_interrupt();
 
 void hls_init(uint32_t hart_id, uintptr_t* csrs);
 

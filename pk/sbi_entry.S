@@ -32,17 +32,15 @@ sbi_base:
   ecall
   ret
 
-  # send_device_request
+  # console_getchar
   .align 4
-  li a7, MCALL_SEND_DEVICE_REQUEST
+  li a7, MCALL_CONSOLE_GETCHAR
   ecall
   ret
 
-  # receive_device_response
+  # empty
   .align 4
-  li a7, MCALL_RECEIVE_DEVICE_RESPONSE
-  ecall
-  ret
+  unimp
 
   # send ipi
   .align 4
@@ -50,7 +48,7 @@ sbi_base:
   ecall
   ret
 
-  # send ipi
+  # clear ipi
   .align 4
   li a7, MCALL_CLEAR_IPI
   ecall

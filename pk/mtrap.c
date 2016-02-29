@@ -80,72 +80,54 @@ void __attribute__((noreturn)) bad_trap()
   panic("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
 }
 
-void htif_interrupt()
-{
-  uintptr_t fromhost = swap_csr(mfromhost, 0);
-  if (!fromhost)
-    return;
-
-  uintptr_t dev = FROMHOST_DEV(fromhost);
-  uintptr_t cmd = FROMHOST_CMD(fromhost);
-  uintptr_t data = FROMHOST_DATA(fromhost);
-
-  sbi_device_message* m = HLS()->device_request_queue_head;
-  sbi_device_message* prev = NULL;
-  for (size_t i = 0, n = HLS()->device_request_queue_size; i < n; i++) {
-    if (!supervisor_paddr_valid(m, sizeof(*m))
-        && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_MPP) != PRV_M)
-      panic("htif: page fault");
-
-    sbi_device_message* next = (void*)m->sbi_private_data;
-    if (m->dev == dev && m->cmd == cmd) {
-      m->data = data;
-
-      // dequeue from request queue
-      if (prev)
-        prev->sbi_private_data = (uintptr_t)next;
-      else
-        HLS()->device_request_queue_head = next;
-      HLS()->device_request_queue_size = n-1;
-      m->sbi_private_data = 0;
-
-      // enqueue to response queue
-      if (HLS()->device_response_queue_tail)
-        HLS()->device_response_queue_tail->sbi_private_data = (uintptr_t)m;
-      else
-        HLS()->device_response_queue_head = m;
-      HLS()->device_response_queue_tail = m;
-
-      // signal software interrupt
-      set_csr(mip, MIP_SSIP);
-      return;
-    }
-
-    prev = m;
-    m = (void*)atomic_read(&m->sbi_private_data);
-  }
-
-  panic("htif: no record");
-}
-
 static uintptr_t mcall_hart_id()
 {
   return HLS()->hart_id;
 }
 
-static uintptr_t mcall_console_putchar(uint8_t ch)
+void request_htif_keyboard_interrupt()
 {
-  while (swap_csr(mtohost, TOHOST_CMD(1, 1, ch)) != 0);
+  uintptr_t old_tohost = swap_csr(mtohost, TOHOST_CMD(1, 0, 0));
+  kassert(old_tohost == 0);
+}
+
+void htif_interrupt()
+{
+  // we should only be interrupted by keypresses
+  uintptr_t fromhost = swap_csr(mfromhost, 0);
+  kassert(FROMHOST_DEV(fromhost) == 1 && FROMHOST_CMD(fromhost) == 0);
+  HLS()->console_ibuf = (uint8_t)FROMHOST_DATA(fromhost);
+  set_csr(mip, MIP_SSIP);
+  request_htif_keyboard_interrupt();
+}
+
+static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
+{
+  while (swap_csr(mtohost, TOHOST_CMD(dev, cmd, data)) != 0)
+    if (read_csr(mfromhost))
+      htif_interrupt();
+
   while (1) {
     uintptr_t fromhost = read_csr(mfromhost);
-    if (FROMHOST_DEV(fromhost) != 1 || FROMHOST_CMD(fromhost) != 1) {
-      if (fromhost)
-        htif_interrupt();
-      continue;
+    if (fromhost) {
+      if (FROMHOST_DEV(fromhost) == dev && FROMHOST_CMD(fromhost) == cmd) {
+        write_csr(mfromhost, 0);
+        break;
+      }
+      htif_interrupt();
     }
-    write_csr(mfromhost, 0);
-    break;
   }
+}
+
+static uintptr_t mcall_console_putchar(uint8_t ch)
+{
+  do_tohost_fromhost(1, 1, ch);
+  return 0;
+}
+
+static uintptr_t mcall_htif_syscall(uintptr_t magic_mem)
+{
+  do_tohost_fromhost(0, 0, magic_mem);
   return 0;
 }
 
@@ -163,51 +145,9 @@ void printm(const char* s, ...)
     mcall_console_putchar(*p++);
 }
 
-static uintptr_t mcall_dev_req(sbi_device_message *m)
-{
-  //printm("req %d %p\n", HLS()->device_request_queue_size, m);
-  if (!supervisor_paddr_valid(m, sizeof(*m))
-      && EXTRACT_FIELD(read_csr(mstatus), MSTATUS_MPP) != PRV_M)
-    return -EFAULT;
-
-  if ((m->dev > 0xFFU) | (m->cmd > 0xFFU) | (m->data > 0x0000FFFFFFFFFFFFU))
-    return -EINVAL;
-
-  while (swap_csr(mtohost, TOHOST_CMD(m->dev, m->cmd, m->data)) != 0)
-    ;
-
-  m->sbi_private_data = (uintptr_t)HLS()->device_request_queue_head;
-  HLS()->device_request_queue_head = m;
-  HLS()->device_request_queue_size++;
-
-  return 0;
-}
-
-static uintptr_t mcall_dev_resp()
-{
-  htif_interrupt();
-
-  sbi_device_message* m = HLS()->device_response_queue_head;
-  if (m) {
-    //printm("resp %p\n", m);
-    sbi_device_message* next = (void*)atomic_read(&m->sbi_private_data);
-    HLS()->device_response_queue_head = next;
-    if (!next) {
-      HLS()->device_response_queue_tail = 0;
-
-      // only clear SSIP if no other events are pending
-      clear_csr(mip, MIP_SSIP);
-      mb();
-      if (HLS()->ipi_pending & IPI_SOFT)
-        set_csr(mip, MIP_SSIP);
-    }
-  }
-  return (uintptr_t)m;
-}
-
 static void send_ipi(uintptr_t recipient, int event)
 {
-  if ((atomic_or(&OTHER_HLS(recipient)->ipi_pending, event) & event) == 0) {
+  if ((atomic_or(&OTHER_HLS(recipient)->mipi_pending, event) & event) == 0) {
     mb();
     OTHER_HLS(recipient)->csrs[CSR_MIPI] = 1;
   }
@@ -222,15 +162,27 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
   return 0;
 }
 
+static void reset_ssip()
+{
+  clear_csr(mip, MIP_SSIP);
+  mb();
+
+  if (HLS()->sipi_pending || HLS()->console_ibuf >= 0)
+    set_csr(mip, MIP_SSIP);
+}
+
+static uintptr_t mcall_console_getchar()
+{
+  int ch = atomic_swap(&HLS()->console_ibuf, -1);
+  reset_ssip();
+  return ch;
+}
+
 static uintptr_t mcall_clear_ipi()
 {
-  // only clear SSIP if no other events are pending
-  if (HLS()->device_response_queue_head == NULL) {
-    clear_csr(mip, MIP_SSIP);
-    mb();
-  }
-
-  return atomic_swap(&HLS()->ipi_pending, 0);
+  int ipi = atomic_swap(&HLS()->sipi_pending, 0);
+  reset_ssip();
+  return ipi;
 }
 
 static uintptr_t mcall_shutdown()
@@ -256,10 +208,12 @@ void software_interrupt()
 {
   clear_csr(mip, MIP_MSIP);
   mb();
-  int ipi_pending = atomic_swap(&HLS()->ipi_pending, 0);
+  int ipi_pending = atomic_swap(&HLS()->mipi_pending, 0);
 
-  if (ipi_pending & IPI_SOFT)
+  if (ipi_pending & IPI_SOFT) {
+    HLS()->sipi_pending = 1;
     set_csr(mip, MIP_SSIP);
+  }
 
   if (ipi_pending & IPI_FENCE_I)
     asm volatile ("fence.i");
@@ -286,7 +240,7 @@ static void send_ipi_many(uintptr_t* pmask, int event)
   // prevent deadlock while spinning by handling any IPIs from other harts.
   for (ssize_t i = num_harts-1; i >= 0; i--)
     if ((mask >> i) & 1)
-      while (OTHER_HLS(i)->ipi_pending & event)
+      while (OTHER_HLS(i)->mipi_pending & event)
         software_interrupt();
 }
 
@@ -315,11 +269,11 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     case MCALL_CONSOLE_PUTCHAR:
       retval = mcall_console_putchar(arg0);
       break;
-    case MCALL_SEND_DEVICE_REQUEST:
-      retval = mcall_dev_req((sbi_device_message*)arg0);
+    case MCALL_CONSOLE_GETCHAR:
+      retval = mcall_console_getchar();
       break;
-    case MCALL_RECEIVE_DEVICE_RESPONSE:
-      retval = mcall_dev_resp();
+    case MCALL_HTIF_SYSCALL:
+      retval = mcall_htif_syscall(arg0);
       break;
     case MCALL_SEND_IPI:
       retval = mcall_send_ipi(arg0);

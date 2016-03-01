@@ -133,16 +133,15 @@ static uintptr_t mcall_htif_syscall(uintptr_t magic_mem)
 
 void printm(const char* s, ...)
 {
-  char buf[128];
+  char buf[256];
   va_list vl;
 
   va_start(vl, s);
   vsnprintf(buf, sizeof buf, s, vl);
   va_end(vl);
 
-  char* p = buf;
-  while (*p)
-    mcall_console_putchar(*p++);
+  for (const char* p = buf; *p; p++)
+    mcall_console_putchar(*p);
 }
 
 static void send_ipi(uintptr_t recipient, int event)

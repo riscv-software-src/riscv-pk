@@ -22,6 +22,8 @@ static void mstatus_init()
   write_csr(mtimecmp, 0);
   clear_csr(mip, MIP_MSIP);
   write_csr(mie, -1);
+  write_csr(mucounteren, -1);
+  write_csr(mscounteren, -1);
 }
 
 static void delegate_traps()

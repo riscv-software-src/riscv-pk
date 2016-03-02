@@ -164,13 +164,17 @@ static inline int xlen()
 
 typedef struct {
   volatile uintptr_t* csrs;
-  uint64_t stime_delta;
-  uint64_t scycle_delta;
-  uint64_t sinstret_delta;
   int hart_id;
   volatile int mipi_pending;
   volatile int sipi_pending;
   int console_ibuf;
+
+  uint64_t utime_delta;
+  uint64_t ucycle_delta;
+  uint64_t uinstret_delta;
+  uint64_t stime_delta;
+  uint64_t scycle_delta;
+  uint64_t sinstret_delta;
 } hls_t;
 
 #define IPI_SOFT      0x1

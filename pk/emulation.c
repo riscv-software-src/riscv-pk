@@ -248,12 +248,21 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
   switch (num)
   {
     case CSR_TIME:
-      *result = read_csr(mtime) + HLS()->stime_delta;
+      *result = read_csr(mtime) + HLS()->utime_delta;
       return 0;
     case CSR_CYCLE:
-      *result = read_csr(mcycle) + HLS()->scycle_delta;
+      *result = read_csr(mcycle) + HLS()->ucycle_delta;
       return 0;
     case CSR_INSTRET:
+      *result = read_csr(minstret) + HLS()->uinstret_delta;
+      return 0;
+    case CSR_STIME:
+      *result = read_csr(mtime) + HLS()->stime_delta;
+      return 0;
+    case CSR_SCYCLE:
+      *result = read_csr(mcycle) + HLS()->scycle_delta;
+      return 0;
+    case CSR_SINSTRET:
       *result = read_csr(minstret) + HLS()->sinstret_delta;
       return 0;
 #ifdef __riscv32

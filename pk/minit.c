@@ -1,6 +1,5 @@
 #include "vm.h"
 #include "mtrap.h"
-#include "devicetree.h"
 
 volatile uint32_t booted_harts_mask;
 uintptr_t mem_size;
@@ -100,7 +99,7 @@ void init_first_hart()
   hart_init();
 
   memset(HLS(), 0, sizeof(*HLS()));
-  parse_device_tree();
+  parse_config_string();
 
   struct mainvars arg_buffer;
   struct mainvars *args = parse_args(&arg_buffer);

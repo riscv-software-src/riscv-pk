@@ -74,6 +74,7 @@ void handle_fault_store(trapframe_t*);
 void prepare_supervisor_mode();
 void boot_loader(struct mainvars*);
 void run_loaded_program(struct mainvars*);
+void parse_config_string();
 void boot_other_hart();
 
 typedef struct {

@@ -222,37 +222,23 @@ do_reset:
   li x31, 0
   csrw mscratch, x0
 
-  csrr a0, mhartid
-  bnez a0, .LmultiHart
-
   # sp <- end of first full page after the end of the binary
   la sp, _end + 2*RISCV_PGSIZE - 1
   li t0, -RISCV_PGSIZE
   and sp, sp, t0
   addi sp, sp, -MENTRY_FRAME_SIZE
 
-  j init_first_hart
+  csrr a0, mhartid
+  slli a1, a0, RISCV_PGSHIFT
+  add sp, sp, a1
+
+  beqz a0, init_first_hart
 
 .LmultiHart:
 #if MAX_HARTS > 1
   # make sure our hart id is within a valid range
   li a1, MAX_HARTS
-  bgeu a0, a1, .LmultiHart
-
-  # signal we're ready to boot
-  li a1, 1
-  sll a1, a1, a0
-  la a2, booted_harts_mask
-  amoor.w x0, a1, (a2)
-
-  # wait for main hart to grant us a stack
-1:csrrw sp, mscratch, x0
-  beqz sp, 1b
-
-  j init_other_hart
-#else
-  j .LmultiHart
+  bltu a0, a1, init_other_hart
+  wfi
 #endif
-
-  # XXX depend on sbi_base to force its linkage
-  la x0, sbi_base
+  j .LmultiHart

@@ -145,26 +145,24 @@ static insn_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t*
   return insn;
 }
 
-static inline long __attribute__((pure)) isa()
-{
-  long res;
-  asm ("csrr %0, misa" : "=r"(res)); // not volatile, so don't use read_csr()
-  return res;
-}
+#define read_const_csr(reg) ({ unsigned long __tmp; \
+  asm ("csrr %0, " #reg : "=r"(__tmp)); \
+  __tmp; })
 
 static inline int supports_extension(char ext)
 {
-  return isa() & (1 << (ext - 'A'));
+  return read_const_csr(misa) & (1 << (ext - 'A'));
 }
 
 static inline int xlen()
 {
-  return isa() < 0 ? 64 : 32;
+  return read_const_csr(misa) < 0 ? 64 : 32;
 }
 
+typedef uintptr_t csr_t; // TODO this might become uint128_t for RV128
+
 typedef struct {
-  volatile uintptr_t* csrs;
-  int hart_id;
+  volatile csr_t* csrs;
   volatile int mipi_pending;
   volatile int sipi_pending;
   int console_ibuf;
@@ -183,7 +181,7 @@ typedef struct {
 
 void request_htif_keyboard_interrupt();
 
-void hls_init(uint32_t hart_id, uintptr_t* csrs);
+void hls_init(uint32_t hart_id, csr_t* csrs);
 
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \
@@ -191,8 +189,7 @@ void hls_init(uint32_t hart_id, uintptr_t* csrs);
 
 // hart-local storage, at top of stack
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
-#define OTHER_STACK_TOP(id) (MACHINE_STACK_TOP() + RISCV_PGSIZE * ((id) - HLS()->hart_id))
-#define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - HLS()->hart_id)))
+#define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
 
 #define printk printm
 

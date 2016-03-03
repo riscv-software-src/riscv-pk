@@ -82,7 +82,7 @@ void __attribute__((noreturn)) bad_trap()
 
 static uintptr_t mcall_hart_id()
 {
-  return HLS()->hart_id;
+  return read_const_csr(mhartid);
 }
 
 void request_htif_keyboard_interrupt()

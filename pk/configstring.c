@@ -179,7 +179,7 @@ static void query_harts(const char* config_string)
       query_result res = query_config_string(config_string, buf);
       if (!res.start)
         break;
-      uintptr_t* base = (uintptr_t*)get_uint(res);
+      csr_t* base = (csr_t*)get_uint(res);
       uintptr_t hart_id = base[CSR_MHARTID];
       hls_init(hart_id, base);
       debug_printk("at %p, found hart %ld\n", base, hart_id);

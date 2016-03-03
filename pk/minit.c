@@ -1,7 +1,6 @@
 #include "vm.h"
 #include "mtrap.h"
 
-volatile uint32_t booted_harts_mask;
 uintptr_t mem_size;
 uint32_t num_harts;
 
@@ -72,21 +71,12 @@ static void fp_init()
 #endif
 }
 
-void hls_init(uint32_t id, uintptr_t* csrs)
+void hls_init(uint32_t id, csr_t* csrs)
 {
   hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));
-  hls->hart_id = id;
   hls->csrs = csrs;
   hls->console_ibuf = -1;
-
-  if (id != 0) {
-    while (((booted_harts_mask >> id) & 1) == 0)
-      ;
-    mb();
-    // wake up the hart by granting it a stack
-    csrs[CSR_MSCRATCH] = (uintptr_t)(OTHER_STACK_TOP(id) - MENTRY_FRAME_SIZE);
-  }
 }
 
 static void hart_init()
@@ -122,6 +112,9 @@ void init_other_hart()
     ;
   mb();
   write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
+
+  // make sure hart 0 has discovered us
+  kassert(HLS()->csrs != NULL);
 
   boot_other_hart();
 }

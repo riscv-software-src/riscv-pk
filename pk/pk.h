@@ -4,7 +4,7 @@
 #define _PK_H
 
 #ifdef __riscv_atomic
-# define MAX_HARTS 32 // coupled to width of booted_harts_mask
+# define MAX_HARTS 8 // arbitrary
 #else
 # define MAX_HARTS 1
 #endif
@@ -54,7 +54,6 @@ extern "C" {
 extern uintptr_t mem_size;
 extern int have_vm;
 extern uint32_t num_harts;
-extern volatile uint32_t booted_harts_mask;
 
 struct mainvars* parse_args(struct mainvars*);
 void printk(const char* s, ...);

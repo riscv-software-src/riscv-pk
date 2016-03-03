@@ -88,7 +88,7 @@ SECTIONS
 
   .sbi :
   {
-    *(.sbi)
+    sbi.o(.sbi)
   }
 
   _end = .;

@@ -31,7 +31,8 @@ static void delegate_traps()
   uintptr_t interrupts = MIP_SSIP | MIP_STIP;
   uintptr_t exceptions =
     (1U << CAUSE_MISALIGNED_FETCH) |
-    (1U << CAUSE_FAULT_FETCH | CAUSE_BREAKPOINT) |
+    (1U << CAUSE_FAULT_FETCH) |
+    (1U << CAUSE_BREAKPOINT) |
     (1U << CAUSE_FAULT_LOAD) |
     (1U << CAUSE_FAULT_STORE) |
     (1U << CAUSE_BREAKPOINT) |

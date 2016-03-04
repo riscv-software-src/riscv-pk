@@ -85,7 +85,7 @@ static uintptr_t mcall_hart_id()
   return read_const_csr(mhartid);
 }
 
-void request_htif_keyboard_interrupt()
+static void request_htif_keyboard_interrupt()
 {
   uintptr_t old_tohost = swap_csr(mtohost, TOHOST_CMD(1, 0, 0));
   kassert(old_tohost == 0);
@@ -96,9 +96,8 @@ void htif_interrupt()
   // we should only be interrupted by keypresses
   uintptr_t fromhost = swap_csr(mfromhost, 0);
   kassert(FROMHOST_DEV(fromhost) == 1 && FROMHOST_CMD(fromhost) == 0);
-  HLS()->console_ibuf = (uint8_t)FROMHOST_DATA(fromhost);
+  HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fromhost);
   set_csr(mip, MIP_SSIP);
-  request_htif_keyboard_interrupt();
 }
 
 static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
@@ -166,15 +165,17 @@ static void reset_ssip()
   clear_csr(mip, MIP_SSIP);
   mb();
 
-  if (HLS()->sipi_pending || HLS()->console_ibuf >= 0)
+  if (HLS()->sipi_pending || HLS()->console_ibuf > 0)
     set_csr(mip, MIP_SSIP);
 }
 
 static uintptr_t mcall_console_getchar()
 {
   int ch = atomic_swap(&HLS()->console_ibuf, -1);
+  if (ch >= 0)
+    request_htif_keyboard_interrupt();
   reset_ssip();
-  return ch;
+  return ch - 1;
 }
 
 static uintptr_t mcall_clear_ipi()

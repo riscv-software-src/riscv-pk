@@ -179,8 +179,6 @@ typedef struct {
 #define IPI_FENCE_I   0x2
 #define IPI_SFENCE_VM 0x4
 
-void request_htif_keyboard_interrupt();
-
 void hls_init(uint32_t hart_id, csr_t* csrs);
 
 #define MACHINE_STACK_TOP() ({ \

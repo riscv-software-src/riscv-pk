@@ -76,7 +76,6 @@ void hls_init(uint32_t id, csr_t* csrs)
   hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));
   hls->csrs = csrs;
-  hls->console_ibuf = -1;
 }
 
 static void hart_init()
@@ -99,7 +98,6 @@ void init_first_hart()
 
   memory_init();
   vm_init();
-  request_htif_keyboard_interrupt();
   boot_loader(args);
 }
 

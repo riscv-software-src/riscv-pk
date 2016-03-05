@@ -18,7 +18,7 @@
 #define FROMHOST_CMD(fromhost_value) ((uint64_t)(fromhost_value) << 8 >> 56)
 #define FROMHOST_DATA(fromhost_value) ((uint64_t)(fromhost_value) << 16 >> 16)
 
-void die(int) __attribute__((noreturn));
+void shutdown(int) __attribute__((noreturn));
 long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4, long a5, long a6);
 
 struct frontend_stat {

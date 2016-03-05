@@ -4,6 +4,7 @@ pk_subproject_deps = \
 pk_hdrs = \
 	atomic.h \
 	bits.h \
+	boot.h \
 	elf.h \
 	emulation.h \
 	encoding.h \
@@ -19,6 +20,7 @@ pk_hdrs = \
 	vm.h \
 
 pk_c_srcs = \
+	snprintf.c \
 	mtrap.c \
 	minit.c \
 	emulation.c \

@@ -28,11 +28,6 @@
 #define MAP_POPULATE 0x8000
 #define MREMAP_FIXED 0x2
 
-#define supervisor_paddr_valid(start, length) \
-  ((uintptr_t)(start) >= current.first_user_vaddr + current.bias \
-   && (uintptr_t)(start) + (length) < mem_size \
-   && (uintptr_t)(start) + (length) >= (uintptr_t)(start))
-
 void vm_init();
 void supervisor_vm_init();
 uintptr_t pk_vm_init();

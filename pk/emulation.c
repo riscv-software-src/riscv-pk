@@ -151,7 +151,7 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
   uintptr_t addr = GET_RS1(insn, regs) + IMM_S(insn);
-  for (size_t i = 0; i < len; i++)
+  for (int i = 0; i < len; i++)
     store_uint8_t((void *)(addr + i), val.bytes[i], mepc);
 
   write_csr(mepc, mepc + 4);

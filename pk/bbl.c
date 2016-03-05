@@ -1,4 +1,5 @@
-#include "pk.h"
+#include "boot.h"
+#include "mtrap.h"
 #include "vm.h"
 #include "config.h"
 
@@ -15,7 +16,7 @@ static void enter_entry_point()
 void run_loaded_program(struct mainvars* args)
 {
   if (!current.is_supervisor)
-    panic("bbl can't run user binaries; try using pk instead");
+    die("bbl can't run user binaries; try using pk instead");
 
   supervisor_vm_init();
 #ifdef PK_ENABLE_LOGO

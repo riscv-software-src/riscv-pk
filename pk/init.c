@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "pk.h"
+#include "boot.h"
 #include "file.h"
 #include "vm.h"
 #include "frontend.h"
@@ -43,7 +44,7 @@ static void handle_option(const char* s)
   }
 }
 
-struct mainvars* parse_args(struct mainvars* args)
+static struct mainvars* parse_args(struct mainvars* args)
 {
   long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0, 0, 0);
   kassert(r == 0);
@@ -56,8 +57,11 @@ struct mainvars* parse_args(struct mainvars* args)
   return (struct mainvars*)&args->argv[a0-1];
 }
 
-void boot_loader(struct mainvars* args)
+void boot_loader()
 {
+  struct mainvars arg_buffer;
+  struct mainvars *args = parse_args(&arg_buffer);
+
   // load program named by argv[0]
   long phdrs[128];
   current.phdr = (uintptr_t)phdrs;

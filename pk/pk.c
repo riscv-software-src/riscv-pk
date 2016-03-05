@@ -1,4 +1,5 @@
 #include "pk.h"
+#include "boot.h"
 #include "vm.h"
 #include "elf.h"
 

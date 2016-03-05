@@ -4,6 +4,12 @@
 #define likely(x) __builtin_expect((x), 1)
 #define unlikely(x) __builtin_expect((x), 0)
 
+#define ROUNDUP(a, b) ((((a)-1)/(b)+1)*(b))
+#define ROUNDDOWN(a, b) ((a)/(b)*(b))
+
+#define EXTRACT_FIELD(val, which) (((val) & (which)) / ((which) & ~((which)-1)))
+#define INSERT_FIELD(val, which, fieldval) (((val) & ~(which)) | ((fieldval) * ((which) & ~((which)-1))))
+
 #define CONST_POPCOUNT2(x) ((((x) >> 0) & 1) + (((x) >> 1) & 1))
 #define CONST_POPCOUNT4(x) (CONST_POPCOUNT2(x) + CONST_POPCOUNT2((x)>>2))
 #define CONST_POPCOUNT8(x) (CONST_POPCOUNT4(x) + CONST_POPCOUNT4((x)>>4))

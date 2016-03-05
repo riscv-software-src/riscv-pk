@@ -3,10 +3,12 @@
 #include "mcall.h"
 #include "vm.h"
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 void __attribute__((noreturn)) bad_trap()
 {
-  panic("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
+  die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
 }
 
 static uintptr_t mcall_hart_id()
@@ -17,14 +19,15 @@ static uintptr_t mcall_hart_id()
 static void request_htif_keyboard_interrupt()
 {
   uintptr_t old_tohost = swap_csr(mtohost, TOHOST_CMD(1, 0, 0));
-  kassert(old_tohost == 0);
+  assert(old_tohost == 0);
 }
 
 void htif_interrupt()
 {
-  // we should only be interrupted by keypresses
   uintptr_t fromhost = swap_csr(mfromhost, 0);
-  kassert(FROMHOST_DEV(fromhost) == 1 && FROMHOST_CMD(fromhost) == 0);
+  // we should only be interrupted by keypresses
+  if (!(FROMHOST_DEV(fromhost) == 1 && FROMHOST_CMD(fromhost) == 0))
+    die("unexpected htif interrupt");
   HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fromhost);
   set_csr(mip, MIP_SSIP);
 }
@@ -57,6 +60,12 @@ static uintptr_t mcall_htif_syscall(uintptr_t magic_mem)
 {
   do_tohost_fromhost(0, 0, magic_mem);
   return 0;
+}
+
+void poweroff()
+{
+  while (1)
+    write_csr(mtohost, 1);
 }
 
 void printm(const char* s, ...)
@@ -116,9 +125,7 @@ static uintptr_t mcall_clear_ipi()
 
 static uintptr_t mcall_shutdown()
 {
-  while (1)
-    write_csr(mtohost, 1);
-  return 0;
+  poweroff();
 }
 
 static uintptr_t mcall_set_timer(unsigned long long when)
@@ -153,12 +160,10 @@ void software_interrupt()
 
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
-  kassert(MAX_HARTS <= 8 * sizeof(*pmask));
+  _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
   uintptr_t mask = -1;
-  if (pmask) {
-    kassert(supervisor_paddr_valid((uintptr_t)pmask, sizeof(uintptr_t)));
+  if (pmask)
     mask = *pmask;
-  }
 
   // send IPIs to everyone
   for (ssize_t i = num_harts-1; i >= 0; i--)
@@ -238,7 +243,6 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus)
 
   uintptr_t prev_priv = EXTRACT_FIELD(mstatus, MSTATUS_MPP);
   uintptr_t prev_ie = EXTRACT_FIELD(mstatus, MSTATUS_MPIE);
-  kassert(prev_priv <= PRV_S);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_SPP, prev_priv);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_SPIE, prev_ie);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);

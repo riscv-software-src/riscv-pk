@@ -32,7 +32,7 @@ long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4, long 
   return ret;
 }
 
-void die(int code)
+void shutdown(int code)
 {
   frontend_syscall(SYS_exit, code, 0, 0, 0, 0, 0, 0);
   while (1);

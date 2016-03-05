@@ -1,13 +1,19 @@
 #ifndef _PK_MTRAP_H
 #define _PK_MTRAP_H
 
-#include "pk.h"
 #include "bits.h"
 #include "encoding.h"
+
+#ifdef __riscv_atomic
+# define MAX_HARTS 8 // arbitrary
+#else
+# define MAX_HARTS 1
+#endif
 
 #ifndef __ASSEMBLER__
 
 #include "sbi.h"
+#include <stdint.h>
 
 #define read_const_csr(reg) ({ unsigned long __tmp; \
   asm ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -22,6 +28,9 @@ static inline int xlen()
 {
   return read_const_csr(misa) < 0 ? 64 : 32;
 }
+
+extern uintptr_t mem_size;
+extern uint32_t num_harts;
 
 typedef uintptr_t csr_t; // TODO this might become uint128_t for RV128
 
@@ -53,7 +62,12 @@ void hls_init(uint32_t hart_id, csr_t* csrs);
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
 #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
 
-#define printk printm
+void parse_config_string();
+void poweroff(void) __attribute((noreturn));
+void printm(const char* s, ...);
+#define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
+#define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })
+#define printk(...) die("printk")
 
 #endif // !__ASSEMBLER__
 

@@ -1,8 +1,9 @@
 // See LICENSE for license details.
 
 #include "file.h"
-#include "pk.h"
 #include "vm.h"
+#include "mtrap.h"
+#include "boot.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <elf.h>
@@ -87,7 +88,7 @@ void load_elf(const char* fn, elf_info* info)
   if (IS_ELF64(eh64))
   {
 #ifndef __riscv64
-    panic("can't run 64-bit ELF on 32-bit arch");
+    die("can't run 64-bit ELF on 32-bit arch");
 #endif
     Elf64_Ehdr* eh;
     Elf64_Phdr* ph;
@@ -96,7 +97,7 @@ void load_elf(const char* fn, elf_info* info)
   else if (IS_ELF32(eh64))
   {
 #ifdef __riscv64
-    panic("can't run 32-bit ELF on 64-bit arch");
+    die("can't run 32-bit ELF on 64-bit arch");
 #endif
     Elf32_Ehdr* eh;
     Elf32_Phdr* ph;
@@ -113,5 +114,5 @@ void load_elf(const char* fn, elf_info* info)
   return;
 
 fail:
-    panic("couldn't open ELF program: %s!", fn);
+    die("couldn't open ELF program: %s!", fn);
 }

@@ -1,9 +1,6 @@
-#include "pk.h"
-#include "vm.h"
-#include "frontend.h"
+#include "mtrap.h"
 #include "sbi.h"
-#include "mcall.h"
-#include <errno.h>
+#include "boot.h"
 
 uintptr_t __sbi_query_memory(uintptr_t id, memory_block_info *p)
 {

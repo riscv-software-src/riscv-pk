@@ -2,6 +2,8 @@
 #include "file.h"
 #include "atomic.h"
 #include "pk.h"
+#include "boot.h"
+#include "mtrap.h"
 #include <stdint.h>
 #include <errno.h>
 

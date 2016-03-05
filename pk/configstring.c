@@ -1,5 +1,6 @@
 #include "encoding.h"
 #include "mtrap.h"
+#include <stdio.h>
 
 static const char* skip_whitespace(const char* str)
 {
@@ -163,11 +164,10 @@ static long get_sint(query_result res)
 static void query_mem(const char* config_string)
 {
   query_result res = query_config_string(config_string, "ram{0{addr");
-  kassert(res.start);
+  assert(res.start);
   uintptr_t base = get_uint(res);
   res = query_config_string(config_string, "ram{0{size");
   mem_size = get_uint(res);
-  debug_printk("at %p, found %d MiB of memory\n", base, (int)(mem_size >> 20));
 }
 
 static void query_harts(const char* config_string)
@@ -182,18 +182,19 @@ static void query_harts(const char* config_string)
       csr_t* base = (csr_t*)get_uint(res);
       uintptr_t hart_id = base[CSR_MHARTID];
       hls_init(hart_id, base);
-      debug_printk("at %p, found hart %ld\n", base, hart_id);
-      kassert(num_harts++ == hart_id);
+      num_harts++;
+      assert(hart_id == num_harts-1);
     }
     if (!hart)
       break;
   }
+  assert(num_harts);
+  assert(num_harts <= MAX_HARTS);
 }
 
 void parse_config_string()
 {
   const char* s = (const char*)read_csr(mcfgaddr);
-  debug_printk("%s\n", s);
   query_mem(s);
   query_harts(s);
 }

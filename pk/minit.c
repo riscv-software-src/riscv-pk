@@ -1,23 +1,20 @@
 #include "vm.h"
 #include "mtrap.h"
 #include "fp_emulation.h"
+#include "boot.h"
 
 uintptr_t mem_size;
 uint32_t num_harts;
 
 static void mstatus_init()
 {
-  if (!supports_extension('S'))
-    panic("supervisor support is required");
-
   uintptr_t ms = 0;
   ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
   ms = INSERT_FIELD(ms, MSTATUS_FS, 1);
   write_csr(mstatus, ms);
-  ms = read_csr(mstatus);
 
-  if (EXTRACT_FIELD(ms, MSTATUS_VM) != VM_CHOICE)
-    have_vm = 0;
+  ms = read_csr(mstatus);
+  assert(EXTRACT_FIELD(ms, MSTATUS_VM) == VM_CHOICE);
 
   write_csr(mtimecmp, 0);
   clear_csr(mip, MIP_MSIP);
@@ -40,35 +37,23 @@ static void delegate_traps()
 
   write_csr(mideleg, interrupts);
   write_csr(medeleg, exceptions);
-  kassert(read_csr(mideleg) == interrupts);
-  kassert(read_csr(medeleg) == exceptions);
-}
-
-static void memory_init()
-{
-  if (mem_size == 0)
-    panic("could not determine memory capacity");
-
-  if ((intptr_t)mem_size < 0)
-    mem_size = INTPTR_MIN;
-
-  if (num_harts == 0)
-    panic("could not determine number of harts");
+  assert(read_csr(mideleg) == interrupts);
+  assert(read_csr(medeleg) == exceptions);
 }
 
 static void fp_init()
 {
-  kassert(read_csr(mstatus) & MSTATUS_FS);
+  assert(read_csr(mstatus) & MSTATUS_FS);
 
 #ifdef __riscv_hard_float
   if (!supports_extension('D'))
-    panic("FPU not found; recompile pk with -msoft-float");
+    die("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
   write_csr(fcsr, 0);
 #else
   if (supports_extension('D'))
-    panic("FPU unexpectedly found; recompile pk without -msoft-float");
+    die("FPU unexpectedly found; recompile with -mhard-float");
 #endif
 }
 
@@ -93,13 +78,8 @@ void init_first_hart()
 
   memset(HLS(), 0, sizeof(*HLS()));
   parse_config_string();
-
-  struct mainvars arg_buffer;
-  struct mainvars *args = parse_args(&arg_buffer);
-
-  memory_init();
   vm_init();
-  boot_loader(args);
+  boot_loader();
 }
 
 void init_other_hart()
@@ -113,7 +93,7 @@ void init_other_hart()
   write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
 
   // make sure hart 0 has discovered us
-  kassert(HLS()->csrs != NULL);
+  assert(HLS()->csrs != NULL);
 
   boot_other_hart();
 }

@@ -5,6 +5,7 @@
 #include "file.h"
 #include "frontend.h"
 #include "vm.h"
+#include "boot.h"
 #include <string.h>
 #include <errno.h>
 
@@ -41,7 +42,7 @@ void sys_exit(int code)
     }
   }
 
-  die(code);
+  shutdown(code);
 }
 
 ssize_t sys_read(int fd, char* buf, size_t n)

@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "mtrap.h"
+#include "fp_emulation.h"
 
 uintptr_t mem_size;
 uint32_t num_harts;

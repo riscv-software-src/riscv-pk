@@ -2,18 +2,27 @@ pk_subproject_deps = \
 	softfloat \
 
 pk_hdrs = \
-	mtrap.h \
-	encoding.h \
 	atomic.h \
-	file.h \
-	frontend.h \
+	bits.h \
 	elf.h \
+	emulation.h \
+	encoding.h \
+	file.h \
+	fp_emulation.h \
+	frontend.h \
+	mcall.h \
+	mtrap.h \
+	pk.h \
+	sbi.h \
+	syscall.h \
+	unprivileged_memory.h \
 	vm.h \
 
 pk_c_srcs = \
 	mtrap.c \
 	minit.c \
 	emulation.c \
+	fp_emulation.c \
 	sbi_impl.c \
 	init.c \
 	file.c \

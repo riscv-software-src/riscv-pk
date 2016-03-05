@@ -86,15 +86,15 @@ trap_vector:
   STORE t1, 6*REGBYTES(sp)
   sll t1, a1, 2                    # t1 <- mcause << 2
   STORE t2, 7*REGBYTES(sp)
-  add t0, t0, t1                   # t0 <- %hi(trap_table)[mcause]
+  add t1, t0, t1                   # t1 <- %hi(trap_table)[mcause]
   STORE s0, 8*REGBYTES(sp)
-  lw t0, %pcrel_lo(1b)(t0)         # t0 <- trap_table[mcause]
+  lw t1, %pcrel_lo(1b)(t1)         # t1 <- trap_table[mcause]
   STORE s1, 9*REGBYTES(sp)
   mv a0, sp                        # a0 <- regs
   STORE a2,12*REGBYTES(sp)
   csrr a2, mepc                    # a2 <- mepc
   STORE a3,13*REGBYTES(sp)
-  csrrw t1, mscratch, x0           # t1 <- user sp
+  csrrw t0, mscratch, x0           # t0 <- user sp
   STORE a4,14*REGBYTES(sp)
   STORE a5,15*REGBYTES(sp)
   STORE a6,16*REGBYTES(sp)
@@ -113,7 +113,7 @@ trap_vector:
   STORE t4,29*REGBYTES(sp)
   STORE t5,30*REGBYTES(sp)
   STORE t6,31*REGBYTES(sp)
-  STORE t1, 2*REGBYTES(sp)         # sp
+  STORE t0, 2*REGBYTES(sp)         # sp
 
 #ifndef __riscv_hard_float
   lw tp, (sp) # Move the emulated FCSR from x0's save slot into tp.
@@ -121,7 +121,7 @@ trap_vector:
   STORE x0, (sp) # Zero x0's save slot.
 
   # Invoke the handler.
-  jalr t0
+  jalr t1
 
 #ifndef __riscv_hard_float
   sw tp, (sp) # Move the emulated FCSR from tp into x0's save slot.

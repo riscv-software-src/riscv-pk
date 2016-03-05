@@ -1,6 +1,9 @@
 #ifndef PK_BITS_H
 #define PK_BITS_H
 
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
+
 #define CONST_POPCOUNT2(x) ((((x) >> 0) & 1) + (((x) >> 1) & 1))
 #define CONST_POPCOUNT4(x) (CONST_POPCOUNT2(x) + CONST_POPCOUNT2((x)>>2))
 #define CONST_POPCOUNT8(x) (CONST_POPCOUNT4(x) + CONST_POPCOUNT4((x)>>4))

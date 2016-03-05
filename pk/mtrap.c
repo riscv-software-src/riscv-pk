@@ -4,77 +4,6 @@
 #include "vm.h"
 #include <errno.h>
 
-void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
-{
-  asm (".pushsection .rodata\n"
-       "illegal_insn_trap_table:\n"
-       "  .word truly_illegal_insn\n"
-#ifdef PK_ENABLE_FP_EMULATION
-       "  .word emulate_float_load\n"
-#else
-       "  .word truly_illegal_insn\n"
-#endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-#ifdef PK_ENABLE_FP_EMULATION
-       "  .word emulate_float_store\n"
-#else
-       "  .word truly_illegal_insn\n"
-#endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_mul_div\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_mul_div32\n"
-       "  .word truly_illegal_insn\n"
-#ifdef PK_ENABLE_FP_EMULATION
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fp\n"
-#else
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-#endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-#ifdef PK_ENABLE_FP_EMULATION
-       "  .word emulate_system\n"
-#else
-       "  .word truly_illegal_insn\n"
-#endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .popsection");
-
-  uintptr_t mstatus;
-  insn_t insn = get_insn(mepc, &mstatus);
-
-  if ((insn & 3) != 3)
-    return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
-  write_csr(mepc, mepc + 4);
-
-  extern int32_t illegal_insn_trap_table[];
-  int32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
-  emulation_func f = (emulation_func)(uintptr_t)*pf;
-  f(regs, mcause, mepc, mstatus, insn);
-}
-
 void __attribute__((noreturn)) bad_trap()
 {
   panic("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
@@ -299,6 +228,25 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   }
   regs[10] = retval;
   write_csr(mepc, mepc + 4);
+}
+
+void redirect_trap(uintptr_t epc, uintptr_t mstatus)
+{
+  write_csr(sepc, epc);
+  write_csr(scause, read_csr(mcause));
+  write_csr(mepc, read_csr(stvec));
+
+  uintptr_t prev_priv = EXTRACT_FIELD(mstatus, MSTATUS_MPP);
+  uintptr_t prev_ie = EXTRACT_FIELD(mstatus, MSTATUS_MPIE);
+  kassert(prev_priv <= PRV_S);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_SPP, prev_priv);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_SPIE, prev_ie);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
+  write_csr(mstatus, mstatus);
+
+  extern void __redirect_trap();
+  return __redirect_trap();
 }
 
 static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)

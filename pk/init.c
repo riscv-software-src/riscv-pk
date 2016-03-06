@@ -44,31 +44,39 @@ static void handle_option(const char* s)
   }
 }
 
-static struct mainvars* parse_args(struct mainvars* args)
+#define MAX_ARGS 64
+typedef union {
+  uint64_t buf[MAX_ARGS];
+  char* argv[MAX_ARGS];
+} arg_buf;
+
+static size_t parse_args(arg_buf* args)
 {
   long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0, 0, 0);
   kassert(r == 0);
+  uint64_t* pk_argv = &args->buf[1];
+  // pk_argv[0] is the proxy kernel itself.  skip it and any flags.
+  size_t pk_argc = args->buf[0], arg = 1;
+  for ( ; arg < pk_argc && *(char*)(uintptr_t)pk_argv[arg] == '-'; arg++)
+    handle_option((const char*)(uintptr_t)pk_argv[arg]);
 
-  // argv[0] is the proxy kernel itself.  skip it and any flags.
-  unsigned a0 = 1;
-  for ( ; a0 < args->argc && *(char*)(uintptr_t)args->argv[a0] == '-'; a0++)
-    handle_option((const char*)(uintptr_t)args->argv[a0]);
-  args->argv[a0-1] = args->argc - a0;
-  return (struct mainvars*)&args->argv[a0-1];
+  for (size_t i = 0; arg + i < pk_argc; i++)
+    args->argv[i] = (char*)(uintptr_t)pk_argv[arg + i];
+  return pk_argc - arg;
 }
 
 void boot_loader()
 {
-  struct mainvars arg_buffer;
-  struct mainvars *args = parse_args(&arg_buffer);
+  arg_buf args;
+  size_t argc = parse_args(&args);
+  if (!argc)
+    panic("tell me what ELF to load!");
 
   // load program named by argv[0]
   long phdrs[128];
   current.phdr = (uintptr_t)phdrs;
   current.phdr_size = sizeof(phdrs);
-  if (!args->argc)
-    panic("tell me what ELF to load!");
-  load_elf((char*)(uintptr_t)args->argv[0], &current);
+  load_elf(args.argv[0], &current);
 
-  run_loaded_program(args);
+  run_loaded_program(argc, args.argv);
 }

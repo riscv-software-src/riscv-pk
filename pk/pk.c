@@ -3,7 +3,7 @@
 #include "vm.h"
 #include "elf.h"
 
-void run_loaded_program(struct mainvars* args)
+void run_loaded_program(size_t argc, char** argv)
 {
   if (current.is_supervisor)
     panic("pk can't run kernel binaries; try using bbl instead");
@@ -25,11 +25,11 @@ void run_loaded_program(struct mainvars* args)
   current.phdr = stack_top;
 
   // copy argv to user stack
-  for (size_t i = 0; i < args->argc; i++) {
-    size_t len = strlen((char*)(uintptr_t)args->argv[i])+1;
+  for (size_t i = 0; i < argc; i++) {
+    size_t len = strlen((char*)(uintptr_t)argv[i])+1;
     stack_top -= len;
-    memcpy((void*)stack_top, (void*)(uintptr_t)args->argv[i], len);
-    args->argv[i] = stack_top;
+    memcpy((void*)stack_top, (void*)(uintptr_t)argv[i], len);
+    argv[i] = (void*)stack_top;
   }
   stack_top &= -sizeof(void*);
 
@@ -49,18 +49,18 @@ void run_loaded_program(struct mainvars* args)
 
   // place argc, argv, envp, auxp on stack
   #define PUSH_ARG(type, value) do { \
-    *((type*)sp) = value; \
+    *((type*)sp) = (type)value; \
     sp += sizeof(type); \
   } while (0)
 
   #define STACK_INIT(type) do { \
     unsigned naux = sizeof(aux)/sizeof(aux[0]); \
-    stack_top -= (1 + args->argc + 1 + 1 + 2*naux) * sizeof(type); \
+    stack_top -= (1 + argc + 1 + 1 + 2*naux) * sizeof(type); \
     stack_top &= -16; \
     long sp = stack_top; \
-    PUSH_ARG(type, args->argc); \
-    for (unsigned i = 0; i < args->argc; i++) \
-      PUSH_ARG(type, args->argv[i]); \
+    PUSH_ARG(type, argc); \
+    for (unsigned i = 0; i < argc; i++) \
+      PUSH_ARG(type, argv[i]); \
     PUSH_ARG(type, 0); /* argv[argc] = NULL */ \
     PUSH_ARG(type, 0); /* envp[0] = NULL */ \
     for (unsigned i = 0; i < naux; i++) { \

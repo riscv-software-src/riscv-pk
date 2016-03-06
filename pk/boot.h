@@ -8,11 +8,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-struct mainvars {
-  uint64_t argc;
-  uint64_t argv[127]; // this space is shared with the arg strings themselves
-};
-
 typedef struct {
   int phent;
   int phnum;
@@ -36,7 +31,7 @@ typedef struct {
 extern elf_info current;
 
 void prepare_supervisor_mode();
-void run_loaded_program(struct mainvars*);
+void run_loaded_program(size_t argc, char** argv);
 void boot_loader();
 void boot_other_hart();
 void load_elf(const char* fn, elf_info* info);

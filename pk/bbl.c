@@ -13,7 +13,7 @@ static void enter_entry_point()
   __builtin_unreachable();
 }
 
-void run_loaded_program(struct mainvars* args)
+void run_loaded_program(size_t argc, char** argv)
 {
   if (!current.is_supervisor)
     die("bbl can't run user binaries; try using pk instead");

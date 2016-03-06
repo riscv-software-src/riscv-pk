@@ -274,7 +274,7 @@ static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
 {
   switch (num)
   {
-#ifndef PK_ENABLE_FP_EMULATION
+#ifdef PK_ENABLE_FP_EMULATION
     case CSR_FRM: SET_FRM(value); return 0;
     case CSR_FFLAGS: SET_FFLAGS(value); return 0;
     case CSR_FCSR: SET_FCSR(value); return 0;

@@ -284,8 +284,6 @@ void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
     case CAUSE_FAULT_LOAD:
     case CAUSE_FAULT_STORE:
       return machine_page_fault(regs, mepc);
-    case CAUSE_MACHINE_ECALL:
-      return mcall_trap(regs, mcause, mepc);
     default:
       bad_trap();
   }

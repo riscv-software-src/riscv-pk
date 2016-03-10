@@ -61,7 +61,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
-       "  .word emulate_system\n"
+       "  .word emulate_system_opcode\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
@@ -153,7 +153,7 @@ static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
   return -1;
 }
 
-DECLARE_EMULATION_FUNC(emulate_system)
+DECLARE_EMULATION_FUNC(emulate_system_opcode)
 {
   int rs1_num = (insn >> 15) & 0x1f;
   uintptr_t rs1_val = GET_RS1(insn, regs);

@@ -11,21 +11,23 @@ uintptr_t num_harts;
 
 static void mstatus_init()
 {
+  // Enable FPU and set VM mode
   uintptr_t ms = 0;
   ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
   ms = INSERT_FIELD(ms, MSTATUS_FS, 1);
   write_csr(mstatus, ms);
 
+  // Make sure the hart actually supports the VM mode we want
   ms = read_csr(mstatus);
   assert(EXTRACT_FIELD(ms, MSTATUS_VM) == VM_CHOICE);
 
-  write_csr(mtimecmp, 0);
-  clear_csr(mip, MIP_MSIP);
-  write_csr(mie, -1);
+  // Enable user/supervisor use of perf counters
   write_csr(mucounteren, -1);
   write_csr(mscounteren, -1);
+  write_csr(mie, ~MIP_MTIP); // disable timer; enable other interrupts
 }
 
+// send S-mode interrupts and most exceptions straight to S-mode
 static void delegate_traps()
 {
   uintptr_t interrupts = MIP_SSIP | MIP_STIP;
@@ -89,7 +91,7 @@ static void hart_init()
 void init_first_hart()
 {
   hart_init();
-  memset(HLS(), 0, sizeof(*HLS()));
+  hls_init(0, NULL); // this might get called again from parse_config_string
   parse_config_string();
   memory_init();
   boot_loader();

@@ -7,7 +7,7 @@
 pte_t* root_page_table;
 uintptr_t first_free_paddr;
 uintptr_t mem_size;
-uint32_t num_harts;
+uintptr_t num_harts;
 
 static void mstatus_init()
 {
@@ -60,7 +60,7 @@ static void fp_init()
 #endif
 }
 
-void hls_init(uint32_t id, csr_t* csrs)
+void hls_init(uintptr_t id, csr_t* csrs)
 {
   hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));

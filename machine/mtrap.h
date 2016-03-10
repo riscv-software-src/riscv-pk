@@ -30,7 +30,7 @@ static inline int xlen()
 
 extern uintptr_t first_free_paddr;
 extern uintptr_t mem_size;
-extern uint32_t num_harts;
+extern uintptr_t num_harts;
 
 typedef uintptr_t csr_t; // TODO this might become uint128_t for RV128
 
@@ -60,7 +60,7 @@ typedef struct {
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
 #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
 
-void hls_init(uint32_t hart_id, csr_t* csrs);
+void hls_init(uintptr_t hart_id, csr_t* csrs);
 void parse_config_string();
 void poweroff(void) __attribute((noreturn));
 void printm(const char* s, ...);

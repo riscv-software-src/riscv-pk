@@ -18,7 +18,10 @@ machine_c_srcs = \
   mtrap.c \
   minit.c \
   emulation.c \
+  muldiv_emulation.c \
   fp_emulation.c \
+  fp_ldst.c \
+  misaligned_ldst.c \
   sbi_impl.c \
   configstring.c \
 

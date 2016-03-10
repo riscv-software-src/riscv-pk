@@ -46,6 +46,7 @@
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) set_csr(fflags, which)
 # define softfloat_roundingMode ({ register int tp asm("tp"); tp; })
+# define SET_FS_DIRTY() ((void) 0)
 #else
 # define GET_F64_REG(insn, pos, regs) (*(int64_t*)((void*)((regs) + 32) + (((insn) >> ((pos)-3)) & 0xf8)))
 # define SET_F64_REG(insn, pos, regs, val) (GET_F64_REG(insn, pos, regs) = (val))
@@ -66,6 +67,7 @@
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) ({ asm volatile ("or tp, tp, %0" :: "rI"(which)); })
 # define softfloat_roundingMode ({ register int tp asm("tp"); tp >> 13; })
+# define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 #endif
 
 #define GET_F32_RS1(insn, regs) (GET_F32_REG(insn, 15, regs))
@@ -76,6 +78,5 @@
 #define GET_F64_RS3(insn, regs) (GET_F64_REG(insn, 27, regs))
 #define SET_F32_RD(insn, regs, val) (SET_F32_REG(insn, 7, regs, val), SET_FS_DIRTY())
 #define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 7, regs, val), SET_FS_DIRTY())
-#define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 
 #endif

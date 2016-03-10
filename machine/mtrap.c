@@ -134,13 +134,14 @@ static uintptr_t mcall_shutdown()
   poweroff();
 }
 
-static uintptr_t mcall_set_timer(unsigned long long when)
+static uintptr_t mcall_set_timer(uint64_t when)
 {
   // bbl/pk don't use the timer, so there's no need to virtualize it
-  write_csr(mtimecmp, when);
-#ifndef __riscv64
-  write_csr(mtimecmph, when >> 32);
+#ifdef __riscv32
+  write_csr(mtimecmp, -1);
+  write_csr(mtimecmph, (uintptr_t)(when >> 32));
 #endif
+  write_csr(mtimecmp, (uintptr_t)when);
   clear_csr(mip, MIP_STIP);
   set_csr(mie, MIP_MTIP);
   return 0;
@@ -225,7 +226,11 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
       retval = mcall_shutdown();
       break;
     case MCALL_SET_TIMER:
+#ifdef __riscv32
+      retval = mcall_set_timer(arg0 + ((uint64_t)arg1 << 32));
+#else
       retval = mcall_set_timer(arg0);
+#endif
       break;
     case MCALL_REMOTE_SFENCE_VM:
       retval = mcall_remote_sfence_vm((uintptr_t*)arg0, arg1);

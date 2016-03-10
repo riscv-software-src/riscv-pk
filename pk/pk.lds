@@ -86,10 +86,5 @@ SECTIONS
     *(COMMON)
   }
 
-  .sbi :
-  {
-    sbi.o(.sbi)
-  }
-
   _end = .;
 }

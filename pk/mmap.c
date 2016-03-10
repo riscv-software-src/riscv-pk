@@ -1,8 +1,8 @@
-#include "vm.h"
-#include "file.h"
+#include "mmap.h"
 #include "atomic.h"
 #include "pk.h"
 #include "boot.h"
+#include "bits.h"
 #include "mtrap.h"
 #include <stdint.h>
 #include <errno.h>
@@ -17,13 +17,14 @@ typedef struct {
 } vmr_t;
 
 #define MAX_VMR (RISCV_PGSIZE / sizeof(vmr_t))
-spinlock_t vm_lock = SPINLOCK_INIT;
+static spinlock_t vm_lock = SPINLOCK_INIT;
 static vmr_t* vmrs;
 
-pte_t* root_page_table;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
+
+int have_vm = 1; // unless -p flag is given
 
 static uintptr_t __page_alloc()
 {
@@ -73,41 +74,6 @@ static size_t pte_ppn(pte_t pte)
   return pte >> PTE_PPN_SHIFT;
 }
 
-static pte_t ptd_create(uintptr_t ppn)
-{
-  return (ppn << PTE_PPN_SHIFT) | PTE_V | PTE_TYPE_TABLE;
-}
-
-static inline pte_t pte_create(uintptr_t ppn, int prot, int user)
-{
-  pte_t pte = (ppn << PTE_PPN_SHIFT) | PTE_V;
-  prot &= PROT_READ|PROT_WRITE|PROT_EXEC;
-  if (user) {
-    switch (prot) {
-      case PROT_NONE: pte |= PTE_TYPE_SR; break;
-      case PROT_READ: pte |= PTE_TYPE_UR_SR; break;
-      case PROT_WRITE: pte |= PTE_TYPE_URW_SRW; break;
-      case PROT_EXEC: pte |= PTE_TYPE_URX_SRX; break;
-      case PROT_READ|PROT_WRITE: pte |= PTE_TYPE_URW_SRW; break;
-      case PROT_READ|PROT_EXEC: pte |= PTE_TYPE_URX_SRX; break;
-      case PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_URWX_SRWX; break;
-      case PROT_READ|PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_URWX_SRWX; break;
-    }
-  } else {
-    switch (prot) {
-      case PROT_NONE: kassert(0); break;
-      case PROT_READ: pte |= PTE_TYPE_SR; break;
-      case PROT_WRITE: pte |= PTE_TYPE_SRW; break;
-      case PROT_EXEC: pte |= PTE_TYPE_SRX; break;
-      case PROT_READ|PROT_WRITE: pte |= PTE_TYPE_SRW; break;
-      case PROT_READ|PROT_EXEC: pte |= PTE_TYPE_SRX; break;
-      case PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_SRWX; break;
-      case PROT_READ|PROT_WRITE|PROT_EXEC: pte |= PTE_TYPE_SRWX; break;
-    }
-  }
-  return pte;
-}
-
 static uintptr_t ppn(uintptr_t addr)
 {
   return addr >> RISCV_PGSHIFT;
@@ -119,27 +85,19 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static void __maybe_create_root_page_table()
+static pte_t* __maybe_create_root_page_table()
 {
-  if (root_page_table)
-    return;
-  root_page_table = (void*)__page_alloc();
-  if (have_vm)
-    write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
+  if (!root_page_table)
+    root_page_table = (void*)__page_alloc();
+  return root_page_table;
 }
 
 static pte_t* __walk_internal(uintptr_t addr, int create)
 {
-  const size_t pte_per_page = RISCV_PGSIZE/sizeof(void*);
-  __maybe_create_root_page_table();
-  pte_t* t = root_page_table;
-  unsigned levels = (VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS;
-
-  for (unsigned i = levels-1; i > 0; i--)
-  {
+  pte_t* t = __maybe_create_root_page_table();
+  for (int i = (VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS - 1; i > 0; i--) {
     size_t idx = pt_idx(addr, i);
-    if (!(t[idx] & PTE_V))
-    {
+    if (!(t[idx] & PTE_V)) {
       if (!create)
         return 0;
       uintptr_t page = __page_alloc();
@@ -185,11 +143,40 @@ static uintptr_t __vm_alloc(size_t npage)
   return 0;
 }
 
+static inline pte_t prot_to_type(int prot, int user)
+{
+  prot &= PROT_READ|PROT_WRITE|PROT_EXEC;
+  if (user) {
+    switch (prot) {
+      case PROT_NONE: return PTE_TYPE_SR;
+      case PROT_READ: return PTE_TYPE_UR_SR;
+      case PROT_WRITE: return PTE_TYPE_URW_SRW;
+      case PROT_EXEC: return PTE_TYPE_URX_SRX;
+      case PROT_READ|PROT_WRITE: return PTE_TYPE_URW_SRW;
+      case PROT_READ|PROT_EXEC: return PTE_TYPE_URX_SRX;
+      case PROT_WRITE|PROT_EXEC: return PTE_TYPE_URWX_SRWX;
+      case PROT_READ|PROT_WRITE|PROT_EXEC: return PTE_TYPE_URWX_SRWX;
+    }
+  } else {
+    switch (prot) {
+      case PROT_NONE:
+      case PROT_READ: return PTE_TYPE_SR;
+      case PROT_WRITE: return PTE_TYPE_SRW;
+      case PROT_EXEC: return PTE_TYPE_SRX;
+      case PROT_READ|PROT_WRITE: return PTE_TYPE_SRW;
+      case PROT_READ|PROT_EXEC: return PTE_TYPE_SRX;
+      case PROT_WRITE|PROT_EXEC: return PTE_TYPE_SRWX;
+      case PROT_READ|PROT_WRITE|PROT_EXEC: return PTE_TYPE_SRWX;
+    }
+  }
+  __builtin_unreachable();
+}
+
 int __valid_user_range(uintptr_t vaddr, size_t len)
 {
   if (vaddr + len < vaddr)
     return 0;
-  return vaddr >= current.first_free_paddr && vaddr + len <= current.mmap_max;
+  return vaddr >= first_free_paddr && vaddr + len <= current.mmap_max;
 }
 
 static int __handle_page_fault(uintptr_t vaddr, int prot)
@@ -206,7 +193,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     uintptr_t ppn = vpn;
 
     vmr_t* v = (vmr_t*)*pte;
-    *pte = pte_create(ppn, PROT_READ|PROT_WRITE, 0);
+    *pte = pte_create(ppn, prot_to_type(PROT_READ|PROT_WRITE, 0));
     flush_tlb();
     if (v->file)
     {
@@ -219,10 +206,10 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     else
       memset((void*)vaddr, 0, RISCV_PGSIZE);
     __vmr_decref(v, 1);
-    *pte = pte_create(ppn, v->prot, 1);
+    *pte = pte_create(ppn, prot_to_type(v->prot, 1));
   }
 
-  pte_t perms = pte_create(0, prot, 1);
+  pte_t perms = pte_create(0, prot_to_type(prot, 1));
   if ((*pte & perms) != perms)
     return -1;
 
@@ -384,7 +371,7 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
           res = -EACCES;
           break;
         }
-        *pte = pte_create(pte_ppn(*pte), prot, 1);
+        *pte = pte_create(pte_ppn(*pte), prot_to_type(prot, 1));
       }
     }
   spinlock_unlock(&vm_lock);
@@ -395,11 +382,12 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
 void __map_kernel_range(uintptr_t vaddr, uintptr_t paddr, size_t len, int prot)
 {
   uintptr_t n = ROUNDUP(len, RISCV_PGSIZE) / RISCV_PGSIZE;
+  uintptr_t offset = paddr - vaddr;
   for (uintptr_t a = vaddr, i = 0; i < n; i++, a += RISCV_PGSIZE)
   {
     pte_t* pte = __walk_create(a);
     kassert(pte);
-    *pte = pte_create((a - vaddr + paddr) >> RISCV_PGSHIFT, prot, 0);
+    *pte = pte_create((a + offset) >> RISCV_PGSHIFT, prot_to_type(prot, 0));
   }
 }
 
@@ -415,85 +403,23 @@ void populate_mapping(const void* start, size_t size, int prot)
   }
 }
 
-static uintptr_t sbi_top_paddr()
+uintptr_t pk_vm_init()
 {
-  extern char _end;
-  return ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
-}
-
-#define first_free_paddr() (sbi_top_paddr() + num_harts * RISCV_PGSIZE)
-
-void vm_init()
-{
-  mem_size = mem_size / SUPERPAGE_SIZE * SUPERPAGE_SIZE;
-  current.first_free_paddr = first_free_paddr();
-
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
   first_free_page = mem_size - free_pages * RISCV_PGSIZE;
-  current.mmap_max = current.brk_max = first_free_page;
-}
 
-void supervisor_vm_init()
-{
-  uintptr_t highest_va = -current.first_free_paddr;
-  mem_size = MIN(mem_size, highest_va - current.first_user_vaddr) & -SUPERPAGE_SIZE;
-
-  pte_t* sbi_pt = (pte_t*)(current.first_vaddr_after_user + current.bias);
-  memset(sbi_pt, 0, RISCV_PGSIZE);
-  pte_t* middle_pt = (void*)sbi_pt + RISCV_PGSIZE;
-#ifndef __riscv64
-  size_t num_middle_pts = 1;
-  pte_t* root_pt = middle_pt;
-  memset(root_pt, 0, RISCV_PGSIZE);
-#else
-  size_t num_middle_pts = (-current.first_user_vaddr - 1) / MEGAPAGE_SIZE + 1;
-  pte_t* root_pt = (void*)middle_pt + num_middle_pts * RISCV_PGSIZE;
-  memset(middle_pt, 0, (num_middle_pts + 1) * RISCV_PGSIZE);
-  for (size_t i = 0; i < num_middle_pts; i++)
-    root_pt[(1<<RISCV_PGLEVEL_BITS)-num_middle_pts+i] = ptd_create(((uintptr_t)middle_pt >> RISCV_PGSHIFT) + i);
-#endif
-
-  for (uintptr_t vaddr = current.first_user_vaddr, paddr = vaddr + current.bias, end = current.first_vaddr_after_user;
-       paddr < mem_size; vaddr += SUPERPAGE_SIZE, paddr += SUPERPAGE_SIZE) {
-    int l2_shift = RISCV_PGLEVEL_BITS + RISCV_PGSHIFT;
-    size_t l2_idx = (current.first_user_vaddr >> l2_shift) & ((1 << RISCV_PGLEVEL_BITS)-1);
-    l2_idx += ((vaddr - current.first_user_vaddr) >> l2_shift);
-    middle_pt[l2_idx] = pte_create(paddr >> RISCV_PGSHIFT, PROT_READ|PROT_WRITE|PROT_EXEC, 0);
-  }
-  current.first_vaddr_after_user += (void*)root_pt + RISCV_PGSIZE - (void*)sbi_pt;
-
-  // map SBI at top of vaddr space
-  uintptr_t num_sbi_pages = sbi_top_paddr() / RISCV_PGSIZE;
-  for (uintptr_t i = 0; i < num_sbi_pages; i++) {
-    uintptr_t idx = (1 << RISCV_PGLEVEL_BITS) - num_sbi_pages + i;
-    sbi_pt[idx] = pte_create(i, PROT_READ|PROT_EXEC, 0);
-  }
-  pte_t* sbi_pte = middle_pt + ((num_middle_pts << RISCV_PGLEVEL_BITS)-1);
-  kassert(!*sbi_pte);
-  *sbi_pte = ptd_create((uintptr_t)sbi_pt >> RISCV_PGSHIFT);
-
-  // disable our allocator
-  kassert(next_free_page == 0);
-  free_pages = 0;
-
-  mb();
-  root_page_table = root_pt;
-  write_csr(sptbr, (uintptr_t)root_pt >> RISCV_PGSHIFT);
-}
-
-uintptr_t pk_vm_init()
-{
-  // keep user addresses positive
-  current.mmap_max = MIN(current.mmap_max, (uintptr_t)INTPTR_MAX + 1);
-
-  __map_kernel_range(0, 0, current.first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
+  __map_kernel_range(0, 0, first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
   __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
 
+  // keep user addresses positive
+  current.mmap_max = MIN(first_free_page, (uintptr_t)INTPTR_MAX + 1);
+  current.brk_max = current.mmap_max;
+
   size_t stack_size = RISCV_PGSIZE * CLAMP(mem_size/(RISCV_PGSIZE*32), 1, 256);
-  current.stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
-  current.stack_top = current.stack_bottom + stack_size;
-  kassert(current.stack_bottom != (uintptr_t)-1);
+  size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
+  kassert(stack_bottom != (uintptr_t)-1);
+  current.stack_top = stack_bottom + stack_size;
 
   uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
   return kernel_stack_top;

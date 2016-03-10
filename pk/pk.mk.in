@@ -1,52 +1,30 @@
 pk_subproject_deps = \
+	util \
 	softfloat \
+	machine \
 
 pk_hdrs = \
-	atomic.h \
-	bits.h \
 	boot.h \
 	elf.h \
-	emulation.h \
-	encoding.h \
 	file.h \
-	fp_emulation.h \
 	frontend.h \
-	mcall.h \
-	mtrap.h \
+	mmap.h \
 	pk.h \
-	sbi.h \
 	syscall.h \
-	unprivileged_memory.h \
-	vm.h \
 
 pk_c_srcs = \
-	snprintf.c \
-	mtrap.c \
-	minit.c \
-	emulation.c \
-	fp_emulation.c \
-	sbi_impl.c \
-	init.c \
 	file.c \
 	syscall.c \
 	handlers.c \
 	frontend.c \
 	elf.c \
 	console.c \
-	vm.c \
-	string.c \
-	logo.c \
-	configstring.c \
+	mmap.c \
 
 pk_asm_srcs = \
-	mentry.S \
 	entry.S \
-	fp_asm.S \
-	sbi_entry.S \
-	sbi.S \
 
 pk_test_srcs =
 
 pk_install_prog_srcs = \
 	pk.c \
-	bbl.c \

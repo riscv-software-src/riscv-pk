@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "mtrap.h"
+#include "bits.h"
 
   .data
   .align 6

@@ -24,7 +24,7 @@ sbi_base:
 
   # query_memory
   .align 4
-  j __sbi_query_memory
+  tail __sbi_query_memory
 
   # console_putchar
   .align 4
@@ -72,11 +72,11 @@ sbi_base:
 
   # mask_interrupt
   .align 4
-  j __sbi_mask_interrupt
+  tail __sbi_mask_interrupt
 
   # unmask_interrupt
   .align 4
-  j __sbi_unmask_interrupt
+  tail __sbi_unmask_interrupt
 
   # remote_sfence_vm
   .align 4
@@ -107,3 +107,5 @@ do_mcall:
   ret
 
   .align RISCV_PGSHIFT
+  .globl _sbi_end
+_sbi_end:

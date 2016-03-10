@@ -12,6 +12,14 @@
 #define IS_ELF32(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 1)
 #define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 2)
 
+#ifdef __riscv64
+# define Elf_Ehdr Elf64_Ehdr
+# define Elf_Phdr Elf64_Phdr
+#else
+# define Elf_Ehdr Elf32_Ehdr
+# define Elf_Phdr Elf32_Phdr
+#endif
+
 #define ET_EXEC 2
 #define ET_DYN 3
 

@@ -1,11 +1,13 @@
 // See LICENSE for license details.
 
+#include "file.h"
+#include "atomic.h"
+#include "mmap.h"
+#include "frontend.h"
+#include "syscall.h"
+#include "pk.h"
 #include <string.h>
 #include <errno.h>
-#include "file.h"
-#include "pk.h"
-#include "frontend.h"
-#include "vm.h"
 
 #define MAX_FDS 128
 static file_t* fds[MAX_FDS];

@@ -1,7 +1,8 @@
 #include "mtrap.h"
-#include "frontend.h"
 #include "mcall.h"
-#include "vm.h"
+#include "htif.h"
+#include "atomic.h"
+#include "bits.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -68,6 +69,12 @@ void poweroff()
     write_csr(mtohost, 1);
 }
 
+void putstring(const char* s)
+{
+  while (*s)
+    mcall_console_putchar(*s++);
+}
+
 void printm(const char* s, ...)
 {
   char buf[256];
@@ -77,8 +84,7 @@ void printm(const char* s, ...)
   vsnprintf(buf, sizeof buf, s, vl);
   va_end(vl);
 
-  for (const char* p = buf; *p; p++)
-    mcall_console_putchar(*p);
+  putstring(buf);
 }
 
 static void send_ipi(uintptr_t recipient, int event)

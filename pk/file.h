@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
-#include "atomic.h"
 
 typedef struct file
 {

@@ -4,7 +4,7 @@
 #include "pk.h"
 #include "file.h"
 #include "frontend.h"
-#include "vm.h"
+#include "mmap.h"
 #include "boot.h"
 #include <string.h>
 #include <errno.h>

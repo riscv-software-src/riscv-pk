@@ -1,11 +1,10 @@
 #include "mtrap.h"
 #include "sbi.h"
-#include "boot.h"
 
 uintptr_t __sbi_query_memory(uintptr_t id, memory_block_info *p)
 {
   if (id == 0) {
-    p->base = current.first_free_paddr;
+    p->base = first_free_paddr;
     p->size = mem_size - p->base;
     return 0;
   }

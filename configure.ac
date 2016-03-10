@@ -81,7 +81,7 @@ AC_SUBST([LIBS],  ["-lgcc"])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ pk, softfloat ])
+MCPPBS_SUBPROJECTS([ pk, bbl, softfloat, dummy_payload, machine, util ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups

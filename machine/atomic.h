@@ -6,7 +6,7 @@
 #include "config.h"
 #include "encoding.h"
 
-// Currently, interrupts are always disabled when in pk/bbl.
+// Currently, interrupts are always disabled in M-mode.
 #define disable_irqsave() (0)
 #define enable_irqrestore(flags) ((void) (flags))
 

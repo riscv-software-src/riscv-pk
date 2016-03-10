@@ -1,8 +1,11 @@
-#include "vm.h"
 #include "mtrap.h"
+#include "atomic.h"
+#include "vm.h"
 #include "fp_emulation.h"
-#include "boot.h"
+#include <string.h>
 
+pte_t* root_page_table;
+uintptr_t first_free_paddr;
 uintptr_t mem_size;
 uint32_t num_harts;
 
@@ -64,6 +67,18 @@ void hls_init(uint32_t id, csr_t* csrs)
   hls->csrs = csrs;
 }
 
+static uintptr_t sbi_top_paddr()
+{
+  extern char _end;
+  return ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
+}
+
+static void memory_init()
+{
+  mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
+  first_free_paddr = sbi_top_paddr() + num_harts * RISCV_PGSIZE;
+}
+
 static void hart_init()
 {
   mstatus_init();
@@ -73,12 +88,10 @@ static void hart_init()
 
 void init_first_hart()
 {
-  file_init();
   hart_init();
-
   memset(HLS(), 0, sizeof(*HLS()));
   parse_config_string();
-  vm_init();
+  memory_init();
   boot_loader();
 }
 
@@ -86,23 +99,22 @@ void init_other_hart()
 {
   hart_init();
 
-  // wait until virtual memory is enabled
-  while (*(pte_t* volatile*)&root_page_table == NULL)
+  // wait until hart 0 discovers us
+  while (*(csr_t * volatile *)&HLS()->csrs == NULL)
     ;
-  mb();
-  write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
-
-  // make sure hart 0 has discovered us
-  assert(HLS()->csrs != NULL);
 
   boot_other_hart();
 }
 
-void prepare_supervisor_mode()
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
 {
   uintptr_t mstatus = read_csr(mstatus);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
+  write_csr(mepc, fn);
+  write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
+  asm volatile ("mv a0, %0; mv sp, %0; eret" : : "r" (stack));
+  __builtin_unreachable();
 }

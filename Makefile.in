@@ -35,6 +35,7 @@ default : all
 project_name := @PACKAGE_TARNAME@
 src_dir      := @srcdir@
 scripts_dir  := $(src_dir)/scripts
+bbl_payload  := @BBL_PAYLOAD@
 
 # If the version information is not in the configure script, then we
 # assume that we are in a working directory. We use the vcs-version.sh
@@ -83,7 +84,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
 
 CC            := @CC@
-CFLAGS        := @CFLAGS@ $(CFLAGS)
+CFLAGS        := @CFLAGS@ $(CFLAGS) -DBBL_PAYLOAD=\"$(bbl_payload)\"
 COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
                  $(sprojs_include)
 # Linker
@@ -93,7 +94,7 @@ COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
 LD            := $(CC)
 LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib -static $(LDFLAGS)
 LIBS          := @LIBS@
-LINK          := $(LD) $(LDFLAGS) -T $(src_dir)/pk/pk.ld
+LINK          := $(LD) $(LDFLAGS)
 
 # Library creation
 
@@ -258,7 +259,7 @@ $$($(2)_install_prog_objs) : %.o : %.c
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS)
+	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS) -T $(src_dir)/$(2)/$(2).lds
 
 $(2)_c_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \

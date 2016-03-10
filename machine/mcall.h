@@ -1,5 +1,5 @@
-#ifndef _PK_MCALL_H
-#define _PK_MCALL_H
+#ifndef _RISCV_MCALL_H
+#define _RISCV_MCALL_H
 
 #define MCALL_HART_ID 0
 #define MCALL_CONSOLE_PUTCHAR 1

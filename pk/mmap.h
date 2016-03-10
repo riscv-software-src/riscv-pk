@@ -1,21 +1,11 @@
-#ifndef _VM_H
-#define _VM_H
+#ifndef _MMAP_H
+#define _MMAP_H
 
+#include "vm.h"
 #include "syscall.h"
+#include "encoding.h"
 #include "file.h"
-#include <string.h>
-#include <stdint.h>
-#include <sys/types.h>
-
-#define SUPERPAGE_SIZE ((uintptr_t)(RISCV_PGSIZE << RISCV_PGLEVEL_BITS))
-#ifdef __riscv64
-# define VM_CHOICE VM_SV39
-# define VA_BITS 39
-# define MEGAPAGE_SIZE (SUPERPAGE_SIZE << RISCV_PGLEVEL_BITS)
-#else
-# define VM_CHOICE VM_SV32
-# define VA_BITS 32
-#endif
+#include <stddef.h>
 
 #define PROT_NONE 0
 #define PROT_READ 1
@@ -28,8 +18,7 @@
 #define MAP_POPULATE 0x8000
 #define MREMAP_FIXED 0x2
 
-void vm_init();
-void supervisor_vm_init();
+extern int have_vm;
 uintptr_t pk_vm_init();
 int handle_page_fault(uintptr_t vaddr, int prot);
 void populate_mapping(const void* start, size_t size, int prot);
@@ -41,13 +30,5 @@ int do_munmap(uintptr_t addr, size_t length);
 uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags);
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
-
-typedef uintptr_t pte_t;
-extern pte_t* root_page_table;
-
-static inline void flush_tlb()
-{
-  asm volatile("sfence.vm");
-}
 
 #endif

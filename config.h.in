@@ -1,5 +1,14 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef BBL_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef DUMMY_PAYLOAD_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef MACHINE_ENABLED
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -35,3 +44,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef UTIL_ENABLED

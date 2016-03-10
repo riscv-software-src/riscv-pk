@@ -1,5 +1,5 @@
 #include <string.h>
-#include "file.h"
+#include "mtrap.h"
 
 static const char logo[] =
 "              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"
@@ -28,5 +28,5 @@ static const char logo[] =
 
 void print_logo()
 {
-  file_write(stderr, logo, sizeof logo);
+  putstring(logo);
 }

@@ -3,7 +3,7 @@
 #include "pk.h"
 #include "config.h"
 #include "syscall.h"
-#include "vm.h"
+#include "mmap.h"
 
 static void handle_illegal_instruction(trapframe_t* tf)
 {
@@ -31,7 +31,7 @@ static void handle_misaligned_fetch(trapframe_t* tf)
   panic("Misaligned instruction access!");
 }
 
-void handle_misaligned_store(trapframe_t* tf)
+static void handle_misaligned_store(trapframe_t* tf)
 {
   dump_tf(tf);
   panic("Misaligned AMO!");
@@ -50,13 +50,13 @@ static void handle_fault_fetch(trapframe_t* tf)
     segfault(tf, tf->badvaddr, "fetch");
 }
 
-void handle_fault_load(trapframe_t* tf)
+static void handle_fault_load(trapframe_t* tf)
 {
   if (handle_page_fault(tf->badvaddr, PROT_READ) != 0)
     segfault(tf, tf->badvaddr, "load");
 }
 
-void handle_fault_store(trapframe_t* tf)
+static void handle_fault_store(trapframe_t* tf)
 {
   if (handle_page_fault(tf->badvaddr, PROT_WRITE) != 0)
     segfault(tf, tf->badvaddr, "store");

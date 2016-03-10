@@ -1,7 +1,6 @@
-#ifndef _PK_MTRAP_H
-#define _PK_MTRAP_H
+#ifndef _RISCV_MTRAP_H
+#define _RISCV_MTRAP_H
 
-#include "bits.h"
 #include "encoding.h"
 
 #ifdef __riscv_atomic
@@ -29,6 +28,7 @@ static inline int xlen()
   return read_const_csr(misa) < 0 ? 64 : 32;
 }
 
+extern uintptr_t first_free_paddr;
 extern uintptr_t mem_size;
 extern uint32_t num_harts;
 
@@ -52,8 +52,6 @@ typedef struct {
 #define IPI_FENCE_I   0x2
 #define IPI_SFENCE_VM 0x4
 
-void hls_init(uint32_t hart_id, csr_t* csrs);
-
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \
   (void*)((sp + RISCV_PGSIZE) & -RISCV_PGSIZE); })
@@ -62,12 +60,24 @@ void hls_init(uint32_t hart_id, csr_t* csrs);
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
 #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
 
+void hls_init(uint32_t hart_id, csr_t* csrs);
 void parse_config_string();
 void poweroff(void) __attribute((noreturn));
 void printm(const char* s, ...);
+void putstring(const char* s);
 #define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
 #define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })
 #define printk(...) die("printk")
+
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
+  __attribute__((noreturn));
+void boot_loader();
+void boot_other_hart();
+
+static inline void wfi()
+{
+  asm volatile ("wfi" ::: "memory");
+}
 
 #endif // !__ASSEMBLER__
 

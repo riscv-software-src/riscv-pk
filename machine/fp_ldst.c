@@ -22,7 +22,7 @@ DECLARE_EMULATION_FUNC(emulate_float_load)
 #ifdef __riscv64
       val = load_uint64_t((void *)addr, mepc);
 #else
-      val = load_uint32_t(addr, mepc);
+      val = load_uint32_t((void *)addr, mepc);
       val += (uint64_t)load_uint32_t((void *)(addr + 4), mepc) << 32;
 #endif
       SET_F64_RD(insn, regs, val);

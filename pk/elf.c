@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "mmap.h"
+#include "pk.h"
 #include "mtrap.h"
 #include "boot.h"
 #include "bits.h"
@@ -69,5 +70,5 @@ void load_elf(const char* fn, elf_info* info)
   return;
 
 fail:
-    die("couldn't open ELF program: %s!", fn);
+  panic("couldn't open ELF program: %s!", fn);
 }

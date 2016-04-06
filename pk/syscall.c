@@ -17,31 +17,7 @@ void sys_exit(int code)
 {
   if (current.t0)
     printk("%ld cycles\n", rdcycle() - current.t0);
-
-  if (uarch_counters_enabled) {
-    size_t i = 0;
-    #define READ_CTR_FINI(name) do { \
-      while (i >= NUM_COUNTERS) ; \
-      long csr = read_csr(name); \
-      csr -= uarch_counters[i]; uarch_counter_names[i] = #name; \
-      uarch_counters[i++] = csr; \
-    } while (0)
-    READ_CTR_FINI(cycle);   READ_CTR_FINI(instret);
-    READ_CTR_FINI(uarch0);  READ_CTR_FINI(uarch1);  READ_CTR_FINI(uarch2);
-    READ_CTR_FINI(uarch3);  READ_CTR_FINI(uarch4);  READ_CTR_FINI(uarch5);
-    READ_CTR_FINI(uarch6);  READ_CTR_FINI(uarch7);  READ_CTR_FINI(uarch8);
-    READ_CTR_FINI(uarch9);  READ_CTR_FINI(uarch10); READ_CTR_FINI(uarch11);
-    READ_CTR_FINI(uarch12); READ_CTR_FINI(uarch13); READ_CTR_FINI(uarch14);
-    READ_CTR_FINI(uarch15);
-    #undef READ_CTR_FINI
-
-    for (int i = 0; i < NUM_COUNTERS; i++) {
-      if (uarch_counters[i]) {
-        printk("%s = %ld\n", uarch_counter_names[i], uarch_counters[i]);
-      }
-    }
-  }
-
+  dump_uarch_counters();
   shutdown(code);
 }
 

@@ -35,6 +35,7 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl);
 int snprintf(char* out, size_t n, const char* s, ...);
 void start_user(trapframe_t* tf) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
+void dump_uarch_counters();
 
 static inline int insn_len(long insn)
 {
@@ -42,11 +43,6 @@ static inline int insn_len(long insn)
 }
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
-
-#define NUM_COUNTERS (18)
-extern int uarch_counters_enabled;
-extern long uarch_counters[NUM_COUNTERS];
-extern char* uarch_counter_names[NUM_COUNTERS];
 
 #ifdef __cplusplus
 }

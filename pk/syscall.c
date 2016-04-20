@@ -382,6 +382,11 @@ ssize_t sys_writev(int fd, const long* iov, int cnt)
   return ret;
 }
 
+int sys_chdir(const char *path)
+{
+  return frontend_syscall(SYS_chdir, (uintptr_t)path, 0, 0, 0, 0, 0, 0);
+}
+
 int sys_getdents(int fd, void* dirbuf, int count)
 {
   return 0; //stub
@@ -442,6 +447,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_getrusage] = sys_stub_nosys,
     [SYS_getrlimit] = sys_stub_nosys,
     [SYS_setrlimit] = sys_stub_nosys,
+    [SYS_chdir] = sys_chdir,
   };
 
   const static void* old_syscall_table[] = {

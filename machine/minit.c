@@ -8,6 +8,7 @@ pte_t* root_page_table;
 uintptr_t first_free_paddr;
 uintptr_t mem_size;
 uintptr_t num_harts;
+volatile uint64_t* mtime;
 
 static void mstatus_init()
 {
@@ -62,11 +63,11 @@ static void fp_init()
 #endif
 }
 
-void hls_init(uintptr_t id, csr_t* csrs)
+hls_t* hls_init(uintptr_t id)
 {
   hls_t* hls = OTHER_HLS(id);
   memset(hls, 0, sizeof(*hls));
-  hls->csrs = csrs;
+  return hls;
 }
 
 static uintptr_t sbi_top_paddr()
@@ -91,7 +92,7 @@ static void hart_init()
 void init_first_hart()
 {
   hart_init();
-  hls_init(0, NULL); // this might get called again from parse_config_string
+  hls_init(0); // this might get called again from parse_config_string
   parse_config_string();
   memory_init();
   boot_loader();
@@ -102,7 +103,7 @@ void init_other_hart()
   hart_init();
 
   // wait until hart 0 discovers us
-  while (*(csr_t * volatile *)&HLS()->csrs == NULL)
+  while (*(uint64_t * volatile *)&HLS()->timecmp == NULL)
     ;
 
   boot_other_hart();

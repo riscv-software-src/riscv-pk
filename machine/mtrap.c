@@ -91,7 +91,8 @@ static void send_ipi(uintptr_t recipient, int event)
 {
   if ((atomic_or(&OTHER_HLS(recipient)->mipi_pending, event) & event) == 0) {
     mb();
-    OTHER_HLS(recipient)->csrs[CSR_MIPI] = 1;
+    if (recipient != read_const_csr(mhartid))
+      assert(!"IPIs temporarily missing");
   }
 }
 
@@ -136,12 +137,7 @@ static uintptr_t mcall_shutdown()
 
 static uintptr_t mcall_set_timer(uint64_t when)
 {
-  // bbl/pk don't use the timer, so there's no need to virtualize it
-#ifdef __riscv32
-  write_csr(mtimecmp, -1);
-  write_csr(mtimecmph, (uintptr_t)(when >> 32));
-#endif
-  write_csr(mtimecmp, (uintptr_t)when);
+  *HLS()->timecmp = when;
   clear_csr(mip, MIP_STIP);
   set_csr(mie, MIP_MTIP);
   return 0;

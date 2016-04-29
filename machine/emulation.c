@@ -91,7 +91,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
   switch (num)
   {
     case CSR_TIME:
-      *result = read_csr(mtime) + HLS()->utime_delta;
+      *result = *mtime + HLS()->utime_delta;
       return 0;
     case CSR_CYCLE:
       *result = read_csr(mcycle) + HLS()->ucycle_delta;
@@ -100,7 +100,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
       *result = read_csr(minstret) + HLS()->uinstret_delta;
       return 0;
     case CSR_STIME:
-      *result = read_csr(mtime) + HLS()->stime_delta;
+      *result = *mtime + HLS()->stime_delta;
       return 0;
     case CSR_SCYCLE:
       *result = read_csr(mcycle) + HLS()->scycle_delta;
@@ -110,8 +110,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
       return 0;
 #ifdef __riscv32
     case CSR_TIMEH:
-      *result = (((uint64_t)read_csr(mtimeh) << 32) + read_csr(mtime)
-                 + HLS()->stime_delta) >> 32;
+      *result = (*mtime + HLS()->stime_delta) >> 32;
       return 0;
     case CSR_CYCLEH:
       *result = (((uint64_t)read_csr(mcycleh) << 32) + read_csr(mcycle)

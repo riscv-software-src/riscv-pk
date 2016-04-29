@@ -118,6 +118,6 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
   write_csr(mepc, fn);
   write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
-  asm volatile ("mv a0, %0; mv sp, %0; eret" : : "r" (stack));
+  asm volatile ("mv a0, %0; mv sp, %0; mret" : : "r" (stack));
   __builtin_unreachable();
 }

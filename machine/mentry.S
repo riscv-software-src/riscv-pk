@@ -57,12 +57,12 @@ trap_vector:
   li a0, MIP_STIP
   csrs mip, a0
 
-.Leret:
+.Lmret:
   # Go back whence we came.
   LOAD a0, 10*REGBYTES(sp)
   LOAD a1, 11*REGBYTES(sp)
   csrrw sp, mscratch, sp
-  eret
+  mret
 
 1:
   # Is it an IPI?
@@ -165,7 +165,7 @@ restore_regs:
   LOAD t5,30*REGBYTES(sp)
   LOAD t6,31*REGBYTES(sp)
   LOAD sp, 2*REGBYTES(sp)
-  eret
+  mret
 
 .Ltrap_from_machine_mode:
   csrr sp, mscratch

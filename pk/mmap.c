@@ -85,26 +85,21 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static pte_t* __maybe_create_root_page_table()
+static pte_t* __walk_create(uintptr_t addr);
+
+static pte_t* __attribute__((noinline)) __continue_walk_create(uintptr_t addr, pte_t* pte)
 {
-  if (!root_page_table)
-    root_page_table = (void*)__page_alloc();
-  return root_page_table;
+  *pte = ptd_create(ppn(__page_alloc()));
+  return __walk_create(addr);
 }
 
 static pte_t* __walk_internal(uintptr_t addr, int create)
 {
-  pte_t* t = __maybe_create_root_page_table();
+  pte_t* t = root_page_table;
   for (int i = (VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS - 1; i > 0; i--) {
     size_t idx = pt_idx(addr, i);
-    if (!(t[idx] & PTE_V)) {
-      if (!create)
-        return 0;
-      uintptr_t page = __page_alloc();
-      t[idx] = ptd_create(ppn(page));
-    }
-    else
-      kassert(PTE_TABLE(t[idx]));
+    if (unlikely(!(t[idx] & PTE_V)))
+      return create ? __continue_walk_create(addr, &t[idx]) : 0;
     t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
   return &t[pt_idx(addr, 0)];
@@ -176,7 +171,7 @@ int __valid_user_range(uintptr_t vaddr, size_t len)
 {
   if (vaddr + len < vaddr)
     return 0;
-  return vaddr >= first_free_paddr && vaddr + len <= current.mmap_max;
+  return vaddr + len <= current.mmap_max;
 }
 
 static int __handle_page_fault(uintptr_t vaddr, int prot)
@@ -190,7 +185,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     return -1;
   else if (!(*pte & PTE_V))
   {
-    uintptr_t ppn = vpn;
+    uintptr_t ppn = vpn + (first_free_paddr / RISCV_PGSIZE);
 
     vmr_t* v = (vmr_t*)*pte;
     *pte = pte_create(ppn, prot_to_type(PROT_READ|PROT_WRITE, 0));
@@ -407,16 +402,16 @@ uintptr_t pk_vm_init()
 {
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
-  first_free_page = mem_size - free_pages * RISCV_PGSIZE;
+  first_free_page = first_free_paddr;
+  first_free_paddr += free_pages * RISCV_PGSIZE;
 
-  __map_kernel_range(0, 0, first_free_paddr, PROT_READ|PROT_WRITE|PROT_EXEC);
-  __map_kernel_range(first_free_page, first_free_page, free_pages * RISCV_PGSIZE, PROT_READ|PROT_WRITE);
+  root_page_table = (void*)__page_alloc();
+  __map_kernel_range(DRAM_BASE, DRAM_BASE, first_free_paddr - DRAM_BASE, PROT_READ|PROT_WRITE|PROT_EXEC);
 
-  // keep user addresses positive
-  current.mmap_max = MIN(first_free_page, (uintptr_t)INTPTR_MAX + 1);
-  current.brk_max = current.mmap_max;
+  current.mmap_max = current.brk_max =
+    MIN(DRAM_BASE, mem_size - (first_free_paddr - DRAM_BASE));
 
-  size_t stack_size = RISCV_PGSIZE * CLAMP(mem_size/(RISCV_PGSIZE*32), 1, 256);
+  size_t stack_size = RISCV_PGSIZE * 64;
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);
   current.stack_top = stack_bottom + stack_size;

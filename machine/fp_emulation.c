@@ -45,8 +45,8 @@ DECLARE_EMULATION_FUNC(emulate_fp)
   if (unlikely((mstatus & MSTATUS_FS) == 0))
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
-  extern int32_t fp_emulation_table[];
-  int32_t* pf = (void*)fp_emulation_table + ((insn >> 25) & 0x7c);
+  extern uint32_t fp_emulation_table[];
+  uint32_t* pf = (void*)fp_emulation_table + ((insn >> 25) & 0x7c);
   emulation_func f = (emulation_func)(uintptr_t)*pf;
 
   SETUP_STATIC_ROUNDING(insn);

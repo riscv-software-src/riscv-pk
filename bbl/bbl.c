@@ -11,7 +11,7 @@ static volatile int elf_loaded;
 
 static void supervisor_vm_init()
 {
-  uintptr_t highest_va = -first_free_paddr;
+  uintptr_t highest_va = DRAM_BASE - first_free_paddr;
   mem_size = MIN(mem_size, highest_va - info.first_user_vaddr) & -MEGAPAGE_SIZE;
 
   pte_t* sbi_pt = (pte_t*)(info.first_vaddr_after_user + info.load_offset);
@@ -30,7 +30,7 @@ static void supervisor_vm_init()
 #endif
 
   for (uintptr_t vaddr = info.first_user_vaddr, paddr = vaddr + info.load_offset, end = info.first_vaddr_after_user;
-       paddr < mem_size; vaddr += MEGAPAGE_SIZE, paddr += MEGAPAGE_SIZE) {
+       paddr < DRAM_BASE + mem_size; vaddr += MEGAPAGE_SIZE, paddr += MEGAPAGE_SIZE) {
     int l2_shift = RISCV_PGLEVEL_BITS + RISCV_PGSHIFT;
     size_t l2_idx = (info.first_user_vaddr >> l2_shift) & ((1 << RISCV_PGLEVEL_BITS)-1);
     l2_idx += ((vaddr - info.first_user_vaddr) >> l2_shift);
@@ -39,11 +39,11 @@ static void supervisor_vm_init()
 
   // map SBI at top of vaddr space
   extern char _sbi_end;
-  uintptr_t num_sbi_pages = ((uintptr_t)&_sbi_end - 1) / RISCV_PGSIZE + 1;
+  uintptr_t num_sbi_pages = ((uintptr_t)&_sbi_end - DRAM_BASE - 1) / RISCV_PGSIZE + 1;
   assert(num_sbi_pages <= (1 << RISCV_PGLEVEL_BITS));
   for (uintptr_t i = 0; i < num_sbi_pages; i++) {
     uintptr_t idx = (1 << RISCV_PGLEVEL_BITS) - num_sbi_pages + i;
-    sbi_pt[idx] = pte_create(i, PTE_TYPE_SRX_GLOBAL);
+    sbi_pt[idx] = pte_create((DRAM_BASE / RISCV_PGSIZE) + i, PTE_TYPE_SRX_GLOBAL);
   }
   pte_t* sbi_pte = middle_pt + ((num_middle_pts << RISCV_PGLEVEL_BITS)-1);
   assert(!*sbi_pte);

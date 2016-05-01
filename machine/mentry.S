@@ -89,7 +89,7 @@ trap_vector:
   STORE t2, 7*REGBYTES(sp)
   add t1, t0, t1                   # t1 <- %hi(trap_table)[mcause]
   STORE s0, 8*REGBYTES(sp)
-  lw t1, %pcrel_lo(1b)(t1)         # t1 <- trap_table[mcause]
+  LWU t1, %pcrel_lo(1b)(t1)         # t1 <- trap_table[mcause]
   STORE s1, 9*REGBYTES(sp)
   mv a0, sp                        # a0 <- regs
   STORE a2,12*REGBYTES(sp)
@@ -222,6 +222,12 @@ do_reset:
   li x30, 0
   li x31, 0
   csrw mscratch, x0
+
+  # write mtvec and make sure it sticks
+  la t0, trap_vector
+  csrw mtvec, t0
+  csrr t1, mtvec
+1:bne t0, t1, 1b
 
   # sp <- end of first full page after the end of the binary
   la sp, _end + 2*RISCV_PGSIZE - 1

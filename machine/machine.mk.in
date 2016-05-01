@@ -4,6 +4,7 @@ machine_subproject_deps = \
 machine_hdrs = \
   atomic.h \
   bits.h \
+  configstring.h \
   emulation.h \
   encoding.h \
   fp_emulation.h \

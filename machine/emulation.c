@@ -75,8 +75,8 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 
   write_csr(mepc, mepc + 4);
 
-  extern int32_t illegal_insn_trap_table[];
-  int32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
+  extern uint32_t illegal_insn_trap_table[];
+  uint32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
   emulation_func f = (emulation_func)(uintptr_t)*pf;
   f(regs, mcause, mepc, mstatus, insn);
 }

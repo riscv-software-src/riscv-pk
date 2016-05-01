@@ -5,6 +5,7 @@
 #include "syscall.h"
 #include "encoding.h"
 #include "file.h"
+#include "mtrap.h"
 #include <stddef.h>
 
 #define PROT_NONE 0
@@ -30,5 +31,8 @@ int do_munmap(uintptr_t addr, size_t length);
 uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags);
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
+
+#define va2pa(va) ({ uintptr_t __va = (uintptr_t)(va); \
+  __va >= DRAM_BASE ? __va : __va + first_free_paddr; })
 
 #endif

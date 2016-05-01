@@ -70,7 +70,7 @@ typedef union {
 
 static size_t parse_args(arg_buf* args)
 {
-  long r = frontend_syscall(SYS_getmainvars, (uintptr_t)args, sizeof(*args), 0, 0, 0, 0, 0);
+  long r = frontend_syscall(SYS_getmainvars, va2pa(args), sizeof(*args), 0, 0, 0, 0, 0);
   kassert(r == 0);
   uint64_t* pk_argv = &args->buf[1];
   // pk_argv[0] is the proxy kernel itself.  skip it and any flags.

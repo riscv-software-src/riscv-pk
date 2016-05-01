@@ -47,7 +47,8 @@ static void query_harts(const char* config_string)
 
 void parse_config_string()
 {
-  const char* s = *(const char* const*)CONFIG_STRING_ADDR;
+  uint32_t addr = *(uint32_t*)CONFIG_STRING_ADDR;
+  const char* s = (const char*)(uintptr_t)addr;
   query_mem(s);
   query_rtc(s);
   query_harts(s);

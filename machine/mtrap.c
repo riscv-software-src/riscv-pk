@@ -7,6 +7,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+volatile uint64_t tohost __attribute__((aligned(64)));
+volatile uint64_t fromhost __attribute__((aligned(64)));
+
 void __attribute__((noreturn)) bad_trap()
 {
   die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
@@ -19,31 +22,33 @@ static uintptr_t mcall_hart_id()
 
 static void request_htif_keyboard_interrupt()
 {
-  uintptr_t old_tohost = swap_csr(mtohost, TOHOST_CMD(1, 0, 0));
-  assert(old_tohost == 0);
+  assert(tohost == 0);
+  tohost = TOHOST_CMD(1, 0, 0);
 }
 
-void htif_interrupt()
+static void htif_interrupt()
 {
-  uintptr_t fromhost = swap_csr(mfromhost, 0);
   // we should only be interrupted by keypresses
-  if (!(FROMHOST_DEV(fromhost) == 1 && FROMHOST_CMD(fromhost) == 0))
+  uint64_t fh = fromhost;
+  if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
     die("unexpected htif interrupt");
-  HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fromhost);
+  HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fh);
+  fromhost = 0;
   set_csr(mip, MIP_SSIP);
 }
 
 static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
 {
-  while (swap_csr(mtohost, TOHOST_CMD(dev, cmd, data)) != 0)
-    if (read_csr(mfromhost))
+  while (tohost)
+    if (fromhost)
       htif_interrupt();
+  tohost = TOHOST_CMD(dev, cmd, data);
 
   while (1) {
-    uintptr_t fromhost = read_csr(mfromhost);
-    if (fromhost) {
-      if (FROMHOST_DEV(fromhost) == dev && FROMHOST_CMD(fromhost) == cmd) {
-        write_csr(mfromhost, 0);
+    uint64_t fh = fromhost;
+    if (fh) {
+      if (FROMHOST_DEV(fh) == dev && FROMHOST_CMD(fh) == cmd) {
+        fromhost = 0;
         break;
       }
       htif_interrupt();
@@ -66,7 +71,7 @@ static uintptr_t mcall_htif_syscall(uintptr_t magic_mem)
 void poweroff()
 {
   while (1)
-    write_csr(mtohost, 1);
+    tohost = 1;
 }
 
 void putstring(const char* s)

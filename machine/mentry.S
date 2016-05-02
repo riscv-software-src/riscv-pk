@@ -18,11 +18,9 @@ trap_table:
   .word mcall_trap
   .word bad_trap
   .word bad_trap
-#define HTIF_INTERRUPT_VECTOR 12
-  .word htif_interrupt
-#define SOFTWARE_INTERRUPT_VECTOR 13
+#define SOFTWARE_INTERRUPT_VECTOR 12
   .word software_interrupt
-#define TRAP_FROM_MACHINE_MODE_VECTOR 14
+#define TRAP_FROM_MACHINE_MODE_VECTOR 13
   .word __trap_from_machine_mode
 
   .option norvc
@@ -67,15 +65,9 @@ trap_vector:
 1:
   # Is it an IPI?
   li a0, IRQ_M_SOFT * 2
-  bne a0, a1, 1f
+  bne a0, a1, .Lunhandleable_trap
   li a1, SOFTWARE_INTERRUPT_VECTOR
   j .Lhandle_trap_in_machine_mode
-
-1:
-  # By process of elimination, it must be an HTIF interrupt.
-  li a0, IRQ_HOST * 2
-  bne a0, a1, .Lunhandleable_trap
-  li a1, HTIF_INTERRUPT_VECTOR
 
 .Lhandle_trap_in_machine_mode:
   # Preserve the registers.  Compute the address of the trap handler.

@@ -25,11 +25,12 @@ static void query_harts(const char* config_string)
   for (int core = 0, hart; ; core++) {
     for (hart = 0; ; hart++) {
       char buf[32];
-      snprintf(buf, sizeof buf, "core{%d{%d{isa", core, hart);
+      snprintf(buf, sizeof buf, "core{%d{%d{ipi", core, hart);
       query_result res = query_config_string(config_string, buf);
       if (!res.start)
         break;
       hls_t* hls = hls_init(num_harts);
+      hls->ipi = (void*)get_uint(res);
 
       snprintf(buf, sizeof buf, "core{%d{%d{timecmp", core, hart);
       res = query_config_string(config_string, buf);

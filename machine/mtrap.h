@@ -35,6 +35,7 @@ extern volatile uint64_t* mtime;
 
 typedef struct {
   uint64_t* timecmp;
+  uint32_t* ipi;
   volatile int mipi_pending;
   volatile int sipi_pending;
   int console_ibuf;

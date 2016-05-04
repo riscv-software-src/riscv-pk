@@ -96,8 +96,7 @@ static void send_ipi(uintptr_t recipient, int event)
 {
   if ((atomic_or(&OTHER_HLS(recipient)->mipi_pending, event) & event) == 0) {
     mb();
-    if (recipient != read_const_csr(mhartid))
-      assert(!"IPIs temporarily missing");
+    *OTHER_HLS(recipient)->ipi = 1;
   }
 }
 

@@ -17,7 +17,7 @@ static void query_rtc(const char* config_string)
 {
   query_result res = query_config_string(config_string, "rtc{addr");
   assert(res.start);
-  mtime = (void*)get_uint(res);
+  mtime = (void*)(uintptr_t)get_uint(res);
 }
 
 static void query_harts(const char* config_string)
@@ -30,12 +30,12 @@ static void query_harts(const char* config_string)
       if (!res.start)
         break;
       hls_t* hls = hls_init(num_harts);
-      hls->ipi = (void*)get_uint(res);
+      hls->ipi = (void*)(uintptr_t)get_uint(res);
 
       snprintf(buf, sizeof buf, "core{%d{%d{timecmp", core, hart);
       res = query_config_string(config_string, buf);
       assert(res.start);
-      hls->timecmp = (void*)get_uint(res);
+      hls->timecmp = (void*)(uintptr_t)get_uint(res);
 
       num_harts++;
     }

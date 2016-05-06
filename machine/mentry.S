@@ -20,7 +20,9 @@ trap_table:
   .word bad_trap
 #define SOFTWARE_INTERRUPT_VECTOR 12
   .word software_interrupt
-#define TRAP_FROM_MACHINE_MODE_VECTOR 13
+#define TIMER_INTERRUPT_VECTOR 13
+  .word timer_interrupt
+#define TRAP_FROM_MACHINE_MODE_VECTOR 14
   .word __trap_from_machine_mode
 
   .option norvc
@@ -49,11 +51,8 @@ trap_vector:
   # Is it a machine timer interrupt?
   li a0, IRQ_M_TIMER * 2
   bne a0, a1, 1f
-  # Yes.  Post a supervisor timer interrupt.
-  li a0, MIP_MTIP
-  csrc mie, a0
-  li a0, MIP_STIP
-  csrs mip, a0
+  li a1, TIMER_INTERRUPT_VECTOR
+  j .Lhandle_trap_in_machine_mode
 
 .Lmret:
   # Go back whence we came.

@@ -30,6 +30,8 @@ static void htif_interrupt()
 {
   // we should only be interrupted by keypresses
   uint64_t fh = fromhost;
+  if (!fh)
+    return;
   if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
     die("unexpected htif interrupt");
   HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fh);
@@ -40,8 +42,7 @@ static void htif_interrupt()
 static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
 {
   while (tohost)
-    if (fromhost)
-      htif_interrupt();
+    htif_interrupt();
   tohost = TOHOST_CMD(dev, cmd, data);
 
   while (1) {
@@ -54,6 +55,18 @@ static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
       htif_interrupt();
     }
   }
+}
+
+uintptr_t timer_interrupt()
+{
+  // just send the timer interrupt to the supervisor
+  clear_csr(mie, MIP_MTIP);
+  set_csr(mip, MIP_STIP);
+
+  // and poll the HTIF console
+  htif_interrupt();
+
+  return 0;
 }
 
 static uintptr_t mcall_console_putchar(uint8_t ch)

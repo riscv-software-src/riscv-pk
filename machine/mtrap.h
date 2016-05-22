@@ -13,6 +13,7 @@
 
 #include "sbi.h"
 #include <stdint.h>
+#include <stddef.h>
 
 #define read_const_csr(reg) ({ unsigned long __tmp; \
   asm ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -32,6 +33,8 @@ extern uintptr_t first_free_paddr;
 extern uintptr_t mem_size;
 extern uintptr_t num_harts;
 extern volatile uint64_t* mtime;
+extern volatile uint16_t* plic_priorities;
+extern size_t plic_ndevs;
 
 typedef struct {
   uint64_t* timecmp;
@@ -46,6 +49,11 @@ typedef struct {
   uint64_t stime_delta;
   uint64_t scycle_delta;
   uint64_t sinstret_delta;
+
+  volatile uint16_t* plic_m_thresh;
+  volatile uintptr_t* plic_m_ie;
+  volatile uint16_t* plic_s_thresh;
+  volatile uintptr_t* plic_s_ie;
 } hls_t;
 
 #define IPI_SOFT      0x1

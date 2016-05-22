@@ -3,12 +3,15 @@
 #include "vm.h"
 #include "fp_emulation.h"
 #include <string.h>
+#include <limits.h>
 
 pte_t* root_page_table;
 uintptr_t first_free_paddr;
 uintptr_t mem_size;
 uintptr_t num_harts;
 volatile uint64_t* mtime;
+volatile uint16_t* plic_priorities;
+size_t plic_ndevs;
 
 static void mstatus_init()
 {
@@ -31,7 +34,7 @@ static void mstatus_init()
 // send S-mode interrupts and most exceptions straight to S-mode
 static void delegate_traps()
 {
-  uintptr_t interrupts = MIP_SSIP | MIP_STIP;
+  uintptr_t interrupts = MIP_SSIP | MIP_STIP | MIP_SEIP;
   uintptr_t exceptions =
     (1U << CAUSE_MISALIGNED_FETCH) |
     (1U << CAUSE_FAULT_FETCH) |
@@ -89,11 +92,42 @@ static void hart_init()
   delegate_traps();
 }
 
+static void plic_init()
+{
+  for (size_t i = 1; i <= plic_ndevs; i++)
+    plic_priorities[i] = 1;
+}
+
+static void hart_plic_init()
+{
+  if (!plic_ndevs)
+    return;
+
+  size_t ie_words = plic_ndevs / sizeof(uintptr_t) + 1;
+  for (size_t i = 0; i < ie_words; i++)
+    HLS()->plic_s_ie[i] = ULONG_MAX;
+  *HLS()->plic_m_thresh = 1;
+  *HLS()->plic_s_thresh = 0;
+
+  int x;
+  while ((x = HLS()->plic_s_thresh[1]))
+    printm("%d\n", x);
+  HLS()->plic_s_thresh[1] = 1;
+  HLS()->plic_s_thresh[1] = 3;
+  *((char*)plic_priorities + 0x805) = 1;
+  while ((x = HLS()->plic_s_thresh[1])) {
+    printm("%d\n", x);
+    *HLS()->plic_s_thresh = 1;
+  }
+}
+
 void init_first_hart()
 {
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
   parse_config_string();
+  plic_init();
+  hart_plic_init();
   memory_init();
   boot_loader();
 }
@@ -106,6 +140,7 @@ void init_other_hart()
   while (*(uint64_t * volatile *)&HLS()->timecmp == NULL)
     ;
 
+  hart_plic_init();
   boot_other_hart();
 }
 

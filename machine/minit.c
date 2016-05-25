@@ -108,17 +108,6 @@ static void hart_plic_init()
     HLS()->plic_s_ie[i] = ULONG_MAX;
   *HLS()->plic_m_thresh = 1;
   *HLS()->plic_s_thresh = 0;
-
-  int x;
-  while ((x = HLS()->plic_s_thresh[1]))
-    printm("%d\n", x);
-  HLS()->plic_s_thresh[1] = 1;
-  HLS()->plic_s_thresh[1] = 3;
-  *((char*)plic_priorities + 0x805) = 1;
-  while ((x = HLS()->plic_s_thresh[1])) {
-    printm("%d\n", x);
-    *HLS()->plic_s_thresh = 1;
-  }
 }
 
 void init_first_hart()

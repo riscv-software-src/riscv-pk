@@ -100,6 +100,10 @@ static void plic_init()
 
 static void hart_plic_init()
 {
+  // clear pending interrupts
+  HLS()->ipi = 0;
+  write_csr(mip, 0);
+
   if (!plic_ndevs)
     return;
 
@@ -128,6 +132,7 @@ void init_other_hart()
   // wait until hart 0 discovers us
   while (*(uint64_t * volatile *)&HLS()->timecmp == NULL)
     ;
+  mb();
 
   hart_plic_init();
   boot_other_hart();

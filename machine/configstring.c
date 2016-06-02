@@ -1,6 +1,7 @@
 #include "configstring.h"
 #include "encoding.h"
 #include "mtrap.h"
+#include "atomic.h"
 #include <stdio.h>
 
 static void query_mem(const char* config_string)
@@ -74,6 +75,8 @@ static void query_harts(const char* config_string)
       snprintf(buf, sizeof buf, "core{%d{%d{timecmp", core, hart);
       res = query_config_string(config_string, buf);
       assert(res.start);
+
+      mb();
       hls->timecmp = (void*)(uintptr_t)get_uint(res);
 
       num_harts++;

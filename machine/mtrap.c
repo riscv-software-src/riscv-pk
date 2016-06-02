@@ -162,7 +162,7 @@ static uintptr_t mcall_set_timer(uint64_t when)
 
 void software_interrupt()
 {
-  clear_csr(mip, MIP_MSIP);
+  *HLS()->ipi = 0;
   mb();
   int ipi_pending = atomic_swap(&HLS()->mipi_pending, 0);
 

@@ -10,7 +10,7 @@ uintptr_t first_free_paddr;
 uintptr_t mem_size;
 uintptr_t num_harts;
 volatile uint64_t* mtime;
-volatile uint16_t* plic_priorities;
+volatile uint32_t* plic_priorities;
 size_t plic_ndevs;
 
 static void mstatus_init()
@@ -101,7 +101,7 @@ static void plic_init()
 static void hart_plic_init()
 {
   // clear pending interrupts
-  HLS()->ipi = 0;
+  *HLS()->ipi = 0;
   write_csr(mip, 0);
 
   if (!plic_ndevs)

@@ -26,7 +26,7 @@ static void query_plic(const char* config_string)
   query_result res = query_config_string(config_string, "plic{priority");
   if (!res.start)
     return;
-  plic_priorities = (uint16_t*)(uintptr_t)get_uint(res);
+  plic_priorities = (uint32_t*)(uintptr_t)get_uint(res);
 
   res = query_config_string(config_string, "plic{ndevs");
   if (!res.start)

@@ -86,7 +86,7 @@ static size_t parse_args(arg_buf* args)
 static void init_tf(trapframe_t* tf, long pc, long sp)
 {
   memset(tf, 0, sizeof(*tf));
-  tf->status = (read_csr(sstatus) &~ SSTATUS_SPP &~ SSTATUS_SIE) | SSTATUS_SPIE;
+  tf->status = (read_csr(sstatus) &~ SSTATUS_SPP &~ SSTATUS_SIE) | SSTATUS_SPIE | SSTATUS_XS;
   tf->gpr[2] = sp;
   tf->epc = pc;
 }

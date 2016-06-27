@@ -2,6 +2,7 @@
 
 #include "mtrap.h"
 #include "bits.h"
+#include "config.h"
 
   .data
   .align 6
@@ -41,9 +42,27 @@ trap_vector:
 
   STORE a0, 10*REGBYTES(sp)
   STORE a1, 11*REGBYTES(sp)
+  STORE a2, 12*REGBYTES(sp)
 
   csrr a1, mcause
   bgez a1, .Lhandle_trap_in_machine_mode
+
+#ifdef PK_ENABLE_HWACHA
+  li a0, MSTATUS_XS
+  csrr a2, mstatus
+  and a0, a0, a2
+  beqz a0, .Lskip_vector_cause_aux
+  vxcptcause a0
+  csrw scause, a0
+  vxcptaux a0
+  csrw sbadaddr, a0
+  csrr a0, stvec
+  csrw mepc, a0
+  li a0, MSTATUS_MPP & (MSTATUS_MPP >> 1)
+  csrs mstatus, a0
+  j .Lmret
+.Lskip_vector_cause_aux:
+#endif
 
   # This is an interrupt.  Discard the mcause MSB and decode the rest.
   sll a1, a1, 1
@@ -58,6 +77,7 @@ trap_vector:
   # Go back whence we came.
   LOAD a0, 10*REGBYTES(sp)
   LOAD a1, 11*REGBYTES(sp)
+  LOAD a2, 12*REGBYTES(sp)
   csrrw sp, mscratch, sp
   mret
 

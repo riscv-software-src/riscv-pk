@@ -98,10 +98,24 @@ static void plic_init()
     plic_priorities[i] = 1;
 }
 
+static void prci_test()
+{
+  assert(!(read_csr(mip) & MIP_MSIP));
+  *HLS()->ipi = 1;
+  assert(read_csr(mip) & MIP_MSIP);
+  *HLS()->ipi = 0;
+
+  assert(!(read_csr(mip) & MIP_MTIP));
+  *HLS()->timecmp = 0;
+  assert(read_csr(mip) & MIP_MTIP);
+  *HLS()->timecmp = -1ULL;
+}
+
 static void hart_plic_init()
 {
   // clear pending interrupts
   *HLS()->ipi = 0;
+  *HLS()->timecmp = -1ULL;
   write_csr(mip, 0);
 
   if (!plic_ndevs)
@@ -121,6 +135,7 @@ void init_first_hart()
   parse_config_string();
   plic_init();
   hart_plic_init();
+  //prci_test();
   memory_init();
   boot_loader();
 }

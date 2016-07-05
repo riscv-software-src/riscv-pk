@@ -33,7 +33,7 @@
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
-#define DCSR_XDEBUGVER      (3<<30)
+#define DCSR_XDEBUGVER      (3U<<30)
 #define DCSR_NDRESET        (1<<29)
 #define DCSR_FULLRESET      (1<<28)
 #define DCSR_HWBPCOUNT      (0xfff<<16)
@@ -100,44 +100,44 @@
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 
+// breakpoint control fields
+#define BPCONTROL_X           0x00000001
+#define BPCONTROL_W           0x00000002
+#define BPCONTROL_R           0x00000004
+#define BPCONTROL_U           0x00000008
+#define BPCONTROL_S           0x00000010
+#define BPCONTROL_H           0x00000020
+#define BPCONTROL_M           0x00000040
+#define BPCONTROL_BPMATCH     0x00000780
+#ifdef __riscv64
+# define BPCONTROL_BPAMASKMAX 0x0F80000000000000
+# define BPCONTROL_TDRTYPE    0xF000000000000000
+#else
+# define BPCONTROL_BPAMASKMAX 0x0F800000
+# define BPCONTROL_TDRTYPE    0xF0000000
+#endif
+
 // page table entry (PTE) fields
 #define PTE_V     0x001 // Valid
-#define PTE_TYPE  0x01E // Type
-#define PTE_R     0x020 // Referenced
-#define PTE_D     0x040 // Dirty
-#define PTE_SOFT  0x380 // Reserved for Software
+#define PTE_R     0x002 // Read
+#define PTE_W     0x004 // Write
+#define PTE_X     0x008 // Execute
+#define PTE_U     0x010 // User
+#define PTE_G     0x020 // Global
+#define PTE_A     0x040 // Accessed
+#define PTE_D     0x080 // Dirty
+#define PTE_SOFT  0x300 // Reserved for Software
 
 #define PTE_TYPE_TABLE        0x00
-#define PTE_TYPE_TABLE_GLOBAL 0x02
-#define PTE_TYPE_URX_SR       0x04
-#define PTE_TYPE_URWX_SRW     0x06
-#define PTE_TYPE_UR_SR        0x08
-#define PTE_TYPE_URW_SRW      0x0A
-#define PTE_TYPE_URX_SRX      0x0C
-#define PTE_TYPE_URWX_SRWX    0x0E
-#define PTE_TYPE_SR           0x10
-#define PTE_TYPE_SRW          0x12
-#define PTE_TYPE_SRX          0x14
-#define PTE_TYPE_SRWX         0x16
-#define PTE_TYPE_SR_GLOBAL    0x18
-#define PTE_TYPE_SRW_GLOBAL   0x1A
-#define PTE_TYPE_SRX_GLOBAL   0x1C
-#define PTE_TYPE_SRWX_GLOBAL  0x1E
+#define PTE_TYPE_R            0x02
+#define PTE_TYPE_RW           0x06
+#define PTE_TYPE_X            0x08
+#define PTE_TYPE_RX           0x0A
+#define PTE_TYPE_RWX          0x0E
 
 #define PTE_PPN_SHIFT 10
 
-#define PTE_TABLE(PTE) ((0x0000000AU >> ((PTE) & 0x1F)) & 1)
-#define PTE_UR(PTE)    ((0x0000AAA0U >> ((PTE) & 0x1F)) & 1)
-#define PTE_UW(PTE)    ((0x00008880U >> ((PTE) & 0x1F)) & 1)
-#define PTE_UX(PTE)    ((0x0000A0A0U >> ((PTE) & 0x1F)) & 1)
-#define PTE_SR(PTE)    ((0xAAAAAAA0U >> ((PTE) & 0x1F)) & 1)
-#define PTE_SW(PTE)    ((0x88888880U >> ((PTE) & 0x1F)) & 1)
-#define PTE_SX(PTE)    ((0xA0A0A000U >> ((PTE) & 0x1F)) & 1)
-
-#define PTE_CHECK_PERM(PTE, SUPERVISOR, STORE, FETCH) \
-  ((STORE) ? ((SUPERVISOR) ? PTE_SW(PTE) : PTE_UW(PTE)) : \
-   (FETCH) ? ((SUPERVISOR) ? PTE_SX(PTE) : PTE_UX(PTE)) : \
-             ((SUPERVISOR) ? PTE_SR(PTE) : PTE_UR(PTE)))
+#define PTE_TABLE(PTE) (((PTE) & (PTE_V | PTE_R | PTE_W | PTE_X)) == PTE_V)
 
 #ifdef __riscv
 
@@ -675,7 +675,6 @@
 #define CSR_SBADADDR 0x143
 #define CSR_SIP 0x144
 #define CSR_SPTBR 0x180
-#define CSR_SASID 0x181
 #define CSR_SCYCLE 0xd00
 #define CSR_STIME 0xd01
 #define CSR_SINSTRET 0xd02
@@ -697,6 +696,10 @@
 #define CSR_MSCYCLE_DELTA 0x704
 #define CSR_MSTIME_DELTA 0x705
 #define CSR_MSINSTRET_DELTA 0x706
+#define CSR_TDRSELECT 0x7a0
+#define CSR_TDRDATA1 0x7a1
+#define CSR_TDRDATA2 0x7a2
+#define CSR_TDRDATA3 0x7a3
 #define CSR_DCSR 0x7b0
 #define CSR_DPC 0x7b1
 #define CSR_DSCRATCH 0x7b2
@@ -981,7 +984,6 @@ DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(sbadaddr, CSR_SBADADDR)
 DECLARE_CSR(sip, CSR_SIP)
 DECLARE_CSR(sptbr, CSR_SPTBR)
-DECLARE_CSR(sasid, CSR_SASID)
 DECLARE_CSR(scycle, CSR_SCYCLE)
 DECLARE_CSR(stime, CSR_STIME)
 DECLARE_CSR(sinstret, CSR_SINSTRET)
@@ -1003,6 +1005,10 @@ DECLARE_CSR(muinstret_delta, CSR_MUINSTRET_DELTA)
 DECLARE_CSR(mscycle_delta, CSR_MSCYCLE_DELTA)
 DECLARE_CSR(mstime_delta, CSR_MSTIME_DELTA)
 DECLARE_CSR(msinstret_delta, CSR_MSINSTRET_DELTA)
+DECLARE_CSR(tdrselect, CSR_TDRSELECT)
+DECLARE_CSR(tdrdata1, CSR_TDRDATA1)
+DECLARE_CSR(tdrdata2, CSR_TDRDATA2)
+DECLARE_CSR(tdrdata3, CSR_TDRDATA3)
 DECLARE_CSR(dcsr, CSR_DCSR)
 DECLARE_CSR(dpc, CSR_DPC)
 DECLARE_CSR(dscratch, CSR_DSCRATCH)

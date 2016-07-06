@@ -34,7 +34,7 @@ static void supervisor_vm_init()
     int l2_shift = RISCV_PGLEVEL_BITS + RISCV_PGSHIFT;
     size_t l2_idx = (info.first_user_vaddr >> l2_shift) & ((1 << RISCV_PGLEVEL_BITS)-1);
     l2_idx += ((vaddr - info.first_user_vaddr) >> l2_shift);
-    middle_pt[l2_idx] = pte_create(paddr >> RISCV_PGSHIFT, PTE_TYPE_SRWX_GLOBAL);
+    middle_pt[l2_idx] = pte_create(paddr >> RISCV_PGSHIFT, PTE_G | PTE_R | PTE_W | PTE_X);
   }
 
   // map SBI at top of vaddr space
@@ -43,7 +43,7 @@ static void supervisor_vm_init()
   assert(num_sbi_pages <= (1 << RISCV_PGLEVEL_BITS));
   for (uintptr_t i = 0; i < num_sbi_pages; i++) {
     uintptr_t idx = (1 << RISCV_PGLEVEL_BITS) - num_sbi_pages + i;
-    sbi_pt[idx] = pte_create((DRAM_BASE / RISCV_PGSIZE) + i, PTE_TYPE_SRX_GLOBAL);
+    sbi_pt[idx] = pte_create((DRAM_BASE / RISCV_PGSIZE) + i, PTE_G | PTE_R | PTE_X);
   }
   pte_t* sbi_pte = middle_pt + ((num_middle_pts << RISCV_PGLEVEL_BITS)-1);
   assert(!*sbi_pte);

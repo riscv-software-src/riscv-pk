@@ -140,31 +140,13 @@ static uintptr_t __vm_alloc(size_t npage)
 
 static inline pte_t prot_to_type(int prot, int user)
 {
-  prot &= PROT_READ|PROT_WRITE|PROT_EXEC;
-  if (user) {
-    switch (prot) {
-      case PROT_NONE: return PTE_TYPE_SR;
-      case PROT_READ: return PTE_TYPE_UR_SR;
-      case PROT_WRITE: return PTE_TYPE_URW_SRW;
-      case PROT_EXEC: return PTE_TYPE_URX_SRX;
-      case PROT_READ|PROT_WRITE: return PTE_TYPE_URW_SRW;
-      case PROT_READ|PROT_EXEC: return PTE_TYPE_URX_SRX;
-      case PROT_WRITE|PROT_EXEC: return PTE_TYPE_URWX_SRWX;
-      case PROT_READ|PROT_WRITE|PROT_EXEC: return PTE_TYPE_URWX_SRWX;
-    }
-  } else {
-    switch (prot) {
-      case PROT_NONE:
-      case PROT_READ: return PTE_TYPE_SR;
-      case PROT_WRITE: return PTE_TYPE_SRW;
-      case PROT_EXEC: return PTE_TYPE_SRX;
-      case PROT_READ|PROT_WRITE: return PTE_TYPE_SRW;
-      case PROT_READ|PROT_EXEC: return PTE_TYPE_SRX;
-      case PROT_WRITE|PROT_EXEC: return PTE_TYPE_SRWX;
-      case PROT_READ|PROT_WRITE|PROT_EXEC: return PTE_TYPE_SRWX;
-    }
-  }
-  __builtin_unreachable();
+  pte_t pte = 0;
+  if (prot & PROT_READ) pte |= PTE_R;
+  if (prot & PROT_WRITE) pte |= PTE_W;
+  if (prot & PROT_EXEC) pte |= PTE_X;
+  if (pte == 0) pte = PTE_R;
+  if (user) pte |= PTE_U;
+  return pte;
 }
 
 int __valid_user_range(uintptr_t vaddr, size_t len)
@@ -360,8 +342,10 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
         }
         v->prot = prot;
       } else {
-        if (((prot & PROT_WRITE) && !PTE_UW(*pte))
-            || ((prot & PROT_EXEC) && !PTE_UX(*pte))) {
+        if (!(*pte & PTE_U) ||
+            ((prot & PROT_READ) && !(*pte & PTE_R)) ||
+            ((prot & PROT_WRITE) && !(*pte & PTE_W)) ||
+            ((prot & PROT_EXEC) && !(*pte & PTE_X))) {
           //TODO:look at file to find perms
           res = -EACCES;
           break;

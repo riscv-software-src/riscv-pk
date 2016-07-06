@@ -29,7 +29,7 @@ static inline pte_t pte_create(uintptr_t ppn, int type)
 
 static inline pte_t ptd_create(uintptr_t ppn)
 {
-  return pte_create(ppn, PTE_TYPE_TABLE);
+  return pte_create(ppn, PTE_V);
 }
 
 #endif

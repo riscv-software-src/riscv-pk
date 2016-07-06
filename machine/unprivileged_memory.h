@@ -57,7 +57,7 @@ static uint32_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_
        "lw %[insn], (%[addr])\n"
        "csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val)
-       : [mprv] "r" (MSTATUS_MPRV), [addr] "r" (__mepc));
+       : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc));
 #else
   uintptr_t rvc_mask = 3, tmp;
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
@@ -69,7 +69,7 @@ static uint32_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_
        "add %[insn], %[insn], %[tmp]\n"
        "1: csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val), [tmp] "=&r" (tmp)
-       : [mprv] "r" (MSTATUS_MPRV), [addr] "r" (__mepc),
+       : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc),
          [rvc_mask] "r" (rvc_mask));
 #endif
   *mstatus = __mstatus;

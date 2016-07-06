@@ -18,6 +18,7 @@
 #define MSTATUS_XS          0x00018000
 #define MSTATUS_MPRV        0x00020000
 #define MSTATUS_PUM         0x00040000
+#define MSTATUS_MXR         0x00080000
 #define MSTATUS_VM          0x1F000000
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS64_SD        0x8000000000000000
@@ -127,13 +128,6 @@
 #define PTE_A     0x040 // Accessed
 #define PTE_D     0x080 // Dirty
 #define PTE_SOFT  0x300 // Reserved for Software
-
-#define PTE_TYPE_TABLE        0x00
-#define PTE_TYPE_R            0x02
-#define PTE_TYPE_RW           0x06
-#define PTE_TYPE_X            0x08
-#define PTE_TYPE_RX           0x0A
-#define PTE_TYPE_RWX          0x0E
 
 #define PTE_PPN_SHIFT 10
 

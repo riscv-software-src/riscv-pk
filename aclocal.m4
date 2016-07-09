@@ -105,34 +105,6 @@ AC_DEFUN([MCPPBS_PROG_INSTALL],
 ])
 
 #-------------------------------------------------------------------------
-# MCPPBS_PROG_RUN
-# -------------------------------------------------------------------------
-# If we are doing a non-native build then we look for an isa simulator
-# to use for running tests. We set the RUN substitution variable to be
-# empty for native builds or to the name of the isa simulator for
-# non-native builds. Thus a makefile can run compiled programs
-# regardless if we are doing a native or non-native build like this:
-# 
-#  $(RUN) $(RUNFLAGS) ./test-program
-#
-
-AC_DEFUN([MCPPBS_PROG_RUN],
-[
-  AS_IF([ test "${build}" != "${host}" ],
-  [
-    AC_CHECK_TOOLS([RUN],[spike],[no])
-    AS_IF([ test ${RUN} = "no" ],
-    [
-      AC_MSG_ERROR([Cannot find simulator for target ${target_alias}])
-    ])
-  ],[
-    RUN=""
-  ])
-  AC_SUBST([RUN])
-  AC_SUBST([RUNFLAGS])
-])
-
-#-------------------------------------------------------------------------
 # MCPPBS_SUBPROJECTS([ sproj1, sproj2, ... ])
 #-------------------------------------------------------------------------
 # The developer should call this macro with a list of the subprojects

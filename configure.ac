@@ -59,7 +59,6 @@ AC_CHECK_TOOL([RANLIB],[ranlib])
 # via the makefile.
 
 MCPPBS_PROG_INSTALL
-MCPPBS_PROG_RUN
 
 #-------------------------------------------------------------------------
 # Checks for header files

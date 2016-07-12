@@ -35,7 +35,6 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl);
 int snprintf(char* out, size_t n, const char* s, ...);
 void start_user(trapframe_t* tf) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
-void dump_uarch_counters();
 
 static inline int insn_len(long insn)
 {

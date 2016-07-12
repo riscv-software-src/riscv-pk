@@ -14,13 +14,6 @@ static void handle_illegal_instruction(trapframe_t* tf)
   else
     kassert(len == 2);
 
-  // supply 0 for unimplemented uarch counters
-  if ((tf->insn & (MASK_CSRRS | 0xcc0U<<20)) == (MATCH_CSRRS | 0xcc0U<<20)) {
-    tf->gpr[(tf->insn >> 7) & 0x1f] = 0;
-    tf->epc += 4;
-    return;
-  }
-
   dump_tf(tf);
   panic("An illegal instruction was executed!");
 }

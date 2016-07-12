@@ -17,7 +17,6 @@ void sys_exit(int code)
 {
   if (current.t0)
     printk("%ld cycles\n", rdcycle() - current.t0);
-  dump_uarch_counters();
   shutdown(code);
 }
 

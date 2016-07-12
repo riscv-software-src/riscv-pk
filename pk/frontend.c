@@ -8,7 +8,7 @@
 #include "syscall.h"
 #include <stdint.h>
 
-long frontend_syscall(long n, long a0, long a1, long a2, long a3, long a4, long a5, long a6)
+long frontend_syscall(long n, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6)
 {
   static volatile uint64_t magic_mem[8];
 

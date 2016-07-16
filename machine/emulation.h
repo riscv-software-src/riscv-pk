@@ -11,8 +11,8 @@ typedef void (*emulation_func)(uintptr_t*, uintptr_t, uintptr_t, uintptr_t, insn
 
 void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc);
 void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc);
-void redirect_trap(uintptr_t epc, uintptr_t mstatus);
-DECLARE_EMULATION_FUNC(truly_illegal_insn);
+void redirect_trap(uintptr_t epc, uintptr_t mstatus) __attribute__((noreturn));
+DECLARE_EMULATION_FUNC(truly_illegal_insn) __attribute__((noreturn));
 
 #define GET_REG(insn, pos, regs) ({ \
   int mask = (1 << (5+LOG_REGBYTES)) - (1 << LOG_REGBYTES); \

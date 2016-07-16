@@ -58,7 +58,7 @@ ifeq ($(enable_stow),yes)
   stow_pkg_dir := $(prefix)/pkgs
   INSTALLDIR ?= $(DESTDIR)/$(stow_pkg_dir)/$(project_name)-$(project_ver)
 else
-  INSTALLDIR ?= $(DESTDIR)/$(prefix)
+  INSTALLDIR ?= $(DESTDIR)/$(prefix)/@install_subdir@
 endif
 
 install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)

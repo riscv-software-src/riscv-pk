@@ -591,6 +591,8 @@ LIBOBJS
 subprojects_enabled
 subprojects
 BBL_PAYLOAD
+install_subdir
+RISCV
 EGREP
 GREP
 CPP
@@ -663,6 +665,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_stow
+enable_32bit
 enable_optional_subprojects
 enable_vm
 enable_logo
@@ -682,7 +685,8 @@ CXXFLAGS
 CCC
 STOW_ROOT
 STOW_PREFIX
-CPP'
+CPP
+RISCV'
 
 
 # Initialize some variables set by options.
@@ -1297,6 +1301,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-stow           Enable stow-based install
+  --enable-32bit          Build a 32-bit pk
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
@@ -1321,6 +1326,7 @@ Some influential environment variables:
   STOW_ROOT   Root for non-native stow-based installs
   STOW_PREFIX Prefix for stow-based installs
   CPP         C preprocessor
+  RISCV       top-level RISC-V install directory
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -3464,7 +3470,6 @@ fi
 fi
 
 
-MCPPBS_PROG_RUN
 
 #-------------------------------------------------------------------------
 # Checks for header files
@@ -3853,12 +3858,43 @@ fi
 
 
 #-------------------------------------------------------------------------
-# Default compiler flags
+# Register RISCV environment variable
 #-------------------------------------------------------------------------
 
-CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
+
+
+#-------------------------------------------------------------------------
+# Set compiler flags
+#-------------------------------------------------------------------------
+
+default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
+
+# Check whether --enable-32bit was given.
+if test "${enable_32bit+set}" = set; then :
+  enableval=$enable_32bit; BUILD_32BIT=$enableval
+else
+  BUILD_32BIT=no
+fi
+
+
+case "${BUILD_32BIT}" in
+  yes|default)
+	echo "Building 32-bit pk"
+	CFLAGS="$default_CFLAGS -m32"
+	LDFLAGS="-m32"
+	install_subdir="riscv32-unknown-elf"
+	;;
+  *)
+	CFLAGS="$default_CFLAGS"
+	LDFLAGS=
+	install_subdir="riscv64-unknown-elf"
+	;;
+esac
+
+
 
 LIBS="-lgcc"
+
 
 
 #-------------------------------------------------------------------------

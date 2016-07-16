@@ -67,11 +67,40 @@ MCPPBS_PROG_INSTALL
 AC_HEADER_STDC
 
 #-------------------------------------------------------------------------
-# Default compiler flags
+# Register RISCV environment variable
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"])
-AC_SUBST([LIBS],  ["-lgcc"])
+AC_ARG_VAR(RISCV, [top-level RISC-V install directory])
+
+#-------------------------------------------------------------------------
+# Set compiler flags
+#-------------------------------------------------------------------------
+
+default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
+
+AC_ARG_ENABLE([32bit],
+	AS_HELP_STRING([--enable-32bit], [Build a 32-bit pk]),
+	BUILD_32BIT=$enableval,
+	BUILD_32BIT=no)
+
+case "${BUILD_32BIT}" in
+  yes|default)
+	echo "Building 32-bit pk"
+	CFLAGS="$default_CFLAGS -m32"
+	LDFLAGS="-m32"
+	install_subdir="riscv32-unknown-elf"
+	;;
+  *)
+	CFLAGS="$default_CFLAGS"
+	LDFLAGS=
+	install_subdir="riscv64-unknown-elf"
+	;;
+esac
+
+AC_SUBST(CFLAGS)
+AC_SUBST(LDFLAGS)
+AC_SUBST([LIBS], ["-lgcc"])
+AC_SUBST(install_subdir)
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

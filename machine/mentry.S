@@ -234,9 +234,16 @@ do_reset:
 
 .LmultiHart:
 #if MAX_HARTS > 1
+  # wait for an IPI to signal that it's safe to boot
+  wfi
+  csrr a1, mip
+  andi a1, a1, MIP_MSIP
+  beqz a1, .LmultiHart
+
   # make sure our hart id is within a valid range
+  fence
   li a1, MAX_HARTS
   bltu a0, a1, init_other_hart
-  wfi
 #endif
+  wfi
   j .LmultiHart

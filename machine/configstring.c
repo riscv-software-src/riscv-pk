@@ -75,9 +75,12 @@ static void query_harts(const char* config_string)
       snprintf(buf, sizeof buf, "core{%d{%d{timecmp", core, hart);
       res = query_config_string(config_string, buf);
       assert(res.start);
+      hls->timecmp = (void*)(uintptr_t)get_uint(res);
 
       mb();
-      hls->timecmp = (void*)(uintptr_t)get_uint(res);
+
+      // wake up the hart
+      *hls->ipi = 1;
 
       num_harts++;
     }

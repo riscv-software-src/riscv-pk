@@ -143,12 +143,6 @@ void init_first_hart()
 void init_other_hart()
 {
   hart_init();
-
-  // wait until hart 0 discovers us
-  while (*(uint64_t * volatile *)&HLS()->timecmp == NULL)
-    ;
-  mb();
-
   hart_plic_init();
   boot_other_hart();
 }

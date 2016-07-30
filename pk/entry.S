@@ -55,6 +55,7 @@
   .endm
 
   .text
+  .align 2
   .global  trap_entry
 trap_entry:
   csrrw sp, sscratch, sp

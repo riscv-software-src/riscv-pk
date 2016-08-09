@@ -32,8 +32,10 @@ static void htif_interrupt()
   uint64_t fh = fromhost;
   if (!fh)
     return;
-  if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
-    die("unexpected htif interrupt");
+  if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0)) {
+    /* Another core writing a char */
+    return;
+  }
   HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fh);
   fromhost = 0;
   set_csr(mip, MIP_SSIP);

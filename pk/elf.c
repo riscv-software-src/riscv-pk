@@ -29,6 +29,10 @@ void load_elf(const char* fn, elf_info* info)
   assert(IS_ELF32(eh));
 #endif
 
+#ifndef __riscv_compressed
+  assert(!(eh.e_flags & EF_RISCV_RVC));
+#endif
+
   uintptr_t min_vaddr = -1;
   size_t phdr_size = eh.e_phnum * sizeof(Elf_Phdr);
   if (phdr_size > info->phdr_size)

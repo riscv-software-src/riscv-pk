@@ -23,6 +23,8 @@
 #define ET_EXEC 2
 #define ET_DYN 3
 
+#define EF_RISCV_RVC 1
+
 #define PT_LOAD 1
 
 #define AT_NULL   0

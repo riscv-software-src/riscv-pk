@@ -13,7 +13,7 @@ static void handle_option(const char* s)
   switch (s[1])
   {
     case 's': // print cycle count upon termination
-      current.t0 = 1;
+      current.cycle0 = 1;
       break;
 
     default:
@@ -105,8 +105,11 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 
   STACK_INIT(uintptr_t);
 
-  if (current.t0) // start timer if so requested
-    current.t0 = rdcycle();
+  if (current.cycle0) { // start timer if so requested
+    current.time0 = rdtime();
+    current.cycle0 = rdcycle();
+    current.instret0 = rdinstret();
+  }
 
   trapframe_t tf;
   init_tf(&tf, current.entry, stack_top);

@@ -15,8 +15,16 @@ typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
 void sys_exit(int code)
 {
-  if (current.t0)
-    printk("%ld cycles\n", rdcycle() - current.t0);
+  if (current.cycle0) {
+    size_t dt = rdtime() - current.time0;
+    size_t dc = rdcycle() - current.cycle0;
+    size_t di = rdinstret() - current.instret0;
+
+    printk("%ld ticks\n", dt);
+    printk("%ld cycles\n", dc);
+    printk("%ld instructions\n", di);
+    printk("%d.%d%d CPI\n", dc/di, 10ULL*dc/di % 10, (100ULL*dc + di/2)/di % 10);
+  }
   shutdown(code);
 }
 

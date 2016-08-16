@@ -7,8 +7,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-volatile uint64_t tohost __attribute__((aligned(64)));
-volatile uint64_t fromhost __attribute__((aligned(64)));
+volatile uint64_t tohost __attribute__((aligned(64))) __attribute__((section("htif")));
+volatile uint64_t fromhost __attribute__((aligned(64))) __attribute__((section("htif")));
 
 void __attribute__((noreturn)) bad_trap()
 {

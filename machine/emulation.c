@@ -95,13 +95,13 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
   switch (num)
   {
     case CSR_TIME:
-      if ((counteren >> (CSR_TIME - CSR_CYCLE)) & 1)
+      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime;
       return 0;
 #ifdef __riscv32
     case CSR_TIMEH:
-      if ((counteren >> (CSR_TIME - CSR_CYCLE)) & 1)
+      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime >> 32;
       return 0;

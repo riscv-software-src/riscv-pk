@@ -16,6 +16,10 @@ static void handle_option(const char* s)
       current.cycle0 = 1;
       break;
 
+    case 'p': // disable demand paging
+      demand_paging = 0;
+      break;
+
     default:
       panic("unrecognized option: `%c'", s[1]);
       break;

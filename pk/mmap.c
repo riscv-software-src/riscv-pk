@@ -24,7 +24,7 @@ static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
 
-int have_vm = 1; // unless -p flag is given
+int demand_paging = 1; // unless -p flag is given
 
 static uintptr_t __page_alloc()
 {
@@ -244,7 +244,7 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
     *pte = (pte_t)v;
   }
 
-  if (!have_vm || (flags & MAP_POPULATE))
+  if (!demand_paging || (flags & MAP_POPULATE))
     for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
       kassert(__handle_page_fault(a, prot) == 0);
 

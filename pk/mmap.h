@@ -19,7 +19,7 @@
 #define MAP_POPULATE 0x8000
 #define MREMAP_FIXED 0x2
 
-extern int have_vm;
+extern int demand_paging;
 uintptr_t pk_vm_init();
 int handle_page_fault(uintptr_t vaddr, int prot);
 void populate_mapping(const void* start, size_t size, int prot);

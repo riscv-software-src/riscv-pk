@@ -232,6 +232,10 @@ do_reset:
 
   beqz a0, init_first_hart
 
+  # set MSIE bit to receive IPI
+  li a1, MIP_MSIP
+  csrw mie, a1
+
 .LmultiHart:
 #if MAX_HARTS > 1
   # wait for an IPI to signal that it's safe to boot

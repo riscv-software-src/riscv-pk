@@ -10,6 +10,19 @@
 #include <elf.h>
 #include <string.h>
 
+/**
+ * The protection flags are in the p_flags section of the program header.
+ * But rather annoyingly, they are the reverse of what mmap expects.
+ */
+static inline int get_prot(uint32_t p_flags)
+{
+  int prot_x = (p_flags & PF_X) ? PROT_EXEC  : PROT_NONE;
+  int prot_w = (p_flags & PF_W) ? PROT_WRITE : PROT_NONE;
+  int prot_r = (p_flags & PF_R) ? PROT_READ  : PROT_NONE;
+
+  return (prot_x | prot_w | prot_r);
+}
+
 void load_elf(const char* fn, elf_info* info)
 {
   file_t* file = file_open(fn, O_RDONLY, 0);
@@ -60,12 +73,13 @@ void load_elf(const char* fn, elf_info* info)
       if (vaddr + ph[i].p_memsz > info->brk_min)
         info->brk_min = vaddr + ph[i].p_memsz;
       int flags2 = flags | (prepad ? MAP_POPULATE : 0);
-      if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, -1, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
+      int prot = get_prot(ph[i].p_flags);
+      if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
         goto fail;
       memset((void*)vaddr - prepad, 0, prepad);
       size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad;
       if (ph[i].p_memsz > mapped)
-        if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, -1, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped)
+        if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, prot, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped)
           goto fail;
     }
   }

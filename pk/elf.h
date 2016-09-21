@@ -36,6 +36,10 @@
 #define AT_SECURE 23
 #define AT_RANDOM 25
 
+#define PF_X 1
+#define PF_W 2
+#define PF_R 4
+
 typedef struct {
   uint8_t  e_ident[16];
   uint16_t e_type;

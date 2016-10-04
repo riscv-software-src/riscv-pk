@@ -34,7 +34,7 @@ static void __htif_interrupt()
   if (!fh)
     return;
   if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
-    die("unexpected htif interrupt");
+    return;
   HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fh);
   fromhost = 0;
   set_csr(mip, MIP_SSIP);

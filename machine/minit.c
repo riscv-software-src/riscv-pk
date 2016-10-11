@@ -19,6 +19,7 @@ static void mstatus_init()
   uintptr_t ms = 0;
   ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
   ms = INSERT_FIELD(ms, MSTATUS_FS, 1);
+  ms = INSERT_FIELD(ms, MSTATUS_XS, 1);
   write_csr(mstatus, ms);
 
   // Make sure the hart actually supports the VM mode we want

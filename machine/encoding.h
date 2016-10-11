@@ -98,6 +98,7 @@
 #define MIP_SEIP            (1 << IRQ_S_EXT)
 #define MIP_HEIP            (1 << IRQ_H_EXT)
 #define MIP_MEIP            (1 << IRQ_M_EXT)
+#define MIP_ROCC            (1 << IRQ_COP)
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP

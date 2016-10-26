@@ -10,7 +10,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   asm (".pushsection .rodata\n"
        "illegal_insn_trap_table:\n"
        "  .word truly_illegal_insn\n"
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
        "  .word emulate_float_load\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -22,7 +22,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
        "  .word emulate_float_store\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -106,7 +106,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
       *result = *mtime >> 32;
       return 0;
 #endif
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM:
       if ((mstatus & MSTATUS_FS) == 0) break;
       *result = GET_FRM();
@@ -128,7 +128,7 @@ static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
 {
   switch (num)
   {
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM: SET_FRM(value); return 0;
     case CSR_FFLAGS: SET_FFLAGS(value); return 0;
     case CSR_FCSR: SET_FCSR(value); return 0;

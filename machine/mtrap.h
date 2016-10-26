@@ -85,7 +85,7 @@ static inline void wfi()
 #define MENTRY_FRAME_SIZE (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE \
                            + HLS_SIZE)
 
-#ifdef __riscv_hard_float
+#ifdef __riscv_flen
 # define SOFT_FLOAT_CONTEXT_SIZE 0
 #else
 # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)

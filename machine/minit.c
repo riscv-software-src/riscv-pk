@@ -54,7 +54,7 @@ static void fp_init()
 {
   assert(read_csr(mstatus) & MSTATUS_FS);
 
-#ifdef __riscv_hard_float
+#ifdef __riscv_flen
   if (!supports_extension('D'))
     die("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)

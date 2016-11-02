@@ -354,7 +354,8 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
       }
     }
   spinlock_unlock(&vm_lock);
- 
+
+  flush_tlb();
   return res;
 }
 

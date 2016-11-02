@@ -74,9 +74,12 @@ void load_elf(const char* fn, elf_info* info)
         info->brk_min = vaddr + ph[i].p_memsz;
       int flags2 = flags | (prepad ? MAP_POPULATE : 0);
       int prot = get_prot(ph[i].p_flags);
-      if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
+      if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot | PROT_WRITE, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
         goto fail;
       memset((void*)vaddr - prepad, 0, prepad);
+      if (!(prot & PROT_WRITE))
+        if (do_mprotect(vaddr - prepad, ph[i].p_filesz + prepad, prot))
+          goto fail;
       size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad;
       if (ph[i].p_memsz > mapped)
         if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, prot, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped)

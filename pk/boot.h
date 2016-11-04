@@ -20,7 +20,9 @@ typedef struct {
   size_t brk_max;
   size_t mmap_max;
   size_t stack_top;
-  size_t t0;
+  size_t time0;
+  size_t cycle0;
+  size_t instret0;
 } elf_info;
 
 extern elf_info current;

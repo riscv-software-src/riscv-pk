@@ -54,15 +54,16 @@ static void fp_init()
 {
   assert(read_csr(mstatus) & MSTATUS_FS);
 
-#ifdef __riscv_hard_float
+#ifdef __riscv_flen
   if (!supports_extension('D'))
     die("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
   write_csr(fcsr, 0);
 #else
-  if (supports_extension('D'))
-    die("FPU unexpectedly found; recompile with -mhard-float");
+  uintptr_t fd_mask = (1 << ('F' - 'A')) | (1 << ('D' - 'A'));
+  clear_csr(misa, fd_mask);
+  assert(!(read_csr(misa) & fd_mask));
 #endif
 }
 

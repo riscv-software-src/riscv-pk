@@ -107,7 +107,7 @@ trap_vector:
   STORE t6,31*REGBYTES(sp)
   STORE t0, 2*REGBYTES(sp)         # sp
 
-#ifndef __riscv_hard_float
+#ifndef __riscv_flen
   lw tp, (sp) # Move the emulated FCSR from x0's save slot into tp.
 #endif
   STORE x0, (sp) # Zero x0's save slot.
@@ -115,7 +115,7 @@ trap_vector:
   # Invoke the handler.
   jalr t1
 
-#ifndef __riscv_hard_float
+#ifndef __riscv_flen
   sw tp, (sp) # Move the emulated FCSR from tp into x0's save slot.
 #endif
 
@@ -231,6 +231,10 @@ do_reset:
   add sp, sp, a1
 
   beqz a0, init_first_hart
+
+  # set MSIE bit to receive IPI
+  li a1, MIP_MSIP
+  csrw mie, a1
 
 .LmultiHart:
 #if MAX_HARTS > 1

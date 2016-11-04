@@ -10,7 +10,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   asm (".pushsection .rodata\n"
        "illegal_insn_trap_table:\n"
        "  .word truly_illegal_insn\n"
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
        "  .word emulate_float_load\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -22,7 +22,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
        "  .word truly_illegal_insn\n"
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
        "  .word emulate_float_store\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -88,40 +88,25 @@ void __attribute__((noinline)) truly_illegal_insn(uintptr_t* regs, uintptr_t mca
 
 static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result)
 {
+  uintptr_t counteren =
+    EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U ? read_csr(mucounteren) :
+                                                   read_csr(mscounteren);
+
   switch (num)
   {
     case CSR_TIME:
-      *result = *mtime + HLS()->utime_delta;
-      return 0;
-    case CSR_CYCLE:
-      *result = read_csr(mcycle) + HLS()->ucycle_delta;
-      return 0;
-    case CSR_INSTRET:
-      *result = read_csr(minstret) + HLS()->uinstret_delta;
-      return 0;
-    case CSR_STIME:
-      *result = *mtime + HLS()->stime_delta;
-      return 0;
-    case CSR_SCYCLE:
-      *result = read_csr(mcycle) + HLS()->scycle_delta;
-      return 0;
-    case CSR_SINSTRET:
-      *result = read_csr(minstret) + HLS()->sinstret_delta;
+      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
+        return -1;
+      *result = *mtime;
       return 0;
 #ifdef __riscv32
     case CSR_TIMEH:
-      *result = (*mtime + HLS()->stime_delta) >> 32;
-      return 0;
-    case CSR_CYCLEH:
-      *result = (((uint64_t)read_csr(mcycleh) << 32) + read_csr(mcycle)
-                 + HLS()->scycle_delta) >> 32;
-      return 0;
-    case CSR_INSTRETH:
-      *result = (((uint64_t)read_csr(minstreth) << 32) + read_csr(minstret)
-                 + HLS()->sinstret_delta) >> 32;
+      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
+        return -1;
+      *result = *mtime >> 32;
       return 0;
 #endif
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM:
       if ((mstatus & MSTATUS_FS) == 0) break;
       *result = GET_FRM();
@@ -143,7 +128,7 @@ static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
 {
   switch (num)
   {
-#if !defined(__riscv_hard_float) && defined(PK_ENABLE_FP_EMULATION)
+#if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM: SET_FRM(value); return 0;
     case CSR_FFLAGS: SET_FFLAGS(value); return 0;
     case CSR_FCSR: SET_FCSR(value); return 0;

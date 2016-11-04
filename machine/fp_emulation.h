@@ -8,7 +8,7 @@
 #define PRECISION_S 0
 #define PRECISION_D 1
 
-#ifdef __riscv_hard_float
+#ifdef __riscv_flen
 # define GET_F32_REG(insn, pos, regs) ({ \
   register int32_t value asm("a0") = ((insn) >> ((pos)-3)) & 0xf8; \
   uintptr_t tmp; \

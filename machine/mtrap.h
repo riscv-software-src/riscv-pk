@@ -43,13 +43,6 @@ typedef struct {
   volatile int sipi_pending;
   int console_ibuf;
 
-  uint64_t utime_delta;
-  uint64_t ucycle_delta;
-  uint64_t uinstret_delta;
-  uint64_t stime_delta;
-  uint64_t scycle_delta;
-  uint64_t sinstret_delta;
-
   volatile uint32_t* plic_m_thresh;
   volatile uintptr_t* plic_m_ie;
   volatile uint32_t* plic_s_thresh;
@@ -92,7 +85,7 @@ static inline void wfi()
 #define MENTRY_FRAME_SIZE (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE \
                            + HLS_SIZE)
 
-#ifdef __riscv_hard_float
+#ifdef __riscv_flen
 # define SOFT_FLOAT_CONTEXT_SIZE 0
 #else
 # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)

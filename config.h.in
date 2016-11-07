@@ -33,6 +33,9 @@
 /* Define if floating-point emulation is enabled */
 #undef PK_ENABLE_FP_EMULATION
 
+/* Define if Host-Target interface is used */
+#undef PK_ENABLE_HTIF
+
 /* Define if the RISC-V logo is to be displayed */
 #undef PK_ENABLE_LOGO
 

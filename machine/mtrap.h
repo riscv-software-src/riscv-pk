@@ -66,6 +66,7 @@ void parse_config_string();
 void poweroff(void) __attribute((noreturn));
 void printm(const char* s, ...);
 void putstring(const char* s);
+void reset_ssip();
 #define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
 #define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })
 

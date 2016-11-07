@@ -15,4 +15,6 @@
 #define FROMHOST_CMD(fromhost_value) ((uint64_t)(fromhost_value) << 8 >> 56)
 #define FROMHOST_DATA(fromhost_value) ((uint64_t)(fromhost_value) << 16 >> 16)
 
+void htif_syscall(uintptr_t magic_mem);
+
 #endif

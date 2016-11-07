@@ -1,4 +1,5 @@
 #include "mtrap.h"
+#include "mimpl.h"
 #include "atomic.h"
 #include "vm.h"
 #include "fp_emulation.h"
@@ -138,6 +139,7 @@ void init_first_hart()
   hart_plic_init();
   //prci_test();
   memory_init();
+  mimpl_init();
   boot_loader();
 }
 

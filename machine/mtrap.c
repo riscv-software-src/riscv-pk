@@ -1,15 +1,19 @@
+#include "config.h"
 #include "mtrap.h"
 #include "mcall.h"
+#ifdef PK_ENABLE_HTIF
 #include "htif.h"
+#endif
+#include "mimpl.h"
 #include "atomic.h"
 #include "bits.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-volatile uint64_t tohost __attribute__((aligned(64))) __attribute__((section("htif")));
-volatile uint64_t fromhost __attribute__((aligned(64))) __attribute__((section("htif")));
-static spinlock_t htif_lock = SPINLOCK_INIT;
+void __attribute__((weak)) mimpl_init(void)
+{
+}
 
 void __attribute__((noreturn)) bad_trap()
 {
@@ -21,87 +25,41 @@ static uintptr_t mcall_hart_id()
   return read_const_csr(mhartid);
 }
 
-static void request_htif_keyboard_interrupt()
-{
-  assert(tohost == 0);
-  tohost = TOHOST_CMD(1, 0, 0);
-}
-
-static void __htif_interrupt()
-{
-  // we should only be interrupted by keypresses
-  uint64_t fh = fromhost;
-  if (!fh)
-    return;
-  if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
-    return;
-  HLS()->console_ibuf = 1 + (uint8_t)FROMHOST_DATA(fh);
-  fromhost = 0;
-  set_csr(mip, MIP_SSIP);
-}
-
-static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
-{
-  spinlock_lock(&htif_lock);
-    while (tohost)
-      __htif_interrupt();
-    tohost = TOHOST_CMD(dev, cmd, data);
-
-    while (1) {
-      uint64_t fh = fromhost;
-      if (fh) {
-        if (FROMHOST_DEV(fh) == dev && FROMHOST_CMD(fh) == cmd) {
-          fromhost = 0;
-          break;
-        }
-        __htif_interrupt();
-      }
-    }
-  spinlock_unlock(&htif_lock);
-}
-
-static void htif_interrupt()
-{
-  if (spinlock_trylock(&htif_lock) == 0) {
-    __htif_interrupt();
-    spinlock_unlock(&htif_lock);
-  }
-}
-
 uintptr_t timer_interrupt()
 {
   // just send the timer interrupt to the supervisor
   clear_csr(mie, MIP_MTIP);
   set_csr(mip, MIP_STIP);
 
-  // and poll the HTIF console
-  htif_interrupt();
+  if (mimpl_ops()->timer_callback)
+    mimpl_ops()->timer_callback();
 
   return 0;
 }
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
 {
-  do_tohost_fromhost(1, 1, ch);
+  mimpl_ops()->console_putchar(ch);
   return 0;
 }
 
+#ifdef PK_ENABLE_HTIF
 static uintptr_t mcall_htif_syscall(uintptr_t magic_mem)
 {
-  do_tohost_fromhost(0, 0, magic_mem);
+  htif_syscall(magic_mem);
   return 0;
 }
+#endif
 
 void poweroff()
 {
-  while (1)
-    tohost = 1;
+  mimpl_ops()->power_off();
 }
 
 void putstring(const char* s)
 {
   while (*s)
-    mcall_console_putchar(*s++);
+    mimpl_ops()->console_putchar(*s++);
 }
 
 void printm(const char* s, ...)
@@ -133,22 +91,18 @@ static uintptr_t mcall_send_ipi(uintptr_t recipient)
   return 0;
 }
 
-static void reset_ssip()
+void reset_ssip()
 {
   clear_csr(mip, MIP_SSIP);
   mb();
 
-  if (HLS()->sipi_pending || HLS()->console_ibuf > 0)
+  if (HLS()->sipi_pending || mimpl_ops()->swint_pending())
     set_csr(mip, MIP_SSIP);
 }
 
 static uintptr_t mcall_console_getchar()
 {
-  int ch = atomic_swap(&HLS()->console_ibuf, -1);
-  if (ch >= 0)
-    request_htif_keyboard_interrupt();
-  reset_ssip();
-  return ch - 1;
+  return mimpl_ops()->console_getchar();
 }
 
 static uintptr_t mcall_clear_ipi()
@@ -237,9 +191,11 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     case MCALL_CONSOLE_GETCHAR:
       retval = mcall_console_getchar();
       break;
+#ifdef PK_ENABLE_HTIF
     case MCALL_HTIF_SYSCALL:
       retval = mcall_htif_syscall(arg0);
       break;
+#endif
     case MCALL_SEND_IPI:
       retval = mcall_send_ipi(arg0);
       break;

@@ -590,6 +590,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subprojects_enabled
 subprojects
+enable_htif
 BBL_PAYLOAD
 install_subdir
 RISCV
@@ -671,6 +672,7 @@ enable_vm
 enable_logo
 with_payload
 enable_fp_emulation
+enable_htif
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1307,6 +1309,7 @@ Optional Features:
   --disable-vm            Disable virtual memory
   --disable-logo          Disable boot logo
   --disable-fp-emulation  Disable floating-point emulation
+  --disable-htif          Disable Host-Target interface
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4182,6 +4185,25 @@ if test "x$enable_fp_emulation" != "xno"; then :
 
 
 $as_echo "#define PK_ENABLE_FP_EMULATION /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-htif was given.
+if test "${enable_htif+set}" = set; then :
+  enableval=$enable_htif;
+fi
+
+if test "x$enable_htif" != "xno"; then :
+
+
+$as_echo "#define PK_ENABLE_HTIF /**/" >>confdefs.h
+  enable_htif=yes
+
+
+else
+
+  enable_htif=no
 
 
 fi

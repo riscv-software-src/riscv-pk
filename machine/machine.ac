@@ -2,3 +2,11 @@ AC_ARG_ENABLE([fp-emulation], AS_HELP_STRING([--disable-fp-emulation], [Disable 
 AS_IF([test "x$enable_fp_emulation" != "xno"], [
   AC_DEFINE([PK_ENABLE_FP_EMULATION],,[Define if floating-point emulation is enabled])
 ])
+
+AC_ARG_ENABLE([htif], AS_HELP_STRING([--disable-htif], [Disable Host-Target interface]))
+AS_IF([test "x$enable_htif" != "xno"], [
+  AC_DEFINE([PK_ENABLE_HTIF],,[Define if Host-Target interface is used])dnl
+  AC_SUBST(enable_htif,yes)
+], [
+  AC_SUBST(enable_htif,no)
+])

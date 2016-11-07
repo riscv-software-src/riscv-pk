@@ -53,6 +53,7 @@ endif
 
 prefix       := @prefix@
 enable_stow  := @enable_stow@
+enable_htif  := @enable_htif@
 
 ifeq ($(enable_stow),yes)
   stow_pkg_dir := $(prefix)/pkgs

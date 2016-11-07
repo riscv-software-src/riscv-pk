@@ -36,3 +36,10 @@ configure command.
 The `install` step installs 64-bit build products into
 `$RISCV/riscv64-unknown-elf`, and 32-bit versions into
 `$RISCV/riscv32-unknown-elf`.
+
+Targeting to real world, not emulation
+---------------
+
+You can disable using of Host-Target interface to target to real device.
+Use --disable-htif configuration option. And you should provide
+implementations for your targeting.

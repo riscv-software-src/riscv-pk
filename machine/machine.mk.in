@@ -8,12 +8,18 @@ machine_hdrs = \
   emulation.h \
   encoding.h \
   fp_emulation.h \
-  htif.h \
   mcall.h \
   mtrap.h \
+  mimpl.h \
   sbi.h \
   unprivileged_memory.h \
   vm.h \
+
+ifeq ($(enable_htif),yes)
+machine_hdrs += htif.h
+else
+machine_hdrs += target.h
+endif
 
 machine_c_srcs = \
   mtrap.c \
@@ -25,6 +31,12 @@ machine_c_srcs = \
   misaligned_ldst.c \
   sbi_impl.c \
   configstring.c \
+
+ifeq ($(enable_htif),yes)
+machine_c_srcs += htif.c
+else
+machine_c_srcs += target.c
+endif
 
 machine_asm_srcs = \
   mentry.S \

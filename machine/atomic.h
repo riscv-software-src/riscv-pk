@@ -40,14 +40,20 @@ typedef struct { int lock; } spinlock_t;
   res; })
 #endif
 
+static inline int spinlock_trylock(spinlock_t* lock)
+{
+  int res = atomic_swap(&lock->lock, -1);
+  mb();
+  return res;
+}
+
 static inline void spinlock_lock(spinlock_t* lock)
 {
   do
   {
     while (atomic_read(&lock->lock))
       ;
-  } while (atomic_swap(&lock->lock, -1));
-  mb();
+  } while (spinlock_trylock(lock));
 }
 
 static inline void spinlock_unlock(spinlock_t* lock)

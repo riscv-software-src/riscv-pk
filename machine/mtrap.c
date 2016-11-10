@@ -9,6 +9,7 @@
 
 volatile uint64_t tohost __attribute__((aligned(64))) __attribute__((section("htif")));
 volatile uint64_t fromhost __attribute__((aligned(64))) __attribute__((section("htif")));
+static spinlock_t htif_lock = SPINLOCK_INIT;
 
 void __attribute__((noreturn)) bad_trap()
 {
@@ -26,7 +27,7 @@ static void request_htif_keyboard_interrupt()
   tohost = TOHOST_CMD(1, 0, 0);
 }
 
-static void htif_interrupt()
+static void __htif_interrupt()
 {
   // we should only be interrupted by keypresses
   uint64_t fh = fromhost;
@@ -43,19 +44,29 @@ static void htif_interrupt()
 
 static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
 {
-  while (tohost)
-    htif_interrupt();
-  tohost = TOHOST_CMD(dev, cmd, data);
+  spinlock_lock(&htif_lock);
+    while (tohost)
+      __htif_interrupt();
+    tohost = TOHOST_CMD(dev, cmd, data);
 
-  while (1) {
-    uint64_t fh = fromhost;
-    if (fh) {
-      if (FROMHOST_DEV(fh) == dev && FROMHOST_CMD(fh) == cmd) {
-        fromhost = 0;
-        break;
+    while (1) {
+      uint64_t fh = fromhost;
+      if (fh) {
+        if (FROMHOST_DEV(fh) == dev && FROMHOST_CMD(fh) == cmd) {
+          fromhost = 0;
+          break;
+        }
+        __htif_interrupt();
       }
-      htif_interrupt();
     }
+  spinlock_unlock(&htif_lock);
+}
+
+static void htif_interrupt()
+{
+  if (spinlock_trylock(&htif_lock) == 0) {
+    __htif_interrupt();
+    spinlock_unlock(&htif_lock);
   }
 }
 

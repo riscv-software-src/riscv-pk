@@ -46,7 +46,6 @@ void load_elf(const char* fn, elf_info* info)
   assert(!(eh.e_flags & EF_RISCV_RVC));
 #endif
 
-  uintptr_t min_vaddr = -1;
   size_t phdr_size = eh.e_phnum * sizeof(Elf_Phdr);
   if (phdr_size > info->phdr_size)
     goto fail;
@@ -56,14 +55,19 @@ void load_elf(const char* fn, elf_info* info)
   info->phnum = eh.e_phnum;
   info->phent = sizeof(Elf_Phdr);
   Elf_Phdr* ph = (typeof(ph))info->phdr;
+
+  // compute highest VA in ELF
+  uintptr_t max_vaddr = 0;
   for (int i = 0; i < eh.e_phnum; i++)
-    if (ph[i].p_type == PT_LOAD && ph[i].p_memsz && ph[i].p_vaddr < min_vaddr)
-      min_vaddr = ph[i].p_vaddr;
-  min_vaddr = ROUNDDOWN(min_vaddr, RISCV_PGSIZE);
+    if (ph[i].p_type == PT_LOAD && ph[i].p_memsz)
+      max_vaddr = MAX(max_vaddr, ph[i].p_vaddr + ph[i].p_memsz);
+  max_vaddr = ROUNDUP(max_vaddr, RISCV_PGSIZE);
+
+  // don't load dynamic linker at 0, else we can't catch NULL pointer derefs
   uintptr_t bias = 0;
   if (eh.e_type == ET_DYN)
-    bias = first_free_paddr - min_vaddr;
-  min_vaddr += bias;
+    bias = RISCV_PGSIZE;
+
   info->entry = eh.e_entry + bias;
   int flags = MAP_FIXED | MAP_PRIVATE;
   for (int i = eh.e_phnum - 1; i >= 0; i--) {

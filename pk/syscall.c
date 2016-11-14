@@ -320,8 +320,12 @@ int sys_getuid()
 
 uintptr_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
-  uintptr_t ret =  do_mmap(addr, length, prot, flags, fd, offset);
-  return ret;
+#ifdef __riscv32
+  if (offset != (offset << 12 >> 12))
+    return -ENXIO;
+  offset <<= 12;
+#endif
+  return do_mmap(addr, length, prot, flags, fd, offset);
 }
 
 int sys_munmap(uintptr_t addr, size_t length)

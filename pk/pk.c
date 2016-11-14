@@ -69,6 +69,20 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
     memcpy((void*)stack_top, (void*)(uintptr_t)argv[i], len);
     argv[i] = (void*)stack_top;
   }
+
+  // copy envp to user stack
+  const char* envp[] = {
+    // environment goes here
+  };
+  size_t envc = sizeof(envp) / sizeof(envp[0]);
+  for (size_t i = 0; i < envc; i++) {
+    size_t len = strlen(envp[i]) + 1;
+    stack_top -= len;
+    memcpy((void*)stack_top, envp[i], len);
+    envp[i] = (void*)stack_top;
+  }
+
+  // align stack
   stack_top &= -sizeof(void*);
 
   struct {
@@ -93,14 +107,16 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 
   #define STACK_INIT(type) do { \
     unsigned naux = sizeof(aux)/sizeof(aux[0]); \
-    stack_top -= (1 + argc + 1 + 1 + 2*naux) * sizeof(type); \
+    stack_top -= (1 + argc + 1 + envc + 1 + 2*naux) * sizeof(type); \
     stack_top &= -16; \
     long sp = stack_top; \
     PUSH_ARG(type, argc); \
     for (unsigned i = 0; i < argc; i++) \
       PUSH_ARG(type, argv[i]); \
     PUSH_ARG(type, 0); /* argv[argc] = NULL */ \
-    PUSH_ARG(type, 0); /* envp[0] = NULL */ \
+    for (unsigned i = 0; i < envc; i++) \
+      PUSH_ARG(type, envp[i]); \
+    PUSH_ARG(type, 0); /* envp[envc] = NULL */ \
     for (unsigned i = 0; i < naux; i++) { \
       PUSH_ARG(type, aux[i].key); \
       PUSH_ARG(type, aux[i].value); \

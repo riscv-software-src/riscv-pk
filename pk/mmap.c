@@ -385,6 +385,11 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
+#ifdef __riscv32
+  // We can't support more than 2 GiB of memory in RV32
+  mem_size = MIN(mem_size, 1U << 31);
+#endif
+
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
   first_free_page = first_free_paddr;

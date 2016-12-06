@@ -250,7 +250,7 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
       retval = mcall_shutdown();
       break;
     case MCALL_SET_TIMER:
-#ifdef __riscv32
+#if __riscv_xlen == 32
       retval = mcall_set_timer(arg0 + ((uint64_t)arg1 << 32));
 #else
       retval = mcall_set_timer(arg0);

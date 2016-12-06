@@ -206,7 +206,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
     case 1: // uint32
       uint_val = (uint32_t)uint_val;
       break;
-#ifdef __riscv64
+#if __riscv_xlen == 64
     case 2: // int64
       negative = (int64_t)uint_val < 0;
       uint_val = negative ? -uint_val : uint_val;
@@ -230,7 +230,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
 DECLARE_EMULATION_FUNC(emulate_fcvt_if)
 {
   int rs2_num = (insn >> 20) & 0x1f;
-#ifdef __riscv64
+#if __riscv_xlen == 64
   if (rs2_num >= 4)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 #else
@@ -367,7 +367,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_fi)
 
   if ((insn & MASK_FMV_S_X) == MATCH_FMV_S_X)
     SET_F32_RD(insn, regs, rs1);
-#ifdef __riscv64
+#if __riscv_xlen == 64
   else if ((insn & MASK_FMV_D_X) == MATCH_FMV_D_X)
     SET_F64_RD(insn, regs, rs1);
 #endif

@@ -19,7 +19,7 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   int shift = 0, fp = 0, len;
   if ((insn & MASK_LW) == MATCH_LW)
     len = 4, shift = 8*(sizeof(uintptr_t) - len);
-#ifdef __riscv64
+#if __riscv_xlen == 64
   else if ((insn & MASK_LD) == MATCH_LD)
     len = 8, shift = 8*(sizeof(uintptr_t) - len);
   else if ((insn & MASK_LWU) == MATCH_LWU)
@@ -62,7 +62,7 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   val.intx = GET_RS2(insn, regs);
   if ((insn & MASK_SW) == MATCH_SW)
     len = 4;
-#ifdef __riscv64
+#if __riscv_xlen == 64
   else if ((insn & MASK_SD) == MATCH_SD)
     len = 8;
 #endif

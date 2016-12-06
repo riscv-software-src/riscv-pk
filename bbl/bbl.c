@@ -17,7 +17,7 @@ static void supervisor_vm_init()
   pte_t* sbi_pt = (pte_t*)(info.first_vaddr_after_user + info.load_offset);
   memset(sbi_pt, 0, RISCV_PGSIZE);
   pte_t* middle_pt = (void*)sbi_pt + RISCV_PGSIZE;
-#ifndef __riscv64
+#if __riscv_xlen == 32
   size_t num_middle_pts = 1;
   pte_t* root_pt = middle_pt;
   memset(root_pt, 0, RISCV_PGSIZE);

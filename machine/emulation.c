@@ -35,7 +35,7 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
 #endif
        "  .word truly_illegal_insn\n"
-#if !defined(__riscv_muldiv) && defined(__riscv64)
+#if !defined(__riscv_muldiv) && __riscv_xlen >= 64
        "  .word emulate_mul_div32\n"
 #else
        "  .word truly_illegal_insn\n"
@@ -99,7 +99,7 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
         return -1;
       *result = *mtime;
       return 0;
-#ifdef __riscv32
+#if __riscv_xlen == 32
     case CSR_TIMEH:
       if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;

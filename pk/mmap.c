@@ -385,7 +385,7 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
-#ifdef __riscv32
+#if __riscv_xlen == 32
   // We can't support more than 2 GiB of memory in RV32
   mem_size = MIN(mem_size, 1U << 31);
 #endif

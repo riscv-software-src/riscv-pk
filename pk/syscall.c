@@ -320,7 +320,7 @@ int sys_getuid()
 
 uintptr_t sys_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
-#ifdef __riscv32
+#if __riscv_xlen == 32
   if (offset != (offset << 12 >> 12))
     return -ENXIO;
   offset <<= 12;

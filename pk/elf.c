@@ -36,7 +36,7 @@ void load_elf(const char* fn, elf_info* info)
         eh.e_ident[2] == 'L'    && eh.e_ident[3] == 'F'))
     goto fail;
 
-#ifdef __riscv64
+#if __riscv_xlen == 64
   assert(IS_ELF64(eh));
 #else
   assert(IS_ELF32(eh));

@@ -19,7 +19,7 @@ DECLARE_EMULATION_FUNC(emulate_float_load)
       if (addr % sizeof(uintptr_t) != 0)
         return misaligned_load_trap(regs, mcause, mepc);
 
-#ifdef __riscv64
+#if __riscv_xlen == 64
       val = load_uint64_t((void *)addr, mepc);
 #else
       val = load_uint32_t((void *)addr, mepc);
@@ -52,7 +52,7 @@ DECLARE_EMULATION_FUNC(emulate_float_store)
         return misaligned_store_trap(regs, mcause, mepc);
 
       val = GET_F64_RS2(insn, regs);
-#ifdef __riscv64
+#if __riscv_xlen == 64
       store_uint64_t((void *)addr, val, mepc);
 #else
       store_uint32_t((void *)addr, val, mepc);

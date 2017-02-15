@@ -15,15 +15,8 @@ size_t plic_ndevs;
 
 static void mstatus_init()
 {
-  // Enable FPU and set VM mode
-  uintptr_t ms = 0;
-  ms = INSERT_FIELD(ms, MSTATUS_VM, VM_CHOICE);
-  ms = INSERT_FIELD(ms, MSTATUS_FS, 1);
-  write_csr(mstatus, ms);
-
-  // Make sure the hart actually supports the VM mode we want
-  ms = read_csr(mstatus);
-  assert(EXTRACT_FIELD(ms, MSTATUS_VM) == VM_CHOICE);
+  // Enable FPU
+  write_csr(mstatus, MSTATUS_FS);
 
   // Enable user/supervisor use of perf counters
   write_csr(mucounteren, -1);
@@ -156,7 +149,7 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
   write_csr(mepc, fn);
-  write_csr(sptbr, (uintptr_t)root_page_table >> RISCV_PGSHIFT);
+  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE);
   asm volatile ("mv a0, %0; mv sp, %0; mret" : : "r" (stack));
   __builtin_unreachable();
 }

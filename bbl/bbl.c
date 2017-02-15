@@ -51,7 +51,7 @@ static void supervisor_vm_init()
 
   mb();
   root_page_table = root_pt;
-  write_csr(sptbr, (uintptr_t)root_pt >> RISCV_PGSHIFT);
+  write_csr(sptbr, ((uintptr_t)root_pt >> RISCV_PGSHIFT) | SPTBR_MODE);
 }
 
 void boot_loader()

@@ -3,6 +3,7 @@
 #include "htif.h"
 #include "atomic.h"
 #include "bits.h"
+#include "vm.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -176,6 +177,7 @@ void software_interrupt()
   *HLS()->ipi = 0;
   mb();
   int ipi_pending = atomic_swap(&HLS()->mipi_pending, 0);
+  mb();
 
   if (ipi_pending & IPI_SOFT) {
     HLS()->sipi_pending = 1;
@@ -186,7 +188,7 @@ void software_interrupt()
     asm volatile ("fence.i");
 
   if (ipi_pending & IPI_SFENCE_VM)
-    asm volatile ("sfence.vm");
+    flush_tlb();
 }
 
 static void send_ipi_many(uintptr_t* pmask, int event)

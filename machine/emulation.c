@@ -5,6 +5,67 @@
 #include "mtrap.h"
 #include <limits.h>
 
+static DECLARE_EMULATION_FUNC(emulate_rvc)
+{
+#ifdef __riscv_compressed
+  // the only emulable RVC instructions are FP loads and stores.
+# if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
+  write_csr(mepc, mepc + 2);
+
+  // if FPU is disabled, punt back to the OS
+  if (unlikely((mstatus & MSTATUS_FS) == 0))
+    return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+
+  if ((insn & MASK_C_FLD) == MATCH_C_FLD) {
+    uintptr_t addr = GET_RS1S(insn, regs) + RVC_LD_IMM(insn);
+    if (unlikely(addr % sizeof(uintptr_t)))
+      return misaligned_load_trap(regs, mcause, mepc);
+    SET_F64_RD(RVC_RS2S(insn) << SH_RD, regs, load_uint64_t((void *)addr, mepc));
+  } else if ((insn & MASK_C_FLDSP) == MATCH_C_FLDSP) {
+    uintptr_t addr = GET_SP(regs) + RVC_LDSP_IMM(insn);
+    if (unlikely(addr % sizeof(uintptr_t)))
+      return misaligned_load_trap(regs, mcause, mepc);
+    SET_F64_RD(insn, regs, load_uint64_t((void *)addr, mepc));
+  } else if ((insn & MASK_C_FSD) == MATCH_C_FSD) {
+    uintptr_t addr = GET_RS1S(insn, regs) + RVC_LD_IMM(insn);
+    if (unlikely(addr % sizeof(uintptr_t)))
+      return misaligned_store_trap(regs, mcause, mepc);
+    store_uint64_t((void *)addr, GET_F64_RS2(RVC_RS2S(insn) << SH_RS2, regs), mepc);
+  } else if ((insn & MASK_C_FSDSP) == MATCH_C_FSDSP) {
+    uintptr_t addr = GET_SP(regs) + RVC_SDSP_IMM(insn);
+    if (unlikely(addr % sizeof(uintptr_t)))
+      return misaligned_store_trap(regs, mcause, mepc);
+    store_uint64_t((void *)addr, GET_F64_RS2(RVC_RS2(insn) << SH_RS2, regs), mepc);
+  } else
+#  if __riscv_xlen == 32
+  if ((insn & MASK_C_FLW) == MATCH_C_FLW) {
+    uintptr_t addr = GET_RS1S(insn, regs) + RVC_LW_IMM(insn);
+    if (unlikely(addr % 4))
+      return misaligned_load_trap(regs, mcause, mepc);
+    SET_F32_RD(RVC_RS2S(insn) << SH_RD, regs, load_int32_t((void *)addr, mepc));
+  } else if ((insn & MASK_C_FLWSP) == MATCH_C_FLWSP) {
+    uintptr_t addr = GET_SP(regs) + RVC_LWSP_IMM(insn);
+    if (unlikely(addr % 4))
+      return misaligned_load_trap(regs, mcause, mepc);
+    SET_F32_RD(insn, regs, load_int32_t((void *)addr, mepc));
+  } else if ((insn & MASK_C_FSW) == MATCH_C_FSW) {
+    uintptr_t addr = GET_RS1S(insn, regs) + RVC_LW_IMM(insn);
+    if (unlikely(addr % 4))
+      return misaligned_store_trap(regs, mcause, mepc);
+    store_uint32_t((void *)addr, GET_F32_RS2(RVC_RS2S(insn) << SH_RS2, regs), mepc);
+  } else if ((insn & MASK_C_FSWSP) == MATCH_C_FSWSP) {
+    uintptr_t addr = GET_SP(regs) + RVC_SWSP_IMM(insn);
+    if (unlikely(addr % 4))
+      return misaligned_store_trap(regs, mcause, mepc);
+    store_uint32_t((void *)addr, GET_F32_RS2(RVC_RS2(insn) << SH_RS2, regs), mepc);
+  } else
+#  endif
+# endif
+#endif
+
+  return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+}
+
 void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   asm (".pushsection .rodata\n"
@@ -70,8 +131,8 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   uintptr_t mstatus;
   insn_t insn = get_insn(mepc, &mstatus);
 
-  if (unlikely((insn & 3) != 3))
-    return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+  if ((insn & 3) != 3)
+    return emulate_rvc(regs, mcause, mepc, mstatus, insn);
 
   write_csr(mepc, mepc + 4);
 
@@ -81,9 +142,10 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   f(regs, mcause, mepc, mstatus, insn);
 }
 
-void __attribute__((noinline)) truly_illegal_insn(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc, uintptr_t mstatus, insn_t insn)
+__attribute__((noinline))
+DECLARE_EMULATION_FUNC(truly_illegal_insn)
 {
-  redirect_trap(mepc, mstatus);
+  return redirect_trap(mepc, mstatus);
 }
 
 static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result)

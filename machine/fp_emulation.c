@@ -331,6 +331,7 @@ DECLARE_EMULATION_FUNC(emulate_fcmp)
   }
   return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 success:
+  SET_FS_DIRTY();
   SET_RD(insn, regs, result);
 }
 
@@ -358,6 +359,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_if)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
   }
 
+  SET_FS_DIRTY();
   SET_RD(insn, regs, result);
 }
 

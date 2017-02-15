@@ -10,25 +10,25 @@
 
 #ifdef __riscv_flen
 # define GET_F32_REG(insn, pos, regs) ({ \
-  register int32_t value asm("a0") = ((insn) >> ((pos)-3)) & 0xf8; \
+  register int32_t value asm("a0") = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
   uintptr_t tmp; \
   asm ("1: auipc %0, %%pcrel_hi(get_f32_reg); add %0, %0, %1; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp), "+&r"(value) :: "t0"); \
   value; })
 # define SET_F32_REG(insn, pos, regs, val) ({ \
   register uint32_t value asm("a0") = (val); \
-  uintptr_t offset = ((insn) >> ((pos)-3)) & 0xf8; \
+  uintptr_t offset = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
   uintptr_t tmp; \
   asm volatile ("1: auipc %0, %%pcrel_hi(put_f32_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(value), "r"(offset) : "t0"); })
 # define init_fp_reg(i) SET_F32_REG((i) << 3, 3, 0, 0)
 # define GET_F64_REG(insn, pos, regs) ({ \
-  register uintptr_t value asm("a0") = ((insn) >> ((pos)-3)) & 0xf8; \
+  register uintptr_t value asm("a0") = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
   uintptr_t tmp; \
   asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %1; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp), "+&r"(value) :: "t0"); \
   sizeof(uintptr_t) == 4 ? *(int64_t*)value : (int64_t)value; })
 # define SET_F64_REG(insn, pos, regs, val) ({ \
   uint64_t __val = (val); \
   register uintptr_t value asm("a0") = sizeof(uintptr_t) == 4 ? (uintptr_t)&__val : (uintptr_t)__val; \
-  uintptr_t offset = ((insn) >> ((pos)-3)) & 0xf8; \
+  uintptr_t offset = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
   uintptr_t tmp; \
   asm volatile ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(value), "r"(offset) : "t0"); })
 # define GET_FCSR() read_csr(fcsr)
@@ -48,12 +48,12 @@
 # define softfloat_roundingMode ({ register int tp asm("tp"); tp; })
 # define SET_FS_DIRTY() ((void) 0)
 #else
-# define GET_F64_REG(insn, pos, regs) (*(int64_t*)((void*)((regs) + 32) + (((insn) >> ((pos)-3)) & 0xf8)))
+# define GET_F64_REG(insn, pos, regs) (*(int64_t*)((void*)((regs) + 32) + (SHIFT_RIGHT(insn, (pos)-3) & 0xf8)))
 # define SET_F64_REG(insn, pos, regs, val) (GET_F64_REG(insn, pos, regs) = (val))
 # define GET_F32_REG(insn, pos, regs) (*(int32_t*)&GET_F64_REG(insn, pos, regs))
 # define SET_F32_REG(insn, pos, regs, val) (GET_F32_REG(insn, pos, regs) = (val))
 # define GET_FCSR() ({ register int tp asm("tp"); tp & 0xFF; })
-# define SET_FCSR(value) ({ asm volatile("add tp, x0, %0" :: "rI"((value) & 0xFF)); })
+# define SET_FCSR(value) ({ asm volatile("add tp, x0, %0" :: "rI"((value) & 0xFF)); SET_FS_DIRTY(); })
 # define GET_FRM() (GET_FCSR() >> 5)
 # define SET_FRM(value) SET_FCSR(GET_FFLAGS() | ((value) << 5))
 # define GET_FFLAGS() (GET_FCSR() & 0x1F)
@@ -78,5 +78,10 @@
 #define GET_F64_RS3(insn, regs) (GET_F64_REG(insn, 27, regs))
 #define SET_F32_RD(insn, regs, val) (SET_F32_REG(insn, 7, regs, val), SET_FS_DIRTY())
 #define SET_F64_RD(insn, regs, val) (SET_F64_REG(insn, 7, regs, val), SET_FS_DIRTY())
+
+#define GET_F32_RS2C(insn, regs) (GET_F32_REG(insn, 2, regs))
+#define GET_F32_RS2S(insn, regs) (GET_F32_REG(RVC_RS2S(insn), 0, regs))
+#define GET_F64_RS2C(insn, regs) (GET_F64_REG(insn, 2, regs))
+#define GET_F64_RS2S(insn, regs) (GET_F64_REG(RVC_RS2S(insn), 0, regs))
 
 #endif

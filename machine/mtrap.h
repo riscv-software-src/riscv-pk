@@ -41,7 +41,6 @@ typedef struct {
   uint32_t* ipi;
   volatile int mipi_pending;
   volatile int sipi_pending;
-  int console_ibuf;
 
   volatile uint32_t* plic_m_thresh;
   volatile uintptr_t* plic_m_ie;

@@ -11,7 +11,6 @@
 
 #ifndef __ASSEMBLER__
 
-#include "sbi.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -68,7 +67,7 @@ void putstring(const char* s);
 #define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
 #define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })
 
-void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
   __attribute__((noreturn));
 void boot_loader();
 void boot_other_hart();

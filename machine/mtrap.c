@@ -13,11 +13,6 @@ void __attribute__((noreturn)) bad_trap()
   die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
 }
 
-static uintptr_t mcall_hart_id()
-{
-  return read_const_csr(mhartid);
-}
-
 uintptr_t timer_interrupt()
 {
   // just send the timer interrupt to the supervisor
@@ -156,9 +151,6 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval;
   switch (n)
   {
-    case MCALL_HART_ID:
-      retval = mcall_hart_id();
-      break;
     case MCALL_CONSOLE_PUTCHAR:
       retval = mcall_console_putchar(arg0);
       break;

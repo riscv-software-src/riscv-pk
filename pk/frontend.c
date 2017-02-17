@@ -3,7 +3,6 @@
 #include "pk.h"
 #include "atomic.h"
 #include "frontend.h"
-#include "sbi.h"
 #include "syscall.h"
 #include "htif.h"
 #include <stdint.h>

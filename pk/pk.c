@@ -162,7 +162,7 @@ void boot_loader()
   write_csr(sie, 0);
 
   file_init();
-  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init());
+  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);
 }
 
 void boot_other_hart()

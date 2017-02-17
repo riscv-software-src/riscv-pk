@@ -141,7 +141,7 @@ void init_other_hart()
   boot_other_hart();
 }
 
-void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
 {
   uintptr_t mstatus = read_csr(mstatus);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
@@ -149,7 +149,10 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
   write_csr(mepc, fn);
-  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE);
-  asm volatile ("mv a0, %0; mv sp, %0; mret" : : "r" (stack));
+  write_csr(sptbr, 0);
+
+  register uintptr_t a0 asm ("a0") = arg0;
+  register uintptr_t a1 asm ("a1") = arg1;
+  asm volatile ("mret" : : "r" (a0), "r" (a1));
   __builtin_unreachable();
 }

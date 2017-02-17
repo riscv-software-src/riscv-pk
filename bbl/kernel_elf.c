@@ -7,7 +7,7 @@
 #include <elf.h>
 #include <string.h>
 
-void load_kernel_elf(void* blob, size_t size, kernel_elf_info* info)
+uintptr_t load_kernel_elf(void* blob, size_t size)
 {
   Elf_Ehdr* eh = blob;
   if (sizeof(*eh) > size ||
@@ -43,11 +43,7 @@ void load_kernel_elf(void* blob, size_t size, kernel_elf_info* info)
     }
   }
 
-  info->entry = eh->e_entry;
-  info->load_offset = bias;
-  info->first_user_vaddr = min_vaddr;
-  info->first_vaddr_after_user = ROUNDUP(max_vaddr - bias, RISCV_PGSIZE);
-  return;
+  return eh->e_entry + bias;
 
 fail:
     die("failed to load payload");

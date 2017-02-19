@@ -18,11 +18,7 @@ trap_table:
   .word mcall_trap
   .word bad_trap
   .word bad_trap
-#define SOFTWARE_INTERRUPT_VECTOR 12
-  .word software_interrupt
-#define TIMER_INTERRUPT_VECTOR 13
-  .word timer_interrupt
-#define TRAP_FROM_MACHINE_MODE_VECTOR 14
+#define TRAP_FROM_MACHINE_MODE_VECTOR 12
   .word __trap_from_machine_mode
 
   .option norvc
@@ -30,10 +26,6 @@ trap_table:
   .globl reset_vector
 reset_vector:
   j do_reset
-
-nmi_vector:
-.Lunhandleable_trap:
-  j bad_trap
 
 trap_vector:
   csrrw sp, mscratch, sp
@@ -51,8 +43,12 @@ trap_vector:
   # Is it a machine timer interrupt?
   li a0, IRQ_M_TIMER * 2
   bne a0, a1, 1f
-  li a1, TIMER_INTERRUPT_VECTOR
-  j .Lhandle_trap_in_machine_mode
+
+  # Yes.  Simply clear MSIE and raise SSIP.
+  li a0, MIP_MTIP
+  csrc mie, a0
+  li a0, MIP_STIP
+  csrs mip, a0
 
 .Lmret:
   # Go back whence we came.
@@ -64,9 +60,35 @@ trap_vector:
 1:
   # Is it an IPI?
   li a0, IRQ_M_SOFT * 2
-  bne a0, a1, .Lunhandleable_trap
-  li a1, SOFTWARE_INTERRUPT_VECTOR
-  j .Lhandle_trap_in_machine_mode
+  bne a0, a1, bad_trap
+
+  # Yes.  First, clear the MIPI bit.
+  LOAD a0, MENTRY_IPI_OFFSET(sp)
+  STORE x0, (a0)
+  fence
+
+  # Now, decode the cause(s).
+#ifdef __riscv_atomic
+  addi a0, sp, MENTRY_IPI_PENDING_OFFSET
+  amoswap.w a0, x0, (a0)
+#else
+  lw a0, MENTRY_IPI_PENDING_OFFSET(a0)
+  sw x0, MENTRY_IPI_PENDING_OFFSET(a0)
+#endif
+  and a1, a0, IPI_SOFT
+  beqz a1, 1f
+  csrs mip, MIP_SSIP
+1:
+  andi a1, a0, IPI_FENCE_I
+  beqz a1, 1f
+  fence.i
+1:
+  andi a1, a0, IPI_SFENCE_VM
+  beqz a1, 1f
+  sfence.vma
+1:
+  j .Lmret
+
 
 .Lhandle_trap_in_machine_mode:
   # Preserve the registers.  Compute the address of the trap handler.

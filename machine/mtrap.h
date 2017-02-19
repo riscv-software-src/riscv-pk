@@ -36,20 +36,16 @@ extern volatile uint32_t* plic_priorities;
 extern size_t plic_ndevs;
 
 typedef struct {
-  uint64_t* timecmp;
   uint32_t* ipi;
   volatile int mipi_pending;
-  volatile int sipi_pending;
+
+  uint64_t* timecmp;
 
   volatile uint32_t* plic_m_thresh;
   volatile uintptr_t* plic_m_ie;
   volatile uint32_t* plic_s_thresh;
   volatile uintptr_t* plic_s_ie;
 } hls_t;
-
-#define IPI_SOFT      0x1
-#define IPI_FENCE_I   0x2
-#define IPI_SFENCE_VM 0x4
 
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \
@@ -79,9 +75,15 @@ static inline void wfi()
 
 #endif // !__ASSEMBLER__
 
+#define IPI_SOFT      0x1
+#define IPI_FENCE_I   0x2
+#define IPI_SFENCE_VM 0x4
+
 #define MACHINE_STACK_SIZE RISCV_PGSIZE
-#define MENTRY_FRAME_SIZE (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE \
-                           + HLS_SIZE)
+#define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)
+#define MENTRY_FRAME_SIZE (MENTRY_HLS_OFFSET + HLS_SIZE)
+#define MENTRY_IPI_OFFSET (MENTRY_HLS_OFFSET)
+#define MENTRY_IPI_PENDING_OFFSET (MENTRY_HLS_OFFSET + REGBYTES)
 
 #ifdef __riscv_flen
 # define SOFT_FLOAT_CONTEXT_SIZE 0

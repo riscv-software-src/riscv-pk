@@ -4,6 +4,7 @@
 #include "atomic.h"
 #include "bits.h"
 #include "vm.h"
+#include "unprivileged_memory.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -11,15 +12,6 @@
 void __attribute__((noreturn)) bad_trap()
 {
   die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
-}
-
-uintptr_t timer_interrupt()
-{
-  // just send the timer interrupt to the supervisor
-  clear_csr(mie, MIP_MTIP);
-  set_csr(mip, MIP_STIP);
-
-  return 0;
 }
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
@@ -59,15 +51,6 @@ static void send_ipi(uintptr_t recipient, int event)
   }
 }
 
-static uintptr_t mcall_send_ipi(uintptr_t recipient)
-{
-  if (recipient >= num_harts)
-    return -1;
-
-  send_ipi(recipient, IPI_SOFT);
-  return 0;
-}
-
 static uintptr_t mcall_console_getchar()
 {
   return htif_console_getchar();
@@ -75,9 +58,7 @@ static uintptr_t mcall_console_getchar()
 
 static uintptr_t mcall_clear_ipi()
 {
-  clear_csr(mip, MIP_SSIP);
-  mb();
-  return atomic_swap(&HLS()->sipi_pending, 0);
+  return clear_csr(mip, MIP_SSIP) & MIP_SSIP;
 }
 
 static uintptr_t mcall_shutdown()
@@ -93,31 +74,12 @@ static uintptr_t mcall_set_timer(uint64_t when)
   return 0;
 }
 
-void software_interrupt()
-{
-  *HLS()->ipi = 0;
-  mb();
-  int ipi_pending = atomic_swap(&HLS()->mipi_pending, 0);
-  mb();
-
-  if (ipi_pending & IPI_SOFT) {
-    HLS()->sipi_pending = 1;
-    set_csr(mip, MIP_SSIP);
-  }
-
-  if (ipi_pending & IPI_FENCE_I)
-    asm volatile ("fence.i");
-
-  if (ipi_pending & IPI_SFENCE_VM)
-    flush_tlb();
-}
-
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
   _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
   uintptr_t mask = -1;
   if (pmask)
-    mask = *pmask;
+    mask = load_uintptr_t(pmask, read_csr(mepc));
 
   // send IPIs to everyone
   for (ssize_t i = num_harts-1; i >= 0; i--)
@@ -125,14 +87,21 @@ static void send_ipi_many(uintptr_t* pmask, int event)
       send_ipi(i, event);
 
   // wait until all events have been handled.
-  // prevent deadlock while spinning by handling any IPIs from other harts.
+  // prevent deadlock by consuming incoming IPIs.
+  uint32_t incoming_ipi = 0;
   for (ssize_t i = num_harts-1; i >= 0; i--)
     if ((mask >> i) & 1)
-      while (OTHER_HLS(i)->mipi_pending & event)
-        software_interrupt();
+      while (OTHER_HLS(i)->ipi)
+        incoming_ipi |= atomic_swap(HLS()->ipi, 0);
+
+  // if we got an IPI, restore it; it will be taken after returning
+  if (incoming_ipi) {
+    *HLS()->ipi = incoming_ipi;
+    mb();
+  }
 }
 
-static uintptr_t mcall_remote_sfence_vm(uintptr_t* hart_mask, uintptr_t asid)
+static uintptr_t mcall_remote_sfence_vm(uintptr_t* hart_mask)
 {
   // ignore the ASID and do a global flush.
   // this allows us to avoid queueing a message.
@@ -149,6 +118,8 @@ static uintptr_t mcall_remote_fence_i(uintptr_t* hart_mask)
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval;
+  uintptr_t ipi_type = 0;
+
   switch (n)
   {
     case MCALL_CONSOLE_PUTCHAR:
@@ -158,7 +129,13 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
       retval = mcall_console_getchar();
       break;
     case MCALL_SEND_IPI:
-      retval = mcall_send_ipi(arg0);
+      ipi_type = IPI_SOFT;
+    case MCALL_REMOTE_SFENCE_VM:
+      ipi_type = IPI_SFENCE_VM;
+    case MCALL_REMOTE_FENCE_I:
+      ipi_type = IPI_FENCE_I;
+      send_ipi_many((uintptr_t*)arg0, ipi_type);
+      retval = 0;
       break;
     case MCALL_CLEAR_IPI:
       retval = mcall_clear_ipi();
@@ -172,12 +149,6 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 #else
       retval = mcall_set_timer(arg0);
 #endif
-      break;
-    case MCALL_REMOTE_SFENCE_VM:
-      retval = mcall_remote_sfence_vm((uintptr_t*)arg0, arg1);
-      break;
-    case MCALL_REMOTE_FENCE_I:
-      retval = mcall_remote_fence_i((uintptr_t*)arg0);
       break;
     default:
       retval = -ENOSYS;

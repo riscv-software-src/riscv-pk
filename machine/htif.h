@@ -18,6 +18,6 @@
 void htif_console_putchar(uint8_t);
 int htif_console_getchar();
 void htif_poweroff() __attribute__((noreturn));
-uintptr_t htif_syscall(uintptr_t);
+void htif_syscall(uintptr_t);
 
 #endif

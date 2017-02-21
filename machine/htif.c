@@ -2,8 +2,8 @@
 #include "atomic.h"
 #include "mtrap.h"
 
-volatile uint64_t tohost __attribute__((aligned(64))) __attribute__((section("htif")));
-volatile uint64_t fromhost __attribute__((aligned(64))) __attribute__((section("htif")));
+volatile uint64_t tohost __attribute__((section("htif")));
+volatile uint64_t fromhost __attribute__((section("htif")));
 volatile int htif_console_buf;
 static spinlock_t htif_lock = SPINLOCK_INIT;
 
@@ -19,8 +19,7 @@ static void __check_fromhost()
   uint64_t fh = fromhost;
   if (!fh)
     return;
-  if (!(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0))
-    die("unexpected htif interrupt");
+  assert(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0);
   htif_console_buf = 1 + (uint8_t)FROMHOST_DATA(fh);
   fromhost = 0;
 }
@@ -54,14 +53,14 @@ static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
         }
         __check_fromhost();
       }
+      wfi();
     }
   spinlock_unlock(&htif_lock);
 }
 
-uintptr_t htif_syscall(uintptr_t arg)
+void htif_syscall(uintptr_t arg)
 {
   do_tohost_fromhost(0, 0, arg);
-  return 0;
 }
 
 void htif_console_putchar(uint8_t ch)

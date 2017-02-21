@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-uintptr_t load_kernel_elf(void* blob, size_t size);
 void print_logo();
 
 #endif // !__ASSEMBLER__

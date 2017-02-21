@@ -6,7 +6,6 @@
 #include <limits.h>
 
 pte_t* root_page_table;
-uintptr_t first_free_paddr;
 uintptr_t mem_size;
 uintptr_t num_harts;
 volatile uint64_t* mtime;
@@ -67,16 +66,9 @@ hls_t* hls_init(uintptr_t id)
   return hls;
 }
 
-static uintptr_t sbi_top_paddr()
-{
-  extern char _end;
-  return ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
-}
-
 static void memory_init()
 {
   mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
-  first_free_paddr = sbi_top_paddr() + num_harts * RISCV_PGSIZE;
 }
 
 static void hart_init()

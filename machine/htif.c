@@ -2,47 +2,56 @@
 #include "atomic.h"
 #include "mtrap.h"
 
-volatile uint64_t tohost __attribute__((section("htif")));
-volatile uint64_t fromhost __attribute__((section("htif")));
+volatile uint64_t tohost __attribute__((section(".htif")));
+volatile uint64_t fromhost __attribute__((section(".htif")));
 volatile int htif_console_buf;
 static spinlock_t htif_lock = SPINLOCK_INIT;
 
-static void request_htif_keyboard_interrupt()
-{
-  assert(tohost == 0);
-  tohost = TOHOST_CMD(1, 0, 0);
-}
-
 static void __check_fromhost()
 {
-  // we should only be interrupted by keypresses
   uint64_t fh = fromhost;
   if (!fh)
     return;
-  assert(FROMHOST_DEV(fh) == 1 && FROMHOST_CMD(fh) == 0);
-  htif_console_buf = 1 + (uint8_t)FROMHOST_DATA(fh);
   fromhost = 0;
+
+  // this should be from the console
+  assert(FROMHOST_DEV(fh) == 1);
+  switch (FROMHOST_CMD(fh)) {
+    case 0:
+      htif_console_buf = 1 + (uint8_t)FROMHOST_DATA(fh);
+      break;
+    case 1:
+      break;
+    default:
+      assert(0);
+  }
+}
+
+static void __set_tohost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
+{
+  while (tohost)
+    __check_fromhost();
+  tohost = TOHOST_CMD(dev, cmd, data);
 }
 
 int htif_console_getchar()
 {
-  if (spinlock_trylock(&htif_lock) == 0) {
+  spinlock_lock(&htif_lock);
     __check_fromhost();
-    spinlock_unlock(&htif_lock);
-  }
+    int ch = htif_console_buf;
+    if (ch >= 0) {
+      htif_console_buf = -1;
+      __set_tohost(1, 0, 0);
+    }
+  spinlock_unlock(&htif_lock);
 
-  int ch = atomic_swap(&htif_console_buf, -1);
-  if (ch >= 0)
-    request_htif_keyboard_interrupt();
   return ch - 1;
 }
 
 static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
 {
   spinlock_lock(&htif_lock);
-    while (tohost)
-      __check_fromhost();
-    tohost = TOHOST_CMD(dev, cmd, data);
+    __set_tohost(dev, cmd, data);
 
     while (1) {
       uint64_t fh = fromhost;
@@ -53,7 +62,6 @@ static void do_tohost_fromhost(uintptr_t dev, uintptr_t cmd, uintptr_t data)
         }
         __check_fromhost();
       }
-      wfi();
     }
   spinlock_unlock(&htif_lock);
 }
@@ -65,7 +73,9 @@ void htif_syscall(uintptr_t arg)
 
 void htif_console_putchar(uint8_t ch)
 {
-  do_tohost_fromhost(1, 1, ch);
+  spinlock_lock(&htif_lock);
+    __set_tohost(1, 1, ch);
+  spinlock_unlock(&htif_lock);
 }
 
 void htif_poweroff()

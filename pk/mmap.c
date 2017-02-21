@@ -20,6 +20,7 @@ typedef struct {
 static spinlock_t vm_lock = SPINLOCK_INIT;
 static vmr_t* vmrs;
 
+uintptr_t first_free_paddr;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
@@ -385,15 +386,14 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
-#if __riscv_xlen == 32
-  // We can't support more than 2 GiB of memory in RV32
+  // HTIF address signedness and va2pa macro both cap memory size to 2 GiB
   mem_size = MIN(mem_size, 1U << 31);
-#endif
-
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
-  first_free_page = first_free_paddr;
-  first_free_paddr += free_pages * RISCV_PGSIZE;
+
+  extern char _end;
+  first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
+  first_free_paddr = first_free_page + free_pages * RISCV_PGSIZE;
 
   root_page_table = (void*)__page_alloc();
   __map_kernel_range(DRAM_BASE, DRAM_BASE, first_free_paddr - DRAM_BASE, PROT_READ|PROT_WRITE|PROT_EXEC);

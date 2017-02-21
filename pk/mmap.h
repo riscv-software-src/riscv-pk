@@ -33,6 +33,7 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
 
 #define va2pa(va) ({ uintptr_t __va = (uintptr_t)(va); \
+  extern uintptr_t first_free_paddr; \
   __va >= DRAM_BASE ? __va : __va + first_free_paddr; })
 
 #endif

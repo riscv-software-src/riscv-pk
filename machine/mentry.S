@@ -247,11 +247,7 @@ do_reset:
   csrr t1, mtvec
 1:bne t0, t1, 1b
 
-  # sp <- end of first full page after the end of the binary
-  la sp, _end + 2*RISCV_PGSIZE - 1
-  li t0, -RISCV_PGSIZE
-  and sp, sp, t0
-  addi sp, sp, -MENTRY_FRAME_SIZE
+  la sp, stacks + RISCV_PGSIZE - MENTRY_FRAME_SIZE
 
   csrr a0, mhartid
   slli a1, a0, RISCV_PGSHIFT
@@ -278,3 +274,8 @@ do_reset:
 #endif
   wfi
   j .LmultiHart
+
+  .bss
+  .align RISCV_PGSHIFT
+stacks:
+  .skip RISCV_PGSIZE * MAX_HARTS

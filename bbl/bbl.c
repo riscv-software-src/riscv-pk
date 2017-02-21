@@ -6,24 +6,25 @@
 #include "config.h"
 #include <string.h>
 
-static volatile uintptr_t entry_point;
+static const void* entry_point;
 
 void boot_other_hart()
 {
-  while (!entry_point)
-    ;
-  mb();
-  enter_supervisor_mode((void *)entry_point, read_csr(mhartid), 0);
+  const void* entry;
+  do {
+    entry = entry_point;
+    mb();
+  } while (!entry);
+  enter_supervisor_mode(entry, read_csr(mhartid), 0);
 }
 
 void boot_loader()
 {
-  extern char _payload_start, _payload_end;
-  uintptr_t entry = load_kernel_elf(&_payload_start, &_payload_end - &_payload_start);
+  extern char _payload_start;
 #ifdef PK_ENABLE_LOGO
   print_logo();
 #endif
   mb();
-  entry_point = entry;
+  entry_point = &_payload_start;
   boot_other_hart();
 }

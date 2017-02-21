@@ -50,6 +50,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
+AC_CHECK_TOOL([READELF],[readelf])
+AC_CHECK_TOOL([OBJCOPY],[objcopy])
 
 #-------------------------------------------------------------------------
 # MCPPBS specific program checks

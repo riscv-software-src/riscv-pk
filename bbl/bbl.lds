@@ -44,9 +44,9 @@ SECTIONS
   /* HTIF, isolated onto separate page                                  */
   /*--------------------------------------------------------------------*/
   . = ALIGN(0x1000);
-  htif :
+  .htif :
   {
-    *(htif)
+    *(.htif)
   }
   . = ALIGN(0x1000);
 

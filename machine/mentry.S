@@ -6,6 +6,7 @@
   .data
   .align 6
 trap_table:
+#define BAD_TRAP_VECTOR 0
   .word bad_trap
   .word bad_trap
   .word illegal_insn_trap
@@ -60,11 +61,11 @@ trap_vector:
 1:
   # Is it an IPI?
   li a0, IRQ_M_SOFT * 2
-  bne a0, a1, bad_trap
+  bne a0, a1, .Lbad_trap
 
   # Yes.  First, clear the MIPI bit.
   LOAD a0, MENTRY_IPI_OFFSET(sp)
-  STORE x0, (a0)
+  sw x0, (a0)
   fence
 
   # Now, decode the cause(s).
@@ -83,7 +84,7 @@ trap_vector:
   beqz a1, 1f
   fence.i
 1:
-  andi a1, a0, IPI_SFENCE_VM
+  andi a1, a0, IPI_SFENCE_VMA
   beqz a1, 1f
   sfence.vma
 1:
@@ -186,6 +187,10 @@ restore_regs:
   STORE a0,10*REGBYTES(sp)
   STORE a1,11*REGBYTES(sp)
   li a1, TRAP_FROM_MACHINE_MODE_VECTOR
+  j .Lhandle_trap_in_machine_mode
+
+.Lbad_trap:
+  li a1, BAD_TRAP_VECTOR
   j .Lhandle_trap_in_machine_mode
 
   .globl __redirect_trap

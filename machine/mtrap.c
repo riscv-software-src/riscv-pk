@@ -9,9 +9,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-void __attribute__((noreturn)) bad_trap()
+void __attribute__((noreturn)) bad_trap(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
-  die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), read_csr(mepc));
+  die("machine mode: unhandlable trap %d @ %p", read_csr(mcause), mepc);
 }
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
@@ -45,10 +45,9 @@ void printm(const char* s, ...)
 
 static void send_ipi(uintptr_t recipient, int event)
 {
-  if ((atomic_or(&OTHER_HLS(recipient)->mipi_pending, event) & event) == 0) {
-    mb();
-    *OTHER_HLS(recipient)->ipi = 1;
-  }
+  atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
+  mb();
+  *OTHER_HLS(recipient)->ipi = 1;
 }
 
 static uintptr_t mcall_console_getchar()
@@ -77,21 +76,24 @@ static uintptr_t mcall_set_timer(uint64_t when)
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
   _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
-  uintptr_t mask = -1;
+  uintptr_t mask = ((uintptr_t)1 << num_harts) - 1;
   if (pmask)
-    mask = load_uintptr_t(pmask, read_csr(mepc));
+    mask &= load_uintptr_t(pmask, read_csr(mepc));
 
   // send IPIs to everyone
-  for (ssize_t i = num_harts-1; i >= 0; i--)
-    if ((mask >> i) & 1)
+  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
+    if (m & 1)
       send_ipi(i, event);
+
+  if (event == IPI_SOFT)
+    return;
 
   // wait until all events have been handled.
   // prevent deadlock by consuming incoming IPIs.
   uint32_t incoming_ipi = 0;
-  for (ssize_t i = num_harts-1; i >= 0; i--)
-    if ((mask >> i) & 1)
-      while (OTHER_HLS(i)->ipi)
+  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
+    if (m & 1)
+      while (*OTHER_HLS(i)->ipi)
         incoming_ipi |= atomic_swap(HLS()->ipi, 0);
 
   // if we got an IPI, restore it; it will be taken after returning
@@ -101,49 +103,40 @@ static void send_ipi_many(uintptr_t* pmask, int event)
   }
 }
 
-static uintptr_t mcall_remote_sfence_vm(uintptr_t* hart_mask)
-{
-  // ignore the ASID and do a global flush.
-  // this allows us to avoid queueing a message.
-  send_ipi_many(hart_mask, IPI_SFENCE_VM);
-  return 0;
-}
-
-static uintptr_t mcall_remote_fence_i(uintptr_t* hart_mask)
-{
-  send_ipi_many(hart_mask, IPI_FENCE_I);
-  return 0;
-}
-
 void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
-  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval;
-  uintptr_t ipi_type = 0;
+  write_csr(mepc, mepc + 4);
+
+  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval, ipi_type;
 
   switch (n)
   {
-    case MCALL_CONSOLE_PUTCHAR:
+    case SBI_CONSOLE_PUTCHAR:
       retval = mcall_console_putchar(arg0);
       break;
-    case MCALL_CONSOLE_GETCHAR:
+    case SBI_CONSOLE_GETCHAR:
       retval = mcall_console_getchar();
       break;
-    case MCALL_SEND_IPI:
+    case SBI_SEND_IPI:
       ipi_type = IPI_SOFT;
-    case MCALL_REMOTE_SFENCE_VM:
-      ipi_type = IPI_SFENCE_VM;
-    case MCALL_REMOTE_FENCE_I:
+      goto send_ipi;
+    case SBI_REMOTE_SFENCE_VMA:
+    case SBI_REMOTE_SFENCE_VMA_ASID:
+      ipi_type = IPI_SFENCE_VMA;
+      goto send_ipi;
+    case SBI_REMOTE_FENCE_I:
       ipi_type = IPI_FENCE_I;
+send_ipi:
       send_ipi_many((uintptr_t*)arg0, ipi_type);
       retval = 0;
       break;
-    case MCALL_CLEAR_IPI:
+    case SBI_CLEAR_IPI:
       retval = mcall_clear_ipi();
       break;
-    case MCALL_SHUTDOWN:
+    case SBI_SHUTDOWN:
       retval = mcall_shutdown();
       break;
-    case MCALL_SET_TIMER:
+    case SBI_SET_TIMER:
 #if __riscv_xlen == 32
       retval = mcall_set_timer(arg0 + ((uint64_t)arg1 << 32));
 #else
@@ -155,7 +148,6 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
       break;
   }
   regs[10] = retval;
-  write_csr(mepc, mepc + 4);
 }
 
 void redirect_trap(uintptr_t epc, uintptr_t mstatus)
@@ -175,7 +167,7 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus)
   return __redirect_trap();
 }
 
-static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)
+static void machine_page_fault(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
   // MPRV=1 iff this trap occurred while emulating an instruction on behalf
   // of a lower privilege level. In that case, a2=epc and a3=mstatus.
@@ -183,7 +175,7 @@ static void machine_page_fault(uintptr_t* regs, uintptr_t mepc)
     write_csr(sbadaddr, read_csr(mbadaddr));
     return redirect_trap(regs[12], regs[13]);
   }
-  bad_trap();
+  bad_trap(regs, dummy, mepc);
 }
 
 void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
@@ -194,8 +186,8 @@ void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
   {
     case CAUSE_FAULT_LOAD:
     case CAUSE_FAULT_STORE:
-      return machine_page_fault(regs, mepc);
+      return machine_page_fault(regs, dummy, mepc);
     default:
-      bad_trap();
+      bad_trap(regs, dummy, mepc);
   }
 }

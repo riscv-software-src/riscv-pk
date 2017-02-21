@@ -36,10 +36,10 @@ extern volatile uint32_t* plic_priorities;
 extern size_t plic_ndevs;
 
 typedef struct {
-  uint32_t* ipi;
+  volatile uint32_t* ipi;
   volatile int mipi_pending;
 
-  uint64_t* timecmp;
+  volatile uint64_t* timecmp;
 
   volatile uint32_t* plic_m_thresh;
   volatile uintptr_t* plic_m_ie;
@@ -75,9 +75,9 @@ static inline void wfi()
 
 #endif // !__ASSEMBLER__
 
-#define IPI_SOFT      0x1
-#define IPI_FENCE_I   0x2
-#define IPI_SFENCE_VM 0x4
+#define IPI_SOFT       0x1
+#define IPI_FENCE_I    0x2
+#define IPI_SFENCE_VMA 0x4
 
 #define MACHINE_STACK_SIZE RISCV_PGSIZE
 #define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)

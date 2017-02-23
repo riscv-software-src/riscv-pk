@@ -142,9 +142,9 @@ static uintptr_t __vm_alloc(size_t npage)
 static inline pte_t prot_to_type(int prot, int user)
 {
   pte_t pte = 0;
-  if (prot & PROT_READ) pte |= PTE_R;
-  if (prot & PROT_WRITE) pte |= PTE_W;
-  if (prot & PROT_EXEC) pte |= PTE_X;
+  if (prot & PROT_READ) pte |= PTE_R | PTE_A;
+  if (prot & PROT_WRITE) pte |= PTE_W | PTE_D;
+  if (prot & PROT_EXEC) pte |= PTE_X | PTE_A;
   if (pte == 0) pte = PTE_R;
   if (user) pte |= PTE_U;
   return pte;
@@ -405,6 +405,9 @@ uintptr_t pk_vm_init()
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);
   current.stack_top = stack_bottom + stack_size;
+
+  flush_tlb();
+  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE_CHOICE);
 
   uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
   return kernel_stack_top;

@@ -21,6 +21,9 @@ static void mstatus_init()
   write_csr(mucounteren, -1);
   write_csr(mscounteren, -1);
   write_csr(mie, ~MIP_MTIP); // disable timer; enable other interrupts
+
+  // Disable paging
+  write_csr(sptbr, 0);
 }
 
 // send S-mode interrupts and most exceptions straight to S-mode
@@ -141,7 +144,6 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
   write_csr(mepc, fn);
-  write_csr(sptbr, 0);
 
   register uintptr_t a0 asm ("a0") = arg0;
   register uintptr_t a1 asm ("a1") = arg1;

@@ -150,9 +150,9 @@ DECLARE_EMULATION_FUNC(truly_illegal_insn)
 
 static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result)
 {
-  uintptr_t counteren =
-    EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U ? read_csr(mucounteren) :
-                                                   read_csr(mscounteren);
+  uintptr_t counteren = -1;
+  if (EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U)
+    counteren = read_csr(scounteren);
 
   switch (num)
   {

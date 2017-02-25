@@ -18,9 +18,11 @@ static void mstatus_init()
   write_csr(mstatus, MSTATUS_FS);
 
   // Enable user/supervisor use of perf counters
-  write_csr(mucounteren, -1);
-  write_csr(mscounteren, -1);
-  write_csr(mie, ~MIP_MTIP); // disable timer; enable other interrupts
+  write_csr(scounteren, -1);
+  write_csr(mcounteren, -1);
+
+  // Enable software interrupts
+  write_csr(mie, MIP_MSIP);
 
   // Disable paging
   write_csr(sptbr, 0);

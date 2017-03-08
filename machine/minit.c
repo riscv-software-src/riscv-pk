@@ -73,6 +73,9 @@ hls_t* hls_init(uintptr_t id)
 
 static void memory_init()
 {
+  // TODO FDT: mem_size
+  mem_size = 16 << 20;
+
   mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
@@ -104,6 +107,9 @@ static void prci_test()
 
 static void hart_plic_init()
 {
+  // TODO FDT: mtime, ipi, timecmp
+  return;
+
   // clear pending interrupts
   *HLS()->ipi = 0;
   *HLS()->timecmp = -1ULL;
@@ -123,7 +129,7 @@ void init_first_hart()
 {
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
-  parse_config_string();
+  //parse_config_string();
   plic_init();
   hart_plic_init();
   //prci_test();

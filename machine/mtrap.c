@@ -156,9 +156,9 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus)
   write_csr(scause, read_csr(mcause));
   write_csr(mepc, read_csr(stvec));
 
-  uintptr_t new_mstatus = mstatus & ~(MSTATUS_SPP | MSTATUS_SPIE | MSTATUS_MPIE);
+  uintptr_t new_mstatus = mstatus & ~(MSTATUS_SPP | MSTATUS_SPIE | MSTATUS_SIE);
   uintptr_t mpp_s = MSTATUS_MPP & (MSTATUS_MPP >> 1);
-  new_mstatus |= (mstatus / (MSTATUS_MPIE / MSTATUS_SPIE)) & MSTATUS_SPIE;
+  new_mstatus |= (mstatus * (MSTATUS_SPIE / MSTATUS_SIE)) & MSTATUS_SPIE;
   new_mstatus |= (mstatus / (mpp_s / MSTATUS_SPP)) & MSTATUS_SPP;
   new_mstatus |= mpp_s;
   write_csr(mstatus, new_mstatus);

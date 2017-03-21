@@ -160,6 +160,7 @@ void boot_loader()
   write_csr(stvec, &trap_entry);
   write_csr(sscratch, 0);
   write_csr(sie, 0);
+  set_csr(sstatus, SSTATUS_SUM);
 
   file_init();
   enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);

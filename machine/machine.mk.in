@@ -4,7 +4,6 @@ machine_subproject_deps = \
 machine_hdrs = \
   atomic.h \
   bits.h \
-  configstring.h \
   emulation.h \
   encoding.h \
   fp_emulation.h \
@@ -23,7 +22,6 @@ machine_c_srcs = \
   fp_emulation.c \
   fp_ldst.c \
   misaligned_ldst.c \
-  configstring.c \
 
 machine_asm_srcs = \
   mentry.S \

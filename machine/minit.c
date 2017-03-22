@@ -2,6 +2,7 @@
 #include "atomic.h"
 #include "vm.h"
 #include "fp_emulation.h"
+#include "fdt.h"
 #include <string.h>
 #include <limits.h>
 
@@ -71,11 +72,10 @@ hls_t* hls_init(uintptr_t id)
   return hls;
 }
 
+#define DTB 0x1014
+
 static void memory_init()
 {
-  // TODO FDT: mem_size
-  mem_size = 16 << 20;
-
   mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
@@ -107,9 +107,6 @@ static void prci_test()
 
 static void hart_plic_init()
 {
-  // TODO FDT: mtime, ipi, timecmp
-  return;
-
   // clear pending interrupts
   *HLS()->ipi = 0;
   *HLS()->timecmp = -1ULL;
@@ -129,7 +126,11 @@ void init_first_hart()
 {
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
-  //parse_config_string();
+
+  query_mem(DTB);
+  query_harts(DTB);
+  query_clint(DTB);
+
   plic_init();
   hart_plic_init();
   //prci_test();

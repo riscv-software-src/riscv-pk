@@ -217,8 +217,9 @@ do_reset:
   li x7, 0
   li x8, 0
   li x9, 0
-  li x10, 0
-  li x11, 0
+// save a0 and a1; arguments from previous boot loader stage:
+//  li x10, 0
+//  li x11, 0
   li x12, 0
   li x13, 0
   li x14, 0
@@ -249,28 +250,28 @@ do_reset:
 
   la sp, stacks + RISCV_PGSIZE - MENTRY_FRAME_SIZE
 
-  csrr a0, mhartid
-  slli a1, a0, RISCV_PGSHIFT
-  add sp, sp, a1
+  csrr a3, mhartid
+  slli a2, a3, RISCV_PGSHIFT
+  add sp, sp, a2
 
-  beqz a0, init_first_hart
+  beqz a3, init_first_hart
 
   # set MSIE bit to receive IPI
-  li a1, MIP_MSIP
-  csrw mie, a1
+  li a2, MIP_MSIP
+  csrw mie, a2
 
 .LmultiHart:
 #if MAX_HARTS > 1
   # wait for an IPI to signal that it's safe to boot
   wfi
-  csrr a1, mip
-  andi a1, a1, MIP_MSIP
-  beqz a1, .LmultiHart
+  csrr a2, mip
+  andi a2, a2, MIP_MSIP
+  beqz a2, .LmultiHart
 
   # make sure our hart id is within a valid range
   fence
-  li a1, MAX_HARTS
-  bltu a0, a1, init_other_hart
+  li a2, MAX_HARTS
+  bltu a3, a2, init_other_hart
 #endif
   wfi
   j .LmultiHart

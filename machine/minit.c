@@ -72,8 +72,6 @@ hls_t* hls_init(uintptr_t id)
   return hls;
 }
 
-#define DTB 0x1014
-
 static void memory_init()
 {
   mem_size = mem_size / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
@@ -122,27 +120,27 @@ static void hart_plic_init()
   *HLS()->plic_s_thresh = 0;
 }
 
-void init_first_hart()
+void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
 
-  query_mem(DTB);
-  query_harts(DTB);
-  query_clint(DTB);
+  query_mem(dtb);
+  query_harts(dtb);
+  query_clint(dtb);
 
   plic_init();
   hart_plic_init();
   //prci_test();
   memory_init();
-  boot_loader();
+  boot_loader(dtb);
 }
 
-void init_other_hart()
+void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
   hart_plic_init();
-  boot_other_hart();
+  boot_other_hart(dtb);
 }
 
 void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)

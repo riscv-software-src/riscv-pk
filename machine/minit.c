@@ -145,6 +145,17 @@ void init_other_hart(uintptr_t hartid, uintptr_t dtb)
 
 void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
 {
+  // Set up a PMP to permit access to all of memory.
+  // Ignore the illegal-instruction trap if PMPs aren't supported.
+  uintptr_t pmpc = PMP_EN | PMP_NAPOT | PMP_M | PMP_R | PMP_W | PMP_X;
+  asm volatile ("la t0, 1f\n\t"
+                "csrrw t0, mtvec, t0\n\t"
+                "csrw pmpaddr0, %1\n\t"
+                "csrw pmpcfg0, %0\n\t"
+                ".align 2\n\t"
+                "1: csrw mtvec, t0"
+                : : "r" (pmpc), "r" (-1UL) : "t0");
+
   uintptr_t mstatus = read_csr(mstatus);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);

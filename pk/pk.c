@@ -163,7 +163,7 @@ void boot_loader(uintptr_t dtb)
   set_csr(sstatus, SSTATUS_SUM);
 
   file_init();
-  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), dtb);
+  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);
 }
 
 void boot_other_hart(uintptr_t dtb)

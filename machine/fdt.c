@@ -68,6 +68,16 @@ void fdt_scan(uintptr_t fdt, fdt_cb cb, void *extra)
   fdt_scan_helper(lex, strings, "/", 0, cb, extra);
 }
 
+uint32_t fdt_size(uintptr_t fdt)
+{
+  struct fdt_header *header = (struct fdt_header *)fdt;
+
+  // Only process FDT that we understand
+  if (bswap(header->magic) != FDT_MAGIC ||
+      bswap(header->last_comp_version) > FDT_VERSION) return 0;
+  return bswap(header->totalsize);
+}
+
 const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *value, uintptr_t *result)
 {
   *result = 0;

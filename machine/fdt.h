@@ -41,6 +41,7 @@ struct fdt_scan_prop {
 // Scan the contents of FDT
 typedef void (*fdt_cb)(const struct fdt_scan_prop *prop, void *extra);
 void fdt_scan(uintptr_t fdt, fdt_cb cb, void *extra);
+uint32_t fdt_size(uintptr_t fdt);
 
 // Extract fields
 const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *base, uintptr_t *value);

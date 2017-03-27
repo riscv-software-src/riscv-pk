@@ -11,6 +11,7 @@ machine_hdrs = \
   htif.h \
   mcall.h \
   mtrap.h \
+  uart.h \
   unprivileged_memory.h \
   vm.h \
 
@@ -23,6 +24,7 @@ machine_c_srcs = \
   muldiv_emulation.c \
   fp_emulation.c \
   fp_ldst.c \
+  uart.c \
   misaligned_ldst.c \
 
 machine_asm_srcs = \

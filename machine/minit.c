@@ -3,6 +3,7 @@
 #include "vm.h"
 #include "fp_emulation.h"
 #include "fdt.h"
+#include "uart.h"
 #include <string.h>
 #include <limits.h>
 
@@ -124,6 +125,10 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
+
+  // Confirm console as early as possible
+  query_uart(dtb);
+  printm("SBI console now online\n");
 
   query_mem(dtb);
   query_harts(dtb);

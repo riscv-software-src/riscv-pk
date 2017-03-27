@@ -4,6 +4,7 @@
 #include "atomic.h"
 #include "bits.h"
 #include "vm.h"
+#include "uart.h"
 #include "unprivileged_memory.h"
 #include <errno.h>
 #include <stdarg.h>
@@ -16,7 +17,11 @@ void __attribute__((noreturn)) bad_trap(uintptr_t* regs, uintptr_t dummy, uintpt
 
 static uintptr_t mcall_console_putchar(uint8_t ch)
 {
-  htif_console_putchar(ch);
+  if (uart) {
+    uart_putchar(ch);
+  } else {
+    htif_console_putchar(ch);
+  }
   return 0;
 }
 
@@ -52,7 +57,11 @@ static void send_ipi(uintptr_t recipient, int event)
 
 static uintptr_t mcall_console_getchar()
 {
-  return htif_console_getchar();
+  if (uart) {
+    return uart_getchar();
+  } else {
+    return htif_console_getchar();
+  }
 }
 
 static uintptr_t mcall_clear_ipi()

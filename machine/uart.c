@@ -1,3 +1,4 @@
+#include <string.h>
 #include "uart.h"
 #include "fdt.h"
 
@@ -27,12 +28,49 @@ int uart_getchar()
   return ch;
 }
 
-void query_uart(uintptr_t dtb)
+struct uart_scan
 {
-  uart = 0; // (void*)fdt_get_reg(dtb, "sifive,uart0");
-  if (!uart) return;
+  int compat;
+  uintptr_t reg;
+};
+
+static void uart_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct uart_scan *scan = (struct uart_scan *)extra;
+  memset(scan, 0, sizeof(*scan));
+}
+
+static void uart_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct uart_scan *scan = (struct uart_scan *)extra;
+  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "sifive,uart0")) {
+    scan->compat = 1;
+  } else if (!strcmp(prop->name, "reg")) {
+    fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+  }
+}
+
+static void uart_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct uart_scan *scan = (struct uart_scan *)extra;
+  if (!scan->compat || !scan->reg || uart) return;
 
   // Enable Rx/Tx channels
+  uart = (void*)scan->reg;
   uart[UART_REG_TXCTRL] = UART_TXEN;
   uart[UART_REG_RXCTRL] = UART_RXEN;
+}
+
+void query_uart(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct uart_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = uart_open;
+  cb.prop = uart_prop;
+  cb.done = uart_done;
+  cb.extra = &scan;
+
+  fdt_scan(fdt, &cb);
 }

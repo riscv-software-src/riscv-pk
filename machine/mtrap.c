@@ -167,6 +167,11 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus)
   return __redirect_trap();
 }
 
+void pmp_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+{
+  redirect_trap(mepc, read_csr(mstatus));
+}
+
 static void machine_page_fault(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 {
   // MPRV=1 iff this trap occurred while emulating an instruction on behalf
@@ -184,8 +189,11 @@ void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
 
   switch (mcause)
   {
-    case CAUSE_FAULT_LOAD:
-    case CAUSE_FAULT_STORE:
+    case CAUSE_LOAD_PAGE_FAULT:
+    case CAUSE_STORE_PAGE_FAULT:
+    case CAUSE_FETCH_ACCESS:
+    case CAUSE_LOAD_ACCESS:
+    case CAUSE_STORE_ACCESS:
       return machine_page_fault(regs, dummy, mepc);
     default:
       bad_trap(regs, dummy, mepc);

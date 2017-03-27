@@ -25,7 +25,6 @@ struct fdt_header {
 
 struct fdt_scan_node {
   const struct fdt_scan_node *parent;
-  const uint32_t *base; // token that began the node
   const char *name;
   int address_cells;
   int size_cells;
@@ -38,9 +37,16 @@ struct fdt_scan_prop {
   int len; // in bytes of value
 };
 
+struct fdt_cb {
+  void (*open)(const struct fdt_scan_node *node, void *extra);
+  void (*prop)(const struct fdt_scan_prop *prop, void *extra);
+  void (*done)(const struct fdt_scan_node *node, void *extra); // last property was seen
+  void (*close)(const struct fdt_scan_node *node, void *extra);
+  void *extra;
+};
+
 // Scan the contents of FDT
-typedef void (*fdt_cb)(const struct fdt_scan_prop *prop, void *extra);
-void fdt_scan(uintptr_t fdt, fdt_cb cb, void *extra);
+void fdt_scan(uintptr_t fdt, const struct fdt_cb *cb);
 uint32_t fdt_size(uintptr_t fdt);
 
 // Extract fields

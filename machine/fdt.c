@@ -309,3 +309,104 @@ void query_clint(uintptr_t fdt)
   fdt_scan(fdt, &cb);
   assert (scan.done);
 }
+
+///////////////////////////////////////////// PLIC SCAN /////////////////////////////////////////
+
+struct plic_scan
+{
+  int compat;
+  uintptr_t reg;
+  const uint32_t *int_value;
+  int int_len;
+  int done;
+  int ndev;
+};
+
+static void plic_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct plic_scan *scan = (struct plic_scan *)extra;
+  scan->compat = 0;
+  scan->reg = 0;
+  scan->int_value = 0;
+}
+
+static void plic_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct plic_scan *scan = (struct plic_scan *)extra;
+  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "riscv,plic0")) {
+    scan->compat = 1;
+  } else if (!strcmp(prop->name, "reg")) {
+    fdt_get_address(prop->node->parent, prop->value, &scan->reg);
+  } else if (!strcmp(prop->name, "interrupts-extended")) {
+    scan->int_value = prop->value;
+    scan->int_len = prop->len;
+  } else if (!strcmp(prop->name, "riscv,ndev")) {
+    scan->ndev = bswap(prop->value[0]);
+  }
+}
+
+#define HART_BASE	0x200000
+#define HART_SIZE	0x1000
+#define ENABLE_BASE	0x2000
+#define ENABLE_SIZE	0x80
+
+static void plic_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct plic_scan *scan = (struct plic_scan *)extra;
+  const uint32_t *value = scan->int_value;
+  const uint32_t *end = value + scan->int_len/4;
+
+  if (!scan->compat) return;
+  assert (scan->reg != 0);
+  assert (scan->int_value && scan->int_len % 8 == 0);
+  assert (scan->ndev >= 0 && scan->ndev < 1024);
+  assert (!scan->done); // only one plic
+
+  scan->done = 1;
+  plic_priorities = (uint32_t*)scan->reg;
+  plic_ndevs = scan->ndev;
+
+  for (int index = 0; end - value > 0; ++index) {
+    uint32_t phandle = bswap(value[0]);
+    uint32_t cpu_int = bswap(value[1]);
+    int hart;
+    for (hart = 0; hart < MAX_HARTS; ++hart)
+      if (hart_phandles[hart] == phandle)
+        break;
+    if (hart < MAX_HARTS) {
+      hls_t *hls = OTHER_HLS(hart);
+      if (cpu_int == IRQ_M_EXT) {
+        hls->plic_m_ie     = (uintptr_t*)(scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_m_thresh = (uint32_t*) (scan->reg + HART_BASE   + HART_SIZE   * index);
+      } else if (cpu_int == IRQ_S_EXT) {
+        hls->plic_s_ie     = (uintptr_t*)(scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_s_thresh = (uint32_t*) (scan->reg + HART_BASE   + HART_SIZE   * index);
+      } else {
+        printm("PLIC wired hart %d to wrong interrupt %d", hart, cpu_int);
+      }
+    }
+    value += 2;
+  }
+#if 0
+  printm("PLIC: prio %x devs %d\n", (uint32_t)(uintptr_t)plic_priorities, plic_ndevs);
+  for (int i = 0; i < MAX_HARTS; ++i) {
+    hls_t *hls = OTHER_HLS(i);
+    printm("CPU %d: %x %x %x %x\n", i, (uint32_t)(uintptr_t)hls->plic_m_ie, (uint32_t)(uintptr_t)hls->plic_m_thresh, (uint32_t)(uintptr_t)hls->plic_s_ie, (uint32_t)(uintptr_t)hls->plic_s_thresh);
+  }
+#endif
+}
+
+void query_plic(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct plic_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = plic_open;
+  cb.prop = plic_prop;
+  cb.done = plic_done;
+  cb.extra = &scan;
+
+  scan.done = 0;
+  fdt_scan(fdt, &cb);
+}

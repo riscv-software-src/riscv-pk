@@ -56,6 +56,7 @@ const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *b
 // Setup memory+clint+plic
 void query_mem(uintptr_t fdt);
 void query_harts(uintptr_t fdt);
+void query_plic(uintptr_t fdt);
 void query_clint(uintptr_t fdt);
 
 #endif

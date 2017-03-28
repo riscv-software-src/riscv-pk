@@ -132,6 +132,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
   query_mem(dtb);
   query_harts(dtb);
+  query_plic(dtb);
   query_clint(dtb);
 
   plic_init();

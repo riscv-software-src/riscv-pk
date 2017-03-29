@@ -93,7 +93,7 @@ COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
 
 LD            := $(CC)
 LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib -static $(LDFLAGS)
-LIBS          := @LIBS@
+LIBS          := @LIBS@ $(LIBS)
 LINK          := $(LD) $(LDFLAGS)
 
 # Library creation

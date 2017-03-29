@@ -128,11 +128,15 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
        "  .word truly_illegal_insn\n"
        "  .popsection");
 
-  uintptr_t mstatus;
-  insn_t insn = get_insn(mepc, &mstatus);
+  uintptr_t mstatus = read_csr(mstatus);
+  insn_t insn = read_csr(mbadaddr);
 
-  if ((insn & 3) != 3)
-    return emulate_rvc(regs, mcause, mepc, mstatus, insn);
+  if (unlikely((insn & 3) != 3)) {
+    if (insn == 0)
+      insn = get_insn(mepc, &mstatus);
+    if ((insn & 3) != 3)
+      return emulate_rvc(regs, mcause, mepc, mstatus, insn);
+  }
 
   write_csr(mepc, mepc + 4);
 

@@ -153,7 +153,7 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
 {
   // Set up a PMP to permit access to all of memory.
   // Ignore the illegal-instruction trap if PMPs aren't supported.
-  uintptr_t pmpc = PMP_EN | PMP_NAPOT | PMP_M | PMP_R | PMP_W | PMP_X;
+  uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
   asm volatile ("la t0, 1f\n\t"
                 "csrrw t0, mtvec, t0\n\t"
                 "csrw pmpaddr0, %1\n\t"

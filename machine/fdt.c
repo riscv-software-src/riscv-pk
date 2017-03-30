@@ -168,28 +168,34 @@ void query_mem(uintptr_t fdt)
 static uint32_t hart_phandles[MAX_HARTS];
 
 struct hart_scan {
-  int cpu;
-  int controller;
-  int cells;
+  const struct fdt_scan_node *cpu;
   int hart;
+  const struct fdt_scan_node *controller;
+  int cells;
   uint32_t phandle;
 };
 
 static void hart_open(const struct fdt_scan_node *node, void *extra)
 {
   struct hart_scan *scan = (struct hart_scan *)extra;
-  memset(scan, 0, sizeof(*scan));
-  scan->cells = -1;
-  scan->hart = -1;
+  if (!scan->cpu) {
+    scan->hart = -1;
+  }
+  if (!scan->controller) {
+    scan->cells = 0;
+    scan->phandle = 0;
+  }
 }
 
 static void hart_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct hart_scan *scan = (struct hart_scan *)extra;
   if (!strcmp(prop->name, "device_type") && !strcmp((const char*)prop->value, "cpu")) {
-    scan->cpu = 1;
+    assert (!scan->cpu);
+    scan->cpu = prop->node;
   } else if (!strcmp(prop->name, "interrupt-controller")) {
-    scan->controller = 1;
+    assert (!scan->controller);
+    scan->controller = prop->node;
   } else if (!strcmp(prop->name, "#interrupt-cells")) {
     scan->cells = bswap(prop->value[0]);
   } else if (!strcmp(prop->name, "phandle")) {
@@ -205,15 +211,26 @@ static void hart_done(const struct fdt_scan_node *node, void *extra)
 {
   struct hart_scan *scan = (struct hart_scan *)extra;
 
-  if (!scan->cpu) return;
-  assert (scan->controller == 1);
-  assert (scan->cells == 1);
-  assert (scan->hart >= 0);
-
-  if (scan->hart < MAX_HARTS) {
-    hart_phandles[scan->hart] = scan->phandle;
-    if (scan->hart >= num_harts) num_harts = scan->hart + 1;
+  if (scan->cpu == node) {
+    assert (scan->hart >= 0);
   }
+
+  if (scan->controller == node && scan->cpu) {
+    assert (scan->phandle > 0);
+    assert (scan->cells == 1);
+
+    if (scan->hart < MAX_HARTS) {
+      hart_phandles[scan->hart] = scan->phandle;
+      if (scan->hart >= num_harts) num_harts = scan->hart + 1;
+    }
+  }
+}
+
+static void hart_close(const struct fdt_scan_node *node, void *extra)
+{
+  struct hart_scan *scan = (struct hart_scan *)extra;
+  if (scan->cpu == node) scan->cpu = 0;
+  if (scan->controller == node) scan->controller = 0;
 }
 
 void query_harts(uintptr_t fdt)
@@ -222,9 +239,11 @@ void query_harts(uintptr_t fdt)
   struct hart_scan scan;
 
   memset(&cb, 0, sizeof(cb));
+  memset(&scan, 0, sizeof(scan));
   cb.open = hart_open;
   cb.prop = hart_prop;
   cb.done = hart_done;
+  cb.close= hart_close;
   cb.extra = &scan;
 
   num_harts = 0;

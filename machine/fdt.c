@@ -166,6 +166,7 @@ void query_mem(uintptr_t fdt)
 ///////////////////////////////////////////// HART SCAN //////////////////////////////////////////
 
 static uint32_t hart_phandles[MAX_HARTS];
+uint64_t hart_mask;
 
 struct hart_scan {
   const struct fdt_scan_node *cpu;
@@ -221,7 +222,9 @@ static void hart_done(const struct fdt_scan_node *node, void *extra)
 
     if (scan->hart < MAX_HARTS) {
       hart_phandles[scan->hart] = scan->phandle;
+      hart_mask |= 1 << scan->hart;
       if (scan->hart >= num_harts) num_harts = scan->hart + 1;
+      hls_init(scan->hart);
     }
   }
 }
@@ -304,10 +307,9 @@ static void clint_done(const struct fdt_scan_node *node, void *extra)
       if (hart_phandles[hart] == phandle)
         break;
     if (hart < MAX_HARTS) {
-      hls_t *hls = hls_init(hart);
+      hls_t *hls = OTHER_HLS(hart);
       hls->ipi = (void*)(scan->reg + index * 4);
       hls->timecmp = (void*)(scan->reg + 0x4000 + (index * 8));
-      *hls->ipi = 1; // wakeup the hart
     }
     value += 4;
   }
@@ -407,10 +409,10 @@ static void plic_done(const struct fdt_scan_node *node, void *extra)
     value += 2;
   }
 #if 0
-  printm("PLIC: prio %x devs %d\n", (uint32_t)(uintptr_t)plic_priorities, plic_ndevs);
+  printm("PLIC: prio %x devs %d\r\n", (uint32_t)(uintptr_t)plic_priorities, plic_ndevs);
   for (int i = 0; i < MAX_HARTS; ++i) {
     hls_t *hls = OTHER_HLS(i);
-    printm("CPU %d: %x %x %x %x\n", i, (uint32_t)(uintptr_t)hls->plic_m_ie, (uint32_t)(uintptr_t)hls->plic_m_thresh, (uint32_t)(uintptr_t)hls->plic_s_ie, (uint32_t)(uintptr_t)hls->plic_s_thresh);
+    printm("CPU %d: %x %x %x %x\r\n", i, (uint32_t)(uintptr_t)hls->plic_m_ie, (uint32_t)(uintptr_t)hls->plic_m_thresh, (uint32_t)(uintptr_t)hls->plic_s_ie, (uint32_t)(uintptr_t)hls->plic_s_thresh);
   }
 #endif
 }

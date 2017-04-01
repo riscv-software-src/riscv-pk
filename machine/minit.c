@@ -121,6 +121,13 @@ static void hart_plic_init()
   *HLS()->plic_s_thresh = 0;
 }
 
+static void wake_harts()
+{
+  for (int hart = 0; hart < MAX_HARTS; ++hart)
+    if (((hart_mask >> hart) & 1))
+      *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
+}
+
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
   hart_init();
@@ -128,12 +135,14 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
   // Confirm console as early as possible
   query_uart(dtb);
-  printm("SBI console now online\n");
+  printm("SBI console now online\r\n");
 
   query_mem(dtb);
   query_harts(dtb);
-  query_plic(dtb);
   query_clint(dtb);
+  query_plic(dtb);
+
+  wake_harts();
 
   plic_init();
   hart_plic_init();

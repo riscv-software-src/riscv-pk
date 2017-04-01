@@ -59,4 +59,7 @@ void query_harts(uintptr_t fdt);
 void query_plic(uintptr_t fdt);
 void query_clint(uintptr_t fdt);
 
+// The hartids of available harts
+extern uint64_t hart_mask;
+
 #endif

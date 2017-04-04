@@ -135,7 +135,6 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
   // Confirm console as early as possible
   query_uart(dtb);
-  printm("SBI console now online\r\n");
 
   query_mem(dtb);
   query_harts(dtb);

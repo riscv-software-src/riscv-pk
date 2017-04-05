@@ -33,7 +33,7 @@ struct fdt_scan_node {
 struct fdt_scan_prop {
   const struct fdt_scan_node *node;
   const char *name;
-  const uint32_t *value;
+  uint32_t *value;
   int len; // in bytes of value
 };
 
@@ -41,7 +41,7 @@ struct fdt_cb {
   void (*open)(const struct fdt_scan_node *node, void *extra);
   void (*prop)(const struct fdt_scan_prop *prop, void *extra);
   void (*done)(const struct fdt_scan_node *node, void *extra); // last property was seen
-  void (*close)(const struct fdt_scan_node *node, void *extra);
+  int  (*close)(const struct fdt_scan_node *node, void *extra); // -1 => delete the node + children
   void *extra;
 };
 

@@ -10,8 +10,8 @@ static inline uint32_t bswap(uint32_t x)
   return z;
 }
 
-static const uint32_t *fdt_scan_helper(
-  const uint32_t *lex,
+static uint32_t *fdt_scan_helper(
+  uint32_t *lex,
   const char *strings,
   struct fdt_scan_node *node,
   const struct fdt_cb *cb)
@@ -43,14 +43,17 @@ static const uint32_t *fdt_scan_helper(
         break;
       }
       case FDT_BEGIN_NODE: {
+        uint32_t *lex_next;
         if (!last && node && cb->done) cb->done(node, cb->extra);
         last = 1;
         child.name = (const char *)(lex+1);
         if (cb->open) cb->open(&child, cb->extra);
-        lex = fdt_scan_helper(
+        lex_next = fdt_scan_helper(
           lex + 2 + strlen(child.name)/4,
           strings, &child, cb);
-        if (cb->close) cb->close(&child, cb->extra);
+        if (cb->close && cb->close(&child, cb->extra) == -1)
+          while (lex != lex_next) *lex++ = bswap(FDT_NOP);
+        lex = lex_next;
         break;
       }
       case FDT_END_NODE: {
@@ -74,7 +77,7 @@ void fdt_scan(uintptr_t fdt, const struct fdt_cb *cb)
       bswap(header->last_comp_version) > FDT_VERSION) return;
 
   const char *strings = (const char *)(fdt + bswap(header->off_dt_strings));
-  const uint32_t *lex = (const uint32_t *)(fdt + bswap(header->off_dt_struct));
+  uint32_t *lex = (uint32_t *)(fdt + bswap(header->off_dt_struct));
 
   fdt_scan_helper(lex, strings, 0, cb);
 }
@@ -229,11 +232,12 @@ static void hart_done(const struct fdt_scan_node *node, void *extra)
   }
 }
 
-static void hart_close(const struct fdt_scan_node *node, void *extra)
+static int hart_close(const struct fdt_scan_node *node, void *extra)
 {
   struct hart_scan *scan = (struct hart_scan *)extra;
   if (scan->cpu == node) scan->cpu = 0;
   if (scan->controller == node) scan->controller = 0;
+  return 0;
 }
 
 void query_harts(uintptr_t fdt)
@@ -337,7 +341,7 @@ struct plic_scan
 {
   int compat;
   uintptr_t reg;
-  const uint32_t *int_value;
+  uint32_t *int_value;
   int int_len;
   int done;
   int ndev;

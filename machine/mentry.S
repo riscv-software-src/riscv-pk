@@ -257,7 +257,11 @@ do_reset:
   slli a2, a3, RISCV_PGSHIFT
   add sp, sp, a2
 
-  beqz a3, init_first_hart
+  # Boot on the first unmasked hart
+  li a4, (~HART_MASK & (HART_MASK+1))
+  srl a4, a4, a3
+  andi a4, a4, 1
+  bnez a4, init_first_hart
 
   # set MSIE bit to receive IPI
   li a2, MIP_MSIP
@@ -267,6 +271,14 @@ do_reset:
 #if MAX_HARTS > 1
   # wait for an IPI to signal that it's safe to boot
   wfi
+
+  # masked harts never start
+  li a4, HART_MASK
+  srl a4, a4, a3
+  andi a4, a4, 1
+  bnez a4, .LmultiHart
+
+  # only start if mip is set
   csrr a2, mip
   andi a2, a2, MIP_MSIP
   beqz a2, .LmultiHart

@@ -124,7 +124,7 @@ static void hart_plic_init()
 static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
-    if (((hart_mask >> hart) & 1))
+    if ((((~HART_MASK & hart_mask) >> hart) & 1))
       *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
 }
 

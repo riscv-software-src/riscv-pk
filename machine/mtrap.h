@@ -9,6 +9,9 @@
 # define MAX_HARTS 1
 #endif
 
+// These harts will be prevented from booting beyond bbl
+#define HART_MASK	0x0UL
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>

@@ -569,8 +569,11 @@ static void hart_filter_done(const struct fdt_scan_node *node, void *extra)
   assert (filter->status);
   assert (filter->hart >= 0);
 
-  if (((filter->mask >> filter->hart) & 1))
+  if (((filter->mask >> filter->hart) & 1) && !strcmp(filter->status, "okay")) {
     strcpy(filter->status, "masked");
+    uint32_t *len = (uint32_t*)filter->status;
+    len[-2] = bswap(strlen("masked")+1);
+  }
 }
 
 void filter_harts(uintptr_t fdt, unsigned long hart_mask)

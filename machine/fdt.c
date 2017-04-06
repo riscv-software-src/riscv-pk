@@ -239,7 +239,6 @@ static void hart_done(const struct fdt_scan_node *node, void *extra)
     if (scan->hart < MAX_HARTS) {
       hart_phandles[scan->hart] = scan->phandle;
       hart_mask |= 1 << scan->hart;
-      if (scan->hart >= num_harts) num_harts = scan->hart + 1;
       hls_init(scan->hart);
     }
   }
@@ -266,9 +265,10 @@ void query_harts(uintptr_t fdt)
   cb.close= hart_close;
   cb.extra = &scan;
 
-  num_harts = 0;
   fdt_scan(fdt, &cb);
-  assert (num_harts > 0);
+
+  // The current hart should have been detected
+  assert ((hart_mask >> read_csr(mhartid)) != 0);
 }
 
 ///////////////////////////////////////////// CLINT SCAN /////////////////////////////////////////

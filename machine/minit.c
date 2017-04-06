@@ -9,7 +9,6 @@
 
 pte_t* root_page_table;
 uintptr_t mem_size;
-uintptr_t num_harts;
 volatile uint64_t* mtime;
 volatile uint32_t* plic_priorities;
 size_t plic_ndevs;

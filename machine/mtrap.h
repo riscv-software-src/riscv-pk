@@ -10,7 +10,7 @@
 #endif
 
 // These harts will be prevented from booting beyond bbl
-#define HART_MASK	0x0UL
+#define DISABLED_HART_MASK	0x0UL
 
 #ifndef __ASSEMBLER__
 

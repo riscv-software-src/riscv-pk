@@ -50,7 +50,7 @@ void printm(const char* s, ...)
 
 static void send_ipi(uintptr_t recipient, int event)
 {
-  if (((HART_MASK >> recipient) & 1)) return;
+  if (((DISABLED_HART_MASK >> recipient) & 1)) return;
   atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
   mb();
   *OTHER_HLS(recipient)->ipi = 1;

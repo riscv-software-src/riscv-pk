@@ -23,7 +23,7 @@ static void filter_dtb(uintptr_t source)
   memcpy((void*)dest, (void*)source, size);
 
   // Remove information from the chained FDT
-  filter_harts(dest, HART_MASK);
+  filter_harts(dest, DISABLED_HART_MASK);
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");

@@ -258,7 +258,7 @@ do_reset:
   add sp, sp, a2
 
   # Boot on the first unmasked hart
-  li a4, (~HART_MASK & (HART_MASK+1))
+  li a4, (~DISABLED_HART_MASK & (DISABLED_HART_MASK+1))
   srl a4, a4, a3
   andi a4, a4, 1
   bnez a4, init_first_hart
@@ -273,7 +273,7 @@ do_reset:
   wfi
 
   # masked harts never start
-  li a4, HART_MASK
+  li a4, DISABLED_HART_MASK
   srl a4, a4, a3
   andi a4, a4, 1
   bnez a4, .LmultiHart

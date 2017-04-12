@@ -2,6 +2,7 @@
 #define _RISCV_MISALIGNED_H
 
 #include "encoding.h"
+#include "bits.h"
 #include <stdint.h>
 
 #define DECLARE_UNPRIVILEGED_LOAD_FUNCTION(type, insn)              \
@@ -39,13 +40,12 @@ DECLARE_UNPRIVILEGED_LOAD_FUNCTION(int32_t, lw)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint8_t, sb)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint16_t, sh)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint32_t, sw)
+DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint32_t, LWU)
 #if __riscv_xlen == 64
-DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint32_t, lwu)
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint64_t, ld)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint64_t, sd)
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uintptr_t, ld)
 #else
-DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint32_t, lw)
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uintptr_t, lw)
 
 static inline uint64_t load_uint64_t(const uint64_t* addr, uintptr_t mepc)
@@ -68,7 +68,7 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
   uintptr_t val;
 #ifndef __riscv_compressed
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
-       "lw %[insn], (%[addr])\n"
+       STR(LWU) " %[insn], (%[addr])\n"
        "csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val)
        : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc));
@@ -78,7 +78,7 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
        "lhu %[insn], (%[addr])\n"
        "and %[tmp], %[insn], %[rvc_mask]\n"
        "bne %[tmp], %[rvc_mask], 1f\n"
-       "lh %[tmp], 2(%[addr])\n"
+       "lhu %[tmp], 2(%[addr])\n"
        "sll %[tmp], %[tmp], 16\n"
        "add %[insn], %[insn], %[tmp]\n"
        "1: csrw mstatus, %[mstatus]"

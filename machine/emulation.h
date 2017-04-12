@@ -11,7 +11,7 @@ typedef void (*emulation_func)(uintptr_t*, uintptr_t, uintptr_t, uintptr_t, insn
 
 void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc);
 void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc);
-void redirect_trap(uintptr_t epc, uintptr_t mstatus);
+void redirect_trap(uintptr_t epc, uintptr_t mstatus, uintptr_t badaddr);
 DECLARE_EMULATION_FUNC(truly_illegal_insn);
 DECLARE_EMULATION_FUNC(emulate_rvc_0);
 DECLARE_EMULATION_FUNC(emulate_rvc_2);

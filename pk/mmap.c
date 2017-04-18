@@ -401,7 +401,7 @@ uintptr_t pk_vm_init()
   current.mmap_max = current.brk_max =
     MIN(DRAM_BASE, mem_size - (first_free_paddr - DRAM_BASE));
 
-  size_t stack_size = RISCV_PGSIZE * 64;
+  size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);
   current.stack_top = stack_bottom + stack_size;

@@ -31,7 +31,7 @@ int uart_getchar()
 struct uart_scan
 {
   int compat;
-  uintptr_t reg;
+  uint64_t reg;
 };
 
 static void uart_open(const struct fdt_scan_node *node, void *extra)
@@ -56,7 +56,7 @@ static void uart_done(const struct fdt_scan_node *node, void *extra)
   if (!scan->compat || !scan->reg || uart) return;
 
   // Enable Rx/Tx channels
-  uart = (void*)scan->reg;
+  uart = (void*)(uintptr_t)scan->reg;
   uart[UART_REG_TXCTRL] = UART_TXEN;
   uart[UART_REG_RXCTRL] = UART_RXEN;
 }

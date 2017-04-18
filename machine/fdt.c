@@ -21,6 +21,7 @@ static uint32_t *fdt_scan_helper(
   int last = 0;
 
   child.parent = node;
+  // these are the default cell counts, as per the FDT spec
   child.address_cells = 2;
   child.size_cells = 1;
   prop.node = node;
@@ -92,17 +93,19 @@ uint32_t fdt_size(uintptr_t fdt)
   return bswap(header->totalsize);
 }
 
-const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *value, uintptr_t *result)
+const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *value, uint64_t *result)
 {
   *result = 0;
-  for (int cells = node->address_cells; cells > 0; --cells) *result += bswap(*value++);
+  for (int cells = node->address_cells; cells > 0; --cells)
+    *result = (*result << 32) + bswap(*value++);
   return value;
 }
 
-const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *value, uintptr_t *result)
+const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *value, uint64_t *result)
 {
   *result = 0;
-  for (int cells = node->size_cells; cells > 0; --cells) *result += bswap(*value++);
+  for (int cells = node->size_cells; cells > 0; --cells)
+    *result = (*result << 32) + bswap(*value++);
   return value;
 }
 
@@ -155,7 +158,7 @@ static void mem_done(const struct fdt_scan_node *node, void *extra)
   assert (scan->reg_value && scan->reg_len % 4 == 0);
 
   while (end - value > 0) {
-    uintptr_t base, size;
+    uint64_t base, size;
     value = fdt_get_address(node->parent, value, &base);
     value = fdt_get_size   (node->parent, value, &size);
     if (base <= self && self <= base + size) { mem_size = size; }
@@ -218,7 +221,7 @@ static void hart_prop(const struct fdt_scan_prop *prop, void *extra)
   } else if (!strcmp(prop->name, "phandle")) {
     scan->phandle = bswap(prop->value[0]);
   } else if (!strcmp(prop->name, "reg")) {
-    uintptr_t reg;
+    uint64_t reg;
     fdt_get_address(prop->node->parent, prop->value, &reg);
     scan->hart = reg;
   }
@@ -276,7 +279,7 @@ void query_harts(uintptr_t fdt)
 struct clint_scan
 {
   int compat;
-  uintptr_t reg;
+  uint64_t reg;
   const uint32_t *int_value;
   int int_len;
   int done;
@@ -315,7 +318,7 @@ static void clint_done(const struct fdt_scan_node *node, void *extra)
   assert (!scan->done); // only one clint
 
   scan->done = 1;
-  mtime = (void*)(scan->reg + 0xbff8);
+  mtime = (void*)((uintptr_t)scan->reg + 0xbff8);
 
   for (int index = 0; end - value > 0; ++index) {
     uint32_t phandle = bswap(value[0]);
@@ -325,8 +328,8 @@ static void clint_done(const struct fdt_scan_node *node, void *extra)
         break;
     if (hart < MAX_HARTS) {
       hls_t *hls = OTHER_HLS(hart);
-      hls->ipi = (void*)(scan->reg + index * 4);
-      hls->timecmp = (void*)(scan->reg + 0x4000 + (index * 8));
+      hls->ipi = (void*)((uintptr_t)scan->reg + index * 4);
+      hls->timecmp = (void*)((uintptr_t)scan->reg + 0x4000 + (index * 8));
     }
     value += 4;
   }
@@ -353,7 +356,7 @@ void query_clint(uintptr_t fdt)
 struct plic_scan
 {
   int compat;
-  uintptr_t reg;
+  uint64_t reg;
   uint32_t *int_value;
   int int_len;
   int done;
@@ -401,7 +404,7 @@ static void plic_done(const struct fdt_scan_node *node, void *extra)
   assert (!scan->done); // only one plic
 
   scan->done = 1;
-  plic_priorities = (uint32_t*)scan->reg;
+  plic_priorities = (uint32_t*)(uintptr_t)scan->reg;
   plic_ndevs = scan->ndev;
 
   for (int index = 0; end - value > 0; ++index) {
@@ -414,11 +417,11 @@ static void plic_done(const struct fdt_scan_node *node, void *extra)
     if (hart < MAX_HARTS) {
       hls_t *hls = OTHER_HLS(hart);
       if (cpu_int == IRQ_M_EXT) {
-        hls->plic_m_ie     = (uintptr_t*)(scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
-        hls->plic_m_thresh = (uint32_t*) (scan->reg + HART_BASE   + HART_SIZE   * index);
+        hls->plic_m_ie     = (uintptr_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_m_thresh = (uint32_t*) ((uintptr_t)scan->reg + HART_BASE   + HART_SIZE   * index);
       } else if (cpu_int == IRQ_S_EXT) {
-        hls->plic_s_ie     = (uintptr_t*)(scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
-        hls->plic_s_thresh = (uint32_t*) (scan->reg + HART_BASE   + HART_SIZE   * index);
+        hls->plic_s_ie     = (uintptr_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_s_thresh = (uint32_t*) ((uintptr_t)scan->reg + HART_BASE   + HART_SIZE   * index);
       } else {
         printm("PLIC wired hart %d to wrong interrupt %d", hart, cpu_int);
       }
@@ -553,7 +556,7 @@ static void hart_filter_prop(const struct fdt_scan_prop *prop, void *extra)
   if (!strcmp(prop->name, "device_type") && !strcmp((const char*)prop->value, "cpu")) {
     filter->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
-    uintptr_t reg;
+    uint64_t reg;
     fdt_get_address(prop->node->parent, prop->value, &reg);
     filter->hart = reg;
   } else if (!strcmp(prop->name, "status")) {

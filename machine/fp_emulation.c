@@ -344,7 +344,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_if)
   if (GET_PRECISION(insn) == PRECISION_S) {
     result = GET_F32_RS1(insn, regs);
     switch (GET_RM(insn)) {
-      case GET_RM(MATCH_FMV_X_S): break;
+      case GET_RM(MATCH_FMV_X_W): break;
       case GET_RM(MATCH_FCLASS_S): result = f32_classify(result); break;
       default: return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
     }
@@ -367,7 +367,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_fi)
 {
   uintptr_t rs1 = GET_RS1(insn, regs);
 
-  if ((insn & MASK_FMV_S_X) == MATCH_FMV_S_X)
+  if ((insn & MASK_FMV_W_X) == MATCH_FMV_W_X)
     SET_F32_RD(insn, regs, rs1);
 #if __riscv_xlen == 64
   else if ((insn & MASK_FMV_D_X) == MATCH_FMV_D_X)

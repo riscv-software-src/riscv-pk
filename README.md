@@ -7,7 +7,7 @@ About
 The RISC-V Proxy Kernel, `pk`, is a lightweight application execution
 environment that can host statically-linked RISC-V ELF binaries.  It is
 designed to support tethered RISC-V implementations with limited I/O
-capability and and thus handles I/O-related system calls by proxying them to
+capability and thus handles I/O-related system calls by proxying them to
 a host computer.
 
 This package also contains the Berkeley Boot Loader, `bbl`, which is a

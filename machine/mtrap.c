@@ -98,6 +98,23 @@ static uintptr_t mcall_set_timer(uint64_t when)
   return 0;
 }
 
+static uintptr_t mcall_disk_read(uintptr_t addr, uintptr_t offset, size_t size)
+{
+  htif_disk_read(addr, offset, size);
+  return 0;
+}
+
+static uintptr_t mcall_disk_write(uintptr_t addr, uintptr_t offset, size_t size)
+{
+  htif_disk_write(addr, offset, size);
+  return 0;
+}
+
+static uintptr_t mcall_disk_size(void)
+{
+  return htif_disk_size();
+}
+
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
   _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
@@ -132,7 +149,8 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   write_csr(mepc, mepc + 4);
 
-  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], retval, ipi_type;
+  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12];
+  uintptr_t retval, ipi_type;
 
   switch (n)
   {
@@ -167,6 +185,15 @@ send_ipi:
 #else
       retval = mcall_set_timer(arg0);
 #endif
+      break;
+    case SBI_DISK_READ:
+      retval = mcall_disk_read(arg0, arg1, arg2);
+      break;
+    case SBI_DISK_WRITE:
+      retval = mcall_disk_write(arg0, arg1, arg2);
+      break;
+    case SBI_DISK_SIZE:
+      retval = mcall_disk_size();
       break;
     default:
       retval = -ENOSYS;

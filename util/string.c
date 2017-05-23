@@ -88,3 +88,21 @@ long atol(const char* str)
 
   return sign ? -res : res;
 }
+
+char *strstr(const char *haystack, const char *needle)
+{
+  while (*haystack) {
+    int i;
+    int found = 1;
+    for (i = 0; needle[i]; i++) {
+      if (haystack[i] != needle[i]) {
+       found = 0;
+       break;
+      }
+    }
+    if (found)
+      return (char *) haystack;
+    haystack++;
+  }
+  return NULL;
+}

@@ -2,6 +2,7 @@
 #define _RISCV_HTIF_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if __riscv_xlen == 64
 # define TOHOST_CMD(dev, cmd, payload) \
@@ -19,5 +20,8 @@ void htif_console_putchar(uint8_t);
 int htif_console_getchar();
 void htif_poweroff() __attribute__((noreturn));
 void htif_syscall(uintptr_t);
+void htif_disk_read(uintptr_t addr, uintptr_t offset, size_t size);
+void htif_disk_write(uintptr_t addr, uintptr_t offset, size_t size);
+unsigned long htif_disk_size(void);
 
 #endif

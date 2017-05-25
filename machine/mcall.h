@@ -10,5 +10,8 @@
 #define SBI_REMOTE_SFENCE_VMA 6
 #define SBI_REMOTE_SFENCE_VMA_ASID 7
 #define SBI_SHUTDOWN 8
+#define SBI_DISK_READ 9
+#define SBI_DISK_WRITE 10
+#define SBI_DISK_SIZE 11
 
 #endif

@@ -5,7 +5,7 @@ dummy_payload_hdrs = \
 dummy_payload_c_srcs = \
 
 dummy_payload_asm_srcs = \
-  dummy_sbi.S \
+  dummy_entry.S \
 
 dummy_payload_test_srcs =
 

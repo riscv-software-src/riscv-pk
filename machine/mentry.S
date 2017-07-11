@@ -6,34 +6,30 @@
   .data
   .align 6
 trap_table:
+#define BAD_TRAP_VECTOR 0
   .word bad_trap
-  .word bad_trap
+  .word pmp_trap
   .word illegal_insn_trap
   .word bad_trap
   .word misaligned_load_trap
-  .word bad_trap
+  .word pmp_trap
   .word misaligned_store_trap
-  .word bad_trap
+  .word pmp_trap
   .word bad_trap
   .word mcall_trap
   .word bad_trap
   .word bad_trap
-#define SOFTWARE_INTERRUPT_VECTOR 12
-  .word software_interrupt
-#define TIMER_INTERRUPT_VECTOR 13
-  .word timer_interrupt
-#define TRAP_FROM_MACHINE_MODE_VECTOR 14
+  .word bad_trap
+#define TRAP_FROM_MACHINE_MODE_VECTOR 13
   .word __trap_from_machine_mode
+  .word bad_trap
+  .word bad_trap
 
   .option norvc
   .section .text.init,"ax",@progbits
   .globl reset_vector
 reset_vector:
   j do_reset
-
-nmi_vector:
-.Lunhandleable_trap:
-  j bad_trap
 
 trap_vector:
   csrrw sp, mscratch, sp
@@ -51,8 +47,12 @@ trap_vector:
   # Is it a machine timer interrupt?
   li a0, IRQ_M_TIMER * 2
   bne a0, a1, 1f
-  li a1, TIMER_INTERRUPT_VECTOR
-  j .Lhandle_trap_in_machine_mode
+
+  # Yes.  Simply clear MSIE and raise SSIP.
+  li a0, MIP_MTIP
+  csrc mie, a0
+  li a0, MIP_STIP
+  csrs mip, a0
 
 .Lmret:
   # Go back whence we came.
@@ -64,9 +64,35 @@ trap_vector:
 1:
   # Is it an IPI?
   li a0, IRQ_M_SOFT * 2
-  bne a0, a1, .Lunhandleable_trap
-  li a1, SOFTWARE_INTERRUPT_VECTOR
-  j .Lhandle_trap_in_machine_mode
+  bne a0, a1, .Lbad_trap
+
+  # Yes.  First, clear the MIPI bit.
+  LOAD a0, MENTRY_IPI_OFFSET(sp)
+  sw x0, (a0)
+  fence
+
+  # Now, decode the cause(s).
+#ifdef __riscv_atomic
+  addi a0, sp, MENTRY_IPI_PENDING_OFFSET
+  amoswap.w a0, x0, (a0)
+#else
+  lw a0, MENTRY_IPI_PENDING_OFFSET(a0)
+  sw x0, MENTRY_IPI_PENDING_OFFSET(a0)
+#endif
+  and a1, a0, IPI_SOFT
+  beqz a1, 1f
+  csrs mip, MIP_SSIP
+1:
+  andi a1, a0, IPI_FENCE_I
+  beqz a1, 1f
+  fence.i
+1:
+  andi a1, a0, IPI_SFENCE_VMA
+  beqz a1, 1f
+  sfence.vma
+1:
+  j .Lmret
+
 
 .Lhandle_trap_in_machine_mode:
   # Preserve the registers.  Compute the address of the trap handler.
@@ -166,6 +192,10 @@ restore_regs:
   li a1, TRAP_FROM_MACHINE_MODE_VECTOR
   j .Lhandle_trap_in_machine_mode
 
+.Lbad_trap:
+  li a1, BAD_TRAP_VECTOR
+  j .Lhandle_trap_in_machine_mode
+
   .globl __redirect_trap
 __redirect_trap:
   # reset sp to top of M-mode stack
@@ -190,8 +220,9 @@ do_reset:
   li x7, 0
   li x8, 0
   li x9, 0
-  li x10, 0
-  li x11, 0
+// save a0 and a1; arguments from previous boot loader stage:
+//  li x10, 0
+//  li x11, 0
   li x12, 0
   li x13, 0
   li x14, 0
@@ -220,34 +251,47 @@ do_reset:
   csrr t1, mtvec
 1:bne t0, t1, 1b
 
-  # sp <- end of first full page after the end of the binary
-  la sp, _end + 2*RISCV_PGSIZE - 1
-  li t0, -RISCV_PGSIZE
-  and sp, sp, t0
-  addi sp, sp, -MENTRY_FRAME_SIZE
+  la sp, stacks + RISCV_PGSIZE - MENTRY_FRAME_SIZE
 
-  csrr a0, mhartid
-  slli a1, a0, RISCV_PGSHIFT
-  add sp, sp, a1
+  csrr a3, mhartid
+  slli a2, a3, RISCV_PGSHIFT
+  add sp, sp, a2
 
-  beqz a0, init_first_hart
+  # Boot on the first unmasked hart
+  li a4, (~DISABLED_HART_MASK & (DISABLED_HART_MASK+1))
+  srl a4, a4, a3
+  andi a4, a4, 1
+  bnez a4, init_first_hart
 
   # set MSIE bit to receive IPI
-  li a1, MIP_MSIP
-  csrw mie, a1
+  li a2, MIP_MSIP
+  csrw mie, a2
 
 .LmultiHart:
 #if MAX_HARTS > 1
   # wait for an IPI to signal that it's safe to boot
   wfi
-  csrr a1, mip
-  andi a1, a1, MIP_MSIP
-  beqz a1, .LmultiHart
+
+  # masked harts never start
+  li a4, DISABLED_HART_MASK
+  srl a4, a4, a3
+  andi a4, a4, 1
+  bnez a4, .LmultiHart
+
+  # only start if mip is set
+  csrr a2, mip
+  andi a2, a2, MIP_MSIP
+  beqz a2, .LmultiHart
 
   # make sure our hart id is within a valid range
   fence
-  li a1, MAX_HARTS
-  bltu a0, a1, init_other_hart
+  li a2, MAX_HARTS
+  bltu a3, a2, init_other_hart
 #endif
   wfi
   j .LmultiHart
+
+  .bss
+  .align RISCV_PGSHIFT
+stacks:
+  .skip RISCV_PGSIZE * MAX_HARTS

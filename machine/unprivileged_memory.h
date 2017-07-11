@@ -2,6 +2,7 @@
 #define _RISCV_MISALIGNED_H
 
 #include "encoding.h"
+#include "bits.h"
 #include <stdint.h>
 
 #define DECLARE_UNPRIVILEGED_LOAD_FUNCTION(type, insn)              \
@@ -39,22 +40,36 @@ DECLARE_UNPRIVILEGED_LOAD_FUNCTION(int32_t, lw)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint8_t, sb)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint16_t, sh)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint32_t, sw)
-#ifdef __riscv64
+#if __riscv_xlen == 64
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint32_t, lwu)
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint64_t, ld)
 DECLARE_UNPRIVILEGED_STORE_FUNCTION(uint64_t, sd)
+DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uintptr_t, ld)
 #else
 DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uint32_t, lw)
+DECLARE_UNPRIVILEGED_LOAD_FUNCTION(uintptr_t, lw)
+
+static inline uint64_t load_uint64_t(const uint64_t* addr, uintptr_t mepc)
+{
+  return load_uint32_t((uint32_t*)addr, mepc)
+         + ((uint64_t)load_uint32_t((uint32_t*)addr + 1, mepc) << 32);
+}
+
+static inline void store_uint64_t(uint64_t* addr, uint64_t val, uintptr_t mepc)
+{
+  store_uint32_t((uint32_t*)addr, val, mepc);
+  store_uint32_t((uint32_t*)addr + 1, val >> 32, mepc);
+}
 #endif
 
-static uint32_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t* mstatus)
+static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t* mstatus)
 {
   register uintptr_t __mepc asm ("a2") = mepc;
   register uintptr_t __mstatus asm ("a3");
-  uint32_t val;
+  uintptr_t val;
 #ifndef __riscv_compressed
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
-       "lw %[insn], (%[addr])\n"
+       STR(LWU) " %[insn], (%[addr])\n"
        "csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val)
        : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc));
@@ -64,7 +79,7 @@ static uint32_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_
        "lhu %[insn], (%[addr])\n"
        "and %[tmp], %[insn], %[rvc_mask]\n"
        "bne %[tmp], %[rvc_mask], 1f\n"
-       "lh %[tmp], 2(%[addr])\n"
+       "lhu %[tmp], 2(%[addr])\n"
        "sll %[tmp], %[tmp], 16\n"
        "add %[insn], %[insn], %[tmp]\n"
        "1: csrw mstatus, %[mstatus]"

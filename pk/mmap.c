@@ -20,6 +20,7 @@ typedef struct {
 static spinlock_t vm_lock = SPINLOCK_INIT;
 static vmr_t* vmrs;
 
+uintptr_t first_free_paddr;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
@@ -141,9 +142,9 @@ static uintptr_t __vm_alloc(size_t npage)
 static inline pte_t prot_to_type(int prot, int user)
 {
   pte_t pte = 0;
-  if (prot & PROT_READ) pte |= PTE_R;
-  if (prot & PROT_WRITE) pte |= PTE_W;
-  if (prot & PROT_EXEC) pte |= PTE_X;
+  if (prot & PROT_READ) pte |= PTE_R | PTE_A;
+  if (prot & PROT_WRITE) pte |= PTE_W | PTE_D;
+  if (prot & PROT_EXEC) pte |= PTE_X | PTE_A;
   if (pte == 0) pte = PTE_R;
   if (user) pte |= PTE_U;
   return pte;
@@ -385,10 +386,14 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
+  // HTIF address signedness and va2pa macro both cap memory size to 2 GiB
+  mem_size = MIN(mem_size, 1U << 31);
   size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
-  first_free_page = first_free_paddr;
-  first_free_paddr += free_pages * RISCV_PGSIZE;
+
+  extern char _end;
+  first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
+  first_free_paddr = first_free_page + free_pages * RISCV_PGSIZE;
 
   root_page_table = (void*)__page_alloc();
   __map_kernel_range(DRAM_BASE, DRAM_BASE, first_free_paddr - DRAM_BASE, PROT_READ|PROT_WRITE|PROT_EXEC);
@@ -396,10 +401,13 @@ uintptr_t pk_vm_init()
   current.mmap_max = current.brk_max =
     MIN(DRAM_BASE, mem_size - (first_free_paddr - DRAM_BASE));
 
-  size_t stack_size = RISCV_PGSIZE * 64;
+  size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);
   current.stack_top = stack_bottom + stack_size;
+
+  flush_tlb();
+  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE_CHOICE);
 
   uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
   return kernel_stack_top;

@@ -49,6 +49,8 @@
 #define SYS_setrlimit 164
 #define SYS_getrusage 165
 #define SYS_clock_gettime 113
+#define SYS_set_tid_address 96
+#define SYS_set_robust_list 99
 
 #define OLD_SYSCALL_THRESHOLD 1024
 #define SYS_open 1024

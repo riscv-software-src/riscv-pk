@@ -11,4 +11,8 @@
  * had before.
  */
 
+/* Returns a pointer to what's expected to be a staticly allocated logo string.
+ * This will be printed when BBL boots. */
+const char *platform__get_logo(void);
+
 #endif

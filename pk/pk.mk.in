@@ -1,4 +1,5 @@
 pk_subproject_deps = \
+	platform \
 	util \
 	softfloat \
 	machine \

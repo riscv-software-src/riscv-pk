@@ -1,0 +1,9 @@
+platform_subproject_deps =
+
+platform_hdrs = \
+  platform_interface.h
+
+platform_c_srcs = \
+  spike.c
+
+platform_asm_srcs =

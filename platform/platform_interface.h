@@ -15,4 +15,7 @@
  * This will be printed when BBL boots. */
 const char *platform__get_logo(void);
 
+/* Returns TRUE if it's valid to use the HTIF */
+int platform__use_htif(void);
+
 #endif

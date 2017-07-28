@@ -25,8 +25,12 @@ static const char logo[] =
 "\n"
 "       INSTRUCTION SETS WANT TO BE FREE\n";
 
-
 const char *platform__get_logo(void)
 {
   return logo;
+}
+
+int platform__use_htif(void)
+{
+  return 1;
 }

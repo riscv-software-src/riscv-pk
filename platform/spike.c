@@ -25,6 +25,8 @@ static const char logo[] =
 "\n"
 "       INSTRUCTION SETS WANT TO BE FREE\n";
 
+long platform__disabled_hart_mask = 0;
+
 const char *platform__get_logo(void)
 {
   return logo;

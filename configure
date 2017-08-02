@@ -592,6 +592,7 @@ subprojects_enabled
 subprojects
 BBL_PAYLOAD
 install_subdir
+PLATFORM_NAME
 RISCV
 EGREP
 GREP
@@ -669,6 +670,7 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 enable_32bit
+with_platform
 enable_optional_subprojects
 enable_vm
 enable_logo
@@ -1325,6 +1327,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-platform=spike   Select the target platform
   --with-payload          Set ELF payload for bbl
 
 Some influential environment variables:
@@ -4088,6 +4091,17 @@ case "${BUILD_32BIT}" in
 	install_subdir="riscv64-unknown-elf"
 	;;
 esac
+
+
+# Check whether --with-platform was given.
+if test "${with_platform+set}" = set; then :
+  withval=$with_platform; PLATFORM_NAME=$withval
+else
+  PLATFORM_NAME=spike
+fi
+
+PLATFORM_NAME=$PLATFORM_NAME
+
 
 
 

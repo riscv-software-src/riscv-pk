@@ -99,6 +99,12 @@ case "${BUILD_32BIT}" in
 	;;
 esac
 
+AC_ARG_WITH([platform],
+	AS_HELP_STRING([--with-platform=spike], [Select the target platform]),
+	PLATFORM_NAME=$withval,
+	PLATFORM_NAME=spike)
+AC_SUBST(PLATFORM_NAME, $PLATFORM_NAME)
+
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST([LIBS], ["-lgcc"])

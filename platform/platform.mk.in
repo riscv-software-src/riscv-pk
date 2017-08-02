@@ -4,6 +4,6 @@ platform_hdrs = \
   platform_interface.h
 
 platform_c_srcs = \
-  spike.c
+  @PLATFORM_NAME@.c
 
 platform_asm_srcs =

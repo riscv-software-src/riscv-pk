@@ -4,5 +4,7 @@
 
 void print_logo()
 {
-  putstring(platform__get_logo());
+  const char *logo = platform__get_logo();
+  if (logo != NULL)
+    putstring(logo);
 }

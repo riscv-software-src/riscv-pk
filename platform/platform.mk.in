@@ -1,0 +1,9 @@
+platform_subproject_deps =
+
+platform_hdrs = \
+  platform_interface.h
+
+platform_c_srcs = \
+  @PLATFORM_NAME@.c
+
+platform_asm_srcs =

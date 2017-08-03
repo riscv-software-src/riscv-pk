@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "fdt.h"
 #include "unprivileged_memory.h"
+#include "platform_interface.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,7 +21,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   if (uart) {
     uart_putchar(ch);
-  } else {
+  } else if (platform__use_htif()) {
     htif_console_putchar(ch);
   }
   return 0;
@@ -28,7 +29,11 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 
 void poweroff()
 {
-  htif_poweroff();
+  if (platform__use_htif()) {
+    htif_poweroff();
+  } else {
+    while (1);
+  }
 }
 
 void putstring(const char* s)
@@ -51,7 +56,7 @@ void printm(const char* s, ...)
 
 static void send_ipi(uintptr_t recipient, int event)
 {
-  if (((DISABLED_HART_MASK >> recipient) & 1)) return;
+  if (((platform__disabled_hart_mask >> recipient) & 1)) return;
   atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
   mb();
   *OTHER_HLS(recipient)->ipi = 1;
@@ -61,8 +66,10 @@ static uintptr_t mcall_console_getchar()
 {
   if (uart) {
     return uart_getchar();
-  } else {
+  } else if (platform__use_htif()) {
     return htif_console_getchar();
+  } else {
+    return '\0';
   }
 }
 

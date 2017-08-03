@@ -4,6 +4,7 @@
 #include "fp_emulation.h"
 #include "fdt.h"
 #include "uart.h"
+#include "platform_interface.h"
 #include <string.h>
 #include <limits.h>
 
@@ -123,7 +124,7 @@ static void hart_plic_init()
 static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
-    if ((((~DISABLED_HART_MASK & hart_mask) >> hart) & 1))
+    if ((((~platform__disabled_hart_mask & hart_mask) >> hart) & 1))
       *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
 }
 

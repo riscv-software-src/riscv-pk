@@ -105,6 +105,11 @@ AC_ARG_WITH([platform],
 	PLATFORM_NAME=spike)
 AC_SUBST(PLATFORM_NAME, $PLATFORM_NAME)
 
+AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
+AS_IF([test "x$enable_print_device_tree" == "xyes"], [
+  AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
+])
+
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST([LIBS], ["-lgcc"])

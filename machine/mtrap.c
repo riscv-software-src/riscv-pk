@@ -42,16 +42,20 @@ void putstring(const char* s)
     mcall_console_putchar(*s++);
 }
 
-void printm(const char* s, ...)
+void vprintm(const char* s, va_list vl)
 {
   char buf[256];
+  vsnprintf(buf, sizeof buf, s, vl);
+  putstring(buf);
+}
+
+void printm(const char* s, ...)
+{
   va_list vl;
 
   va_start(vl, s);
-  vsnprintf(buf, sizeof buf, s, vl);
+  vprintm(s, vl);
   va_end(vl);
-
-  putstring(buf);
 }
 
 static void send_ipi(uintptr_t recipient, int event)

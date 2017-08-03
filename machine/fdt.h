@@ -68,4 +68,9 @@ void filter_compat(uintptr_t fdt, const char *compat);
 // The hartids of available harts
 extern uint64_t hart_mask;
 
+#ifdef PK_PRINT_DEVICE_TREE
+// Prints the device tree to the console as a DTS
+void fdt_print(uintptr_t fdt);
+#endif
+
 #endif

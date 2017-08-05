@@ -671,6 +671,7 @@ enable_option_checking
 enable_stow
 enable_32bit
 with_platform
+enable_print_device_tree
 enable_optional_subprojects
 enable_vm
 enable_logo
@@ -1318,6 +1319,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-stow           Enable stow-based install
   --enable-32bit          Build a 32-bit pk
+  --enable-print-device-tree
+                          Print DTS when booting
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
@@ -4102,6 +4105,19 @@ fi
 
 PLATFORM_NAME=$PLATFORM_NAME
 
+
+# Check whether --enable-print-device-tree was given.
+if test "${enable_print_device_tree+set}" = set; then :
+  enableval=$enable_print_device_tree;
+fi
+
+if test "x$enable_print_device_tree" == "xyes"; then :
+
+
+$as_echo "#define PK_PRINT_DEVICE_TREE /**/" >>confdefs.h
+
+
+fi
 
 
 

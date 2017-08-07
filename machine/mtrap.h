@@ -9,15 +9,11 @@
 # define MAX_HARTS 1
 #endif
 
-// These harts will be prevented from booting beyond bbl
-#ifndef DISABLED_HART_MASK
-#define DISABLED_HART_MASK	0x0UL
-#endif
-
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 #define read_const_csr(reg) ({ unsigned long __tmp; \
   asm ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -62,6 +58,7 @@ hls_t* hls_init(uintptr_t hart_id);
 void parse_config_string();
 void poweroff(void) __attribute((noreturn));
 void printm(const char* s, ...);
+void vprintm(const char *s, va_list args);
 void putstring(const char* s);
 #define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
 #define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })

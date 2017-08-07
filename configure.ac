@@ -99,6 +99,17 @@ case "${BUILD_32BIT}" in
 	;;
 esac
 
+AC_ARG_WITH([platform],
+	AS_HELP_STRING([--with-platform=spike], [Select the target platform]),
+	PLATFORM_NAME=$withval,
+	PLATFORM_NAME=spike)
+AC_SUBST(PLATFORM_NAME, $PLATFORM_NAME)
+
+AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
+AS_IF([test "x$enable_print_device_tree" == "xyes"], [
+  AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
+])
+
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 # AC_SUBST([LIBS], ["-lgcc"])
@@ -111,7 +122,7 @@ AC_SUBST(install_subdir)
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ pk, bbl, softfloat, dummy_payload, machine, util ])
+MCPPBS_SUBPROJECTS([ pk, bbl, softfloat, dummy_payload, machine, util, platform ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups

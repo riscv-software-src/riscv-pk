@@ -3,6 +3,7 @@ bbl_subproject_deps = \
   softfloat \
   machine \
   dummy_payload \
+  platform \
 
 bbl_hdrs = \
   bbl.h \

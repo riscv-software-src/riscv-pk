@@ -39,6 +39,12 @@
 /* Define if virtual memory support is enabled */
 #undef PK_ENABLE_VM
 
+/* Define if the DTS is to be displayed */
+#undef PK_PRINT_DEVICE_TREE
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef PLATFORM_ENABLED
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 

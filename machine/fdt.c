@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include "config.h"
 #include "fdt.h"
 #include "mtrap.h"
 
@@ -8,6 +9,19 @@ static inline uint32_t bswap(uint32_t x)
   uint32_t y = (x & 0x00FF00FF) <<  8 | (x & 0xFF00FF00) >>  8;
   uint32_t z = (y & 0x0000FFFF) << 16 | (y & 0xFFFF0000) >> 16;
   return z;
+}
+
+static inline int isstring(char c)
+{
+  if (c >= 'A' && c <= 'Z')
+    return 1;
+  if (c >= 'a' && c <= 'z')
+    return 1;
+  if (c >= '0' && c <= '9')
+    return 1;
+  if (c == '\0' || c == ' ' || c == ',' || c == '-')
+    return 1;
+  return 0;
 }
 
 static uint32_t *fdt_scan_helper(
@@ -593,3 +607,116 @@ void filter_harts(uintptr_t fdt, unsigned long hart_mask)
   filter.mask = hart_mask;
   fdt_scan(fdt, &cb);
 }
+
+//////////////////////////////////////////// PRINT //////////////////////////////////////////////
+
+#ifdef PK_PRINT_DEVICE_TREE
+#define FDT_PRINT_MAX_DEPTH 32
+
+struct fdt_print_info {
+  int depth;
+  const struct fdt_scan_node *stack[FDT_PRINT_MAX_DEPTH];
+};
+
+void fdt_print_printm(struct fdt_print_info *info, const char *format, ...)
+{
+  va_list vl;
+
+  for (int i = 0; i < info->depth; ++i)
+    printm("  ");
+
+  va_start(vl, format);
+  vprintm(format, vl);
+  va_end(vl);
+}
+
+static void fdt_print_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct fdt_print_info *info = (struct fdt_print_info *)extra;
+
+  while (node->parent != NULL && info->stack[info->depth-1] != node->parent) {
+    info->depth--;
+    fdt_print_printm(info, "}\r\n");
+  }
+
+  fdt_print_printm(info, "%s {\r\n", node->name);
+  info->stack[info->depth] = node;
+  info->depth++;
+}
+
+static void fdt_print_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct fdt_print_info *info = (struct fdt_print_info *)extra;
+  int asstring = 1;
+  char *char_data = (char *)(prop->value);
+
+  fdt_print_printm(info, "%s", prop->name);
+
+  if (prop->len == 0) {
+    printm(";\r\n");
+    return;
+  } else {
+    printm(" = ");
+  }
+
+  /* It appears that dtc uses a hueristic to detect strings so I'm using a
+   * similar one here. */
+  for (int i = 0; i < prop->len; ++i) {
+    if (!isstring(char_data[i]))
+      asstring = 0;
+    if (i > 0 && char_data[i] == '\0' && char_data[i-1] == '\0')
+      asstring = 0;
+  }
+
+  if (asstring) {
+    for (size_t i = 0; i < prop->len; i += strlen(char_data + i) + 1) {
+      if (i != 0)
+        printm(", ");
+      printm("\"%s\"", char_data + i);
+    }
+  } else {
+    printm("<");
+    for (size_t i = 0; i < prop->len/4; ++i) {
+      if (i != 0)
+        printm(" ");
+      printm("0x%08x", bswap(prop->value[i]));
+    }
+    printm(">");
+  }
+
+  printm(";\r\n");
+}
+
+static void fdt_print_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct fdt_print_info *info = (struct fdt_print_info *)extra;
+}
+
+static int fdt_print_close(const struct fdt_scan_node *node, void *extra)
+{
+  struct fdt_print_info *info = (struct fdt_print_info *)extra;
+  return 0;
+}
+
+void fdt_print(uintptr_t fdt)
+{
+  struct fdt_print_info info;
+  struct fdt_cb cb;
+
+  info.depth = 0;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = fdt_print_open;
+  cb.prop = fdt_print_prop;
+  cb.done = fdt_print_done;
+  cb.close = fdt_print_close;
+  cb.extra = &info;
+
+  fdt_scan(fdt, &cb);
+
+  while (info.depth > 0) {
+    info.depth--;
+    fdt_print_printm(&info, "}\r\n");
+  }
+}
+#endif

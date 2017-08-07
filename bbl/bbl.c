@@ -5,6 +5,7 @@
 #include "bits.h"
 #include "config.h"
 #include "fdt.h"
+#include "platform_interface.h"
 #include <string.h>
 
 static const void* entry_point;
@@ -16,17 +17,19 @@ static uintptr_t dtb_output()
   return (end + MEGAPAGE_SIZE - 1) / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
-static void filter_dtb(uintptr_t source)
+static uintptr_t filter_dtb(uintptr_t source)
 {
   uintptr_t dest = dtb_output();
   uint32_t size = fdt_size(source);
   memcpy((void*)dest, (void*)source, size);
 
   // Remove information from the chained FDT
-  filter_harts(dest, DISABLED_HART_MASK);
+  filter_harts(dest, platform__disabled_hart_mask);
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");
+
+  return dest;
 }
 
 void boot_other_hart(uintptr_t dtb)
@@ -36,15 +39,18 @@ void boot_other_hart(uintptr_t dtb)
     entry = entry_point;
     mb();
   } while (!entry);
-  enter_supervisor_mode(entry, read_csr(mhartid), dtb_output());
+  enter_supervisor_mode(entry, read_csr(mhartid), dtb);
 }
 
 void boot_loader(uintptr_t dtb)
 {
   extern char _payload_start;
-  filter_dtb(dtb);
+  dtb = filter_dtb(dtb);
 #ifdef PK_ENABLE_LOGO
   print_logo();
+#endif
+#ifdef PK_PRINT_DEVICE_TREE
+  fdt_print(dtb);
 #endif
   mb();
   entry_point = &_payload_start;

@@ -4091,7 +4091,7 @@ esac
 
 
 
-LIBS="-lgcc"
+# LIBS="-lgcc"
 
 
 

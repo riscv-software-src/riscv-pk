@@ -101,7 +101,7 @@ esac
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
-AC_SUBST([LIBS], ["-lgcc"])
+# AC_SUBST([LIBS], ["-lgcc"])
 AC_SUBST(install_subdir)
 
 #-------------------------------------------------------------------------

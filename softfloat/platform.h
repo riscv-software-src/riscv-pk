@@ -37,6 +37,8 @@ these four paragraphs for those parts of this code that are retained.
 #define LITTLEENDIAN
 
 #ifndef UINT64_C
+#ifndef __FreeBSD__
 # define UINT64_C(x) (x ## ULL)
 # define INT64_C(x) (x ## LL)
+#endif
 #endif

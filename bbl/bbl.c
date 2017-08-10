@@ -17,7 +17,7 @@ static uintptr_t dtb_output()
   return (end + MEGAPAGE_SIZE - 1) / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
-static uintptr_t filter_dtb(uintptr_t source)
+static void filter_dtb(uintptr_t source)
 {
   uintptr_t dest = dtb_output();
   uint32_t size = fdt_size(source);
@@ -28,31 +28,29 @@ static uintptr_t filter_dtb(uintptr_t source)
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");
-
-  return dest;
 }
 
-void boot_other_hart(uintptr_t dtb)
+void boot_other_hart(uintptr_t unused __attribute__((unused)))
 {
   const void* entry;
   do {
     entry = entry_point;
     mb();
   } while (!entry);
-  enter_supervisor_mode(entry, read_csr(mhartid), dtb);
+  enter_supervisor_mode(entry, read_csr(mhartid), dtb_output());
 }
 
 void boot_loader(uintptr_t dtb)
 {
   extern char _payload_start;
-  dtb = filter_dtb(dtb);
+  filter_dtb(dtb);
 #ifdef PK_ENABLE_LOGO
   print_logo();
 #endif
 #ifdef PK_PRINT_DEVICE_TREE
-  fdt_print(dtb);
+  fdt_print(dtb_output());
 #endif
   mb();
   entry_point = &_payload_start;
-  boot_other_hart(dtb);
+  boot_other_hart(0);
 }

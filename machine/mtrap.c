@@ -5,6 +5,7 @@
 #include "bits.h"
 #include "vm.h"
 #include "uart.h"
+#include "finisher.h"
 #include "fdt.h"
 #include "unprivileged_memory.h"
 #include "platform_interface.h"
@@ -27,8 +28,10 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
   return 0;
 }
 
-void poweroff()
+void poweroff(uint16_t code)
 {
+  printm("Power off\n");
+  finisher_exit(code);
   if (platform__use_htif()) {
     htif_poweroff();
   } else {
@@ -84,7 +87,7 @@ static uintptr_t mcall_clear_ipi()
 
 static uintptr_t mcall_shutdown()
 {
-  poweroff();
+  poweroff(0);
 }
 
 static uintptr_t mcall_set_timer(uint64_t when)

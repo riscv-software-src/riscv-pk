@@ -4,6 +4,7 @@
 #include "fp_emulation.h"
 #include "fdt.h"
 #include "uart.h"
+#include "finisher.h"
 #include "platform_interface.h"
 #include <string.h>
 #include <limits.h>
@@ -135,6 +136,9 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 
   // Confirm console as early as possible
   query_uart(dtb);
+
+  // Find the power button early as well so die() works
+  query_finisher(dtb);
 
   query_mem(dtb);
   query_harts(dtb);

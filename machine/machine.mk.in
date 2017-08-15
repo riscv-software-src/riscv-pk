@@ -13,6 +13,7 @@ machine_hdrs = \
   mcall.h \
   mtrap.h \
   uart.h \
+  finisher.h \
   unprivileged_memory.h \
   vm.h \
 
@@ -26,6 +27,7 @@ machine_c_srcs = \
   fp_emulation.c \
   fp_ldst.c \
   uart.c \
+  finisher.c \
   misaligned_ldst.c \
 
 machine_asm_srcs = \

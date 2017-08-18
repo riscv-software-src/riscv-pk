@@ -65,6 +65,9 @@ void filter_harts(uintptr_t fdt, unsigned long hart_mask);
 void filter_plic(uintptr_t fdt);
 void filter_compat(uintptr_t fdt, const char *compat);
 
+// Limit the memory in the FDT to N bytes. */
+void fdt_reduce_mem(uintptr_t fdt, unsigned long bytes);
+
 // The hartids of available harts
 extern uint64_t hart_mask;
 

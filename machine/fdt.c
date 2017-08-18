@@ -123,6 +123,14 @@ const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *v
   return value;
 }
 
+void fdt_set_size(const struct fdt_scan_node *node, uint32_t *value, uint64_t set)
+{
+  for (int cells = node->size_cells; cells > 0; --cells) {
+    value[cells-1] = bswap(set);
+    set >>= 32;
+  }
+}
+
 int fdt_string_list_index(const struct fdt_scan_prop *prop, const char *str)
 {
   const char *list = (const char *)prop->value;
@@ -720,3 +728,69 @@ void fdt_print(uintptr_t fdt)
   }
 }
 #endif
+
+//////////////////////////////////////////// MEMORY REDUCE /////////////////////////////////////////
+
+struct reducemem_scan {
+  uint64_t size;
+  int memory;
+  const uint32_t *reg_value;
+  int reg_len;
+};
+
+static void reducemem_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct reducemem_scan *scan = (struct reducemem_scan *)extra;
+  scan->memory = 0;
+}
+
+static void reducemem_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct reducemem_scan *scan = (struct reducemem_scan *)extra;
+  if (!strcmp(prop->name, "device_type") && !strcmp((const char*)prop->value, "memory")) {
+    scan->memory = 1;
+  } else if (!strcmp(prop->name, "reg")) {
+    scan->reg_value = prop->value;
+    scan->reg_len = prop->len;
+  }
+}
+
+static void reducemem_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct reducemem_scan *scan = (struct reducemem_scan *)extra;
+  const uint32_t *value = scan->reg_value;
+  const uint32_t *end = value + scan->reg_len/4;
+  uint32_t *size_ptr;
+
+  if (!scan->memory) return;
+  // assert (scan->reg_value && scan->reg_len % 4 == 0);
+
+  while (end - value > 0) {
+    uint64_t base, size;
+    value = fdt_get_address(node->parent, value, &base);
+    size_ptr = (uint32_t*)value;
+    value = fdt_get_size   (node->parent, value, &size);
+    if (size > scan->size) {
+      fdt_set_size(node->parent, size_ptr, scan->size);
+      scan->size = 0;
+    } else {
+      scan->size -= size;
+    }
+  }
+  // assert (end == value);
+}
+
+void fdt_reduce_mem(uintptr_t fdt, uintptr_t size)
+{
+  struct fdt_cb cb;
+  struct reducemem_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = reducemem_open;
+  cb.prop = reducemem_prop;
+  cb.done = reducemem_done;
+  cb.extra = &scan;
+  scan.size = size;
+
+  fdt_scan(fdt, &cb);
+}

@@ -28,6 +28,8 @@ static void filter_dtb(uintptr_t source)
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");
+  if (platform__limit_memory_bytes > 0)
+    fdt_reduce_mem(dest, platform__limit_memory_bytes);
 }
 
 void boot_other_hart(uintptr_t unused __attribute__((unused)))

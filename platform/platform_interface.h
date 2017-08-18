@@ -24,6 +24,9 @@ int platform__use_htif(void);
  * should intsead be held in a loop. */
 extern long platform__disabled_hart_mask;
 
+/* The number of bytes of memory this platform can actually support. */
+extern long platform__limit_memory_bytes;
+
 #endif
 
 #endif

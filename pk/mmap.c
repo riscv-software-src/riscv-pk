@@ -40,10 +40,14 @@ static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
 {
   if (!vmrs) {
     spinlock_lock(&vm_lock);
-      if (!vmrs)
-        vmrs = (vmr_t*)__page_alloc();
+      if (!vmrs) {
+        vmr_t* page = (vmr_t*)__page_alloc();
+        mb();
+        vmrs = page;
+      }
     spinlock_unlock(&vm_lock);
   }
+  mb();
 
   for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
     if (v->refcnt == 0) {

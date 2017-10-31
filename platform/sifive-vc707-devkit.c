@@ -29,6 +29,7 @@ static const char logo[] =
 "           SiFive RISC-V Coreplex\r\n";
 
 long platform__disabled_hart_mask = 0x1;
+long platform__limit_memory_bytes = 2UL * 1024 * 1024 * 1024;
 
 const char *platform__get_logo(void)
 {

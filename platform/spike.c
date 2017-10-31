@@ -26,6 +26,7 @@ static const char logo[] =
 "       INSTRUCTION SETS WANT TO BE FREE\n";
 
 long platform__disabled_hart_mask = 0;
+long platform__limit_memory_bytes = 0;
 
 const char *platform__get_logo(void)
 {

@@ -201,7 +201,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
   {
     case 0: // int32
       negative = (int32_t)uint_val < 0;
-      uint_val = negative ? -(int32_t)uint_val : (int32_t)uint_val;
+      uint_val = (uint32_t)(negative ? -uint_val : uint_val);
       break;
     case 1: // uint32
       uint_val = (uint32_t)uint_val;

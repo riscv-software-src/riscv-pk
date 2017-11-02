@@ -20,10 +20,6 @@ const char *platform__get_logo(void);
 /* Returns TRUE if it's valid to use the HTIF */
 int platform__use_htif(void);
 
-/* The harts that should be excluded from booting to the target program and
- * should intsead be held in a loop. */
-extern long platform__disabled_hart_mask;
-
 #endif
 
 #endif

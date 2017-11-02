@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "finisher.h"
 #include "platform_interface.h"
+#include "disabled_hart_mask.h"
 #include <string.h>
 #include <limits.h>
 
@@ -125,7 +126,7 @@ static void hart_plic_init()
 static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
-    if ((((~platform__disabled_hart_mask & hart_mask) >> hart) & 1))
+    if ((((~disabled_hart_mask & hart_mask) >> hart) & 1))
       *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
 }
 

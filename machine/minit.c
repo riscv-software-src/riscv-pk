@@ -132,11 +132,11 @@ static void wake_harts()
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
-  hart_init();
-  hls_init(0); // this might get called again from parse_config_string
-
   // Confirm console as early as possible
   query_uart(dtb);
+
+  hart_init();
+  hls_init(0); // this might get called again from parse_config_string
 
   // Find the power button early as well so die() works
   query_finisher(dtb);

@@ -5,8 +5,8 @@
 #include "fdt.h"
 #include "uart.h"
 #include "finisher.h"
-#include "platform_interface.h"
 #include "disabled_hart_mask.h"
+#include "htif.h"
 #include <string.h>
 #include <limits.h>
 
@@ -141,6 +141,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
   // Confirm console as early as possible
   query_uart(dtb);
+  query_htif(dtb);
 
   hart_init();
   hls_init(0); // this might get called again from parse_config_string

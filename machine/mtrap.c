@@ -8,7 +8,6 @@
 #include "finisher.h"
 #include "fdt.h"
 #include "unprivileged_memory.h"
-#include "platform_interface.h"
 #include "disabled_hart_mask.h"
 #include <errno.h>
 #include <stdarg.h>
@@ -23,7 +22,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   if (uart) {
     uart_putchar(ch);
-  } else if (platform__use_htif()) {
+  } else if (htif) {
     htif_console_putchar(ch);
   }
   return 0;
@@ -33,7 +32,7 @@ void poweroff(uint16_t code)
 {
   printm("Power off\n");
   finisher_exit(code);
-  if (platform__use_htif()) {
+  if (htif) {
     htif_poweroff();
   } else {
     while (1);
@@ -74,7 +73,7 @@ static uintptr_t mcall_console_getchar()
 {
   if (uart) {
     return uart_getchar();
-  } else if (platform__use_htif()) {
+  } else if (htif) {
     return htif_console_getchar();
   } else {
     return '\0';

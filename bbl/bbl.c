@@ -5,7 +5,6 @@
 #include "bits.h"
 #include "config.h"
 #include "fdt.h"
-#include "platform_interface.h"
 #include <string.h>
 
 static const void* entry_point;

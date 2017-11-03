@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 elf_info current;
+long disabled_hart_mask;
 
 static void handle_option(const char* s)
 {

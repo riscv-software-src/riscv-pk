@@ -9,6 +9,7 @@
 #include "fdt.h"
 #include "unprivileged_memory.h"
 #include "platform_interface.h"
+#include "disabled_hart_mask.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -63,7 +64,7 @@ void printm(const char* s, ...)
 
 static void send_ipi(uintptr_t recipient, int event)
 {
-  if (((platform__disabled_hart_mask >> recipient) & 1)) return;
+  if (((disabled_hart_mask >> recipient) & 1)) return;
   atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
   mb();
   *OTHER_HLS(recipient)->ipi = 1;

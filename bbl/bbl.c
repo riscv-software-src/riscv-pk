@@ -9,6 +9,7 @@
 #include <string.h>
 
 static const void* entry_point;
+long disabled_hart_mask;
 
 static uintptr_t dtb_output()
 {
@@ -24,7 +25,7 @@ static void filter_dtb(uintptr_t source)
   memcpy((void*)dest, (void*)source, size);
 
   // Remove information from the chained FDT
-  filter_harts(dest, platform__disabled_hart_mask);
+  filter_harts(dest, &disabled_hart_mask);
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");
@@ -37,7 +38,18 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
     entry = entry_point;
     mb();
   } while (!entry);
-  enter_supervisor_mode(entry, read_csr(mhartid), dtb_output());
+
+  long hartid = read_csr(mhartid);
+  if ((1 << hartid) & disabled_hart_mask) {
+    while (1) {
+      __asm__ volatile("wfi");
+#ifdef __riscv_div
+      __asm__ volatile("div x0, x0, x0");
+#endif
+    }
+  }
+
+  enter_supervisor_mode(entry, hartid, dtb_output());
 }
 
 void boot_loader(uintptr_t dtb)

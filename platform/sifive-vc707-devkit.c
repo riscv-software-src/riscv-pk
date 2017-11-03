@@ -28,8 +28,6 @@ static const char logo[] =
 "\r\n"
 "           SiFive RISC-V Coreplex\r\n";
 
-long platform__disabled_hart_mask = 0x1;
-
 const char *platform__get_logo(void)
 {
   return logo;

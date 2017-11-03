@@ -258,7 +258,7 @@ do_reset:
   add sp, sp, a2
 
   # Boot on the first unmasked hart
-  la a4, platform__disabled_hart_mask
+  la a4, disabled_hart_mask
   LOAD a4, 0(a4)
   addi a5, a4, 1
   not a4, a4
@@ -277,7 +277,7 @@ do_reset:
   wfi
 
   # masked harts never start
-  la a4, platform__disabled_hart_mask
+  la a4, disabled_hart_mask
   LOAD a4, 0(a4)
   srl a4, a4, a3
   andi a4, a4, 1

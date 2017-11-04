@@ -590,9 +590,9 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subprojects_enabled
 subprojects
+BBL_LOGO_FILE
 BBL_PAYLOAD
 install_subdir
-PLATFORM_NAME
 RISCV
 EGREP
 GREP
@@ -670,12 +670,12 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 enable_32bit
-with_platform
 enable_print_device_tree
 enable_optional_subprojects
 enable_vm
 enable_logo
 with_payload
+with_logo
 enable_fp_emulation
 '
       ac_precious_vars='build_alias
@@ -1330,8 +1330,8 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-platform=spike   Select the target platform
   --with-payload          Set ELF payload for bbl
+  --with-logo             Specify a better logo
 
 Some influential environment variables:
   CC          C compiler command
@@ -4095,17 +4095,6 @@ case "${BUILD_32BIT}" in
 	;;
 esac
 
-
-# Check whether --with-platform was given.
-if test "${with_platform+set}" = set; then :
-  withval=$with_platform; PLATFORM_NAME=$withval
-else
-  PLATFORM_NAME=spike
-fi
-
-PLATFORM_NAME=$PLATFORM_NAME
-
-
 # Check whether --enable-print-device-tree was given.
 if test "${enable_print_device_tree+set}" = set; then :
   enableval=$enable_print_device_tree;
@@ -4263,6 +4252,17 @@ if test "${with_payload+set}" = set; then :
 
 else
   BBL_PAYLOAD=dummy_payload
+
+fi
+
+
+
+# Check whether --with-logo was given.
+if test "${with_logo+set}" = set; then :
+  withval=$with_logo; BBL_LOGO_FILE=$with_logo
+
+else
+  BBL_LOGO_FILE=riscv_logo.txt
 
 fi
 
@@ -4457,51 +4457,6 @@ $as_echo "$as_me: configuring default subproject : util" >&6;}
       subprojects_enabled="$subprojects_enabled util"
 
 $as_echo "#define UTIL_ENABLED /**/" >>confdefs.h
-
-
-
-
-
-
-    # Determine if this is a required or an optional subproject
-
-
-
-    # Determine if there is a group with the same name
-
-
-
-    # Create variations of the subproject name suitable for use as a CPP
-    # enabled define, a shell enabled variable, and a shell function
-
-
-
-
-
-
-
-
-
-
-
-    # Add subproject to our running list
-
-    subprojects="$subprojects platform"
-
-    # Process the subproject appropriately. If enabled add it to the
-    # $enabled_subprojects running shell variable, set a
-    # SUBPROJECT_ENABLED C define, and include the appropriate
-    # 'subproject.ac'.
-
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : platform" >&5
-$as_echo "$as_me: configuring default subproject : platform" >&6;}
-      ac_config_files="$ac_config_files platform.mk:platform/platform.mk.in"
-
-      enable_platform_sproj="yes"
-      subprojects_enabled="$subprojects_enabled platform"
-
-$as_echo "#define PLATFORM_ENABLED /**/" >>confdefs.h
 
 
 
@@ -5230,7 +5185,6 @@ do
     "dummy_payload.mk") CONFIG_FILES="$CONFIG_FILES dummy_payload.mk:dummy_payload/dummy_payload.mk.in" ;;
     "machine.mk") CONFIG_FILES="$CONFIG_FILES machine.mk:machine/machine.mk.in" ;;
     "util.mk") CONFIG_FILES="$CONFIG_FILES util.mk:util/util.mk.in" ;;
-    "platform.mk") CONFIG_FILES="$CONFIG_FILES platform.mk:platform/platform.mk.in" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 

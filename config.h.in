@@ -43,9 +43,6 @@
 #undef PK_PRINT_DEVICE_TREE
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
-#undef PLATFORM_ENABLED
-
-/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 
 /* Define to 1 if you have the ANSI C header files. */

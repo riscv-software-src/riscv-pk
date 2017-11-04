@@ -3,7 +3,6 @@ bbl_subproject_deps = \
   softfloat \
   machine \
   dummy_payload \
-  platform \
 
 bbl_hdrs = \
   bbl.h \
@@ -13,6 +12,7 @@ bbl_c_srcs = \
 
 bbl_asm_srcs = \
   payload.S \
+  raw_logo.S \
 
 payload.o: bbl_payload
 

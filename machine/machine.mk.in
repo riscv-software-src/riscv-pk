@@ -1,6 +1,5 @@
 machine_subproject_deps = \
   softfloat \
-  platform \
 
 machine_hdrs = \
   atomic.h \

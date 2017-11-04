@@ -46,6 +46,7 @@ SECTIONS
   . = ALIGN(0x1000);
   .htif :
   {
+    PROVIDE( __htif_base = . );
     *(.htif)
   }
   . = ALIGN(0x1000);

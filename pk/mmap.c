@@ -411,7 +411,7 @@ uintptr_t pk_vm_init()
   current.stack_top = stack_bottom + stack_size;
 
   flush_tlb();
-  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE_CHOICE);
+  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
 
   uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
   return kernel_stack_top;

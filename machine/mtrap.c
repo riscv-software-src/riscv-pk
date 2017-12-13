@@ -5,6 +5,7 @@
 #include "bits.h"
 #include "vm.h"
 #include "uart.h"
+#include "uart16550.h"
 #include "finisher.h"
 #include "fdt.h"
 #include "unprivileged_memory.h"
@@ -22,6 +23,8 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   if (uart) {
     uart_putchar(ch);
+  } else if (uart16550) {
+    uart16550_putchar(ch);
   } else if (htif) {
     htif_console_putchar(ch);
   }
@@ -73,6 +76,8 @@ static uintptr_t mcall_console_getchar()
 {
   if (uart) {
     return uart_getchar();
+  } else if (uart16550) {
+    return uart16550_getchar();
   } else if (htif) {
     return htif_console_getchar();
   } else {

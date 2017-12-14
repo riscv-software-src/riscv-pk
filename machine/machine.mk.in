@@ -28,6 +28,7 @@ machine_c_srcs = \
   uart.c \
   finisher.c \
   misaligned_ldst.c \
+  flush_icache.c \
 
 machine_asm_srcs = \
   mentry.S \

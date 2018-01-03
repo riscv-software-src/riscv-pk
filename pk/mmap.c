@@ -40,10 +40,14 @@ static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
 {
   if (!vmrs) {
     spinlock_lock(&vm_lock);
-      if (!vmrs)
-        vmrs = (vmr_t*)__page_alloc();
+      if (!vmrs) {
+        vmr_t* page = (vmr_t*)__page_alloc();
+        mb();
+        vmrs = page;
+      }
     spinlock_unlock(&vm_lock);
   }
+  mb();
 
   for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
     if (v->refcnt == 0) {
@@ -407,7 +411,7 @@ uintptr_t pk_vm_init()
   current.stack_top = stack_bottom + stack_size;
 
   flush_tlb();
-  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SPTBR_MODE_CHOICE);
+  write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
 
   uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
   return kernel_stack_top;

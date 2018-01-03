@@ -76,16 +76,25 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
 #else
   uintptr_t rvc_mask = 3, tmp;
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
+       "and %[tmp], %[addr], 2\n"
+       "bnez %[tmp], 1f\n"
+       STR(LWU) " %[insn], (%[addr])\n"
+       "and %[tmp], %[insn], %[rvc_mask]\n"
+       "beq %[tmp], %[rvc_mask], 2f\n"
+       "sll %[insn], %[insn], %[xlen_minus_16]\n"
+       "srl %[insn], %[insn], %[xlen_minus_16]\n"
+       "j 2f\n"
+       "1:\n"
        "lhu %[insn], (%[addr])\n"
        "and %[tmp], %[insn], %[rvc_mask]\n"
-       "bne %[tmp], %[rvc_mask], 1f\n"
+       "bne %[tmp], %[rvc_mask], 2f\n"
        "lhu %[tmp], 2(%[addr])\n"
        "sll %[tmp], %[tmp], 16\n"
        "add %[insn], %[insn], %[tmp]\n"
-       "1: csrw mstatus, %[mstatus]"
+       "2: csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val), [tmp] "=&r" (tmp)
        : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc),
-         [rvc_mask] "r" (rvc_mask));
+         [rvc_mask] "r" (rvc_mask), [xlen_minus_16] "i" (__riscv_xlen - 16));
 #endif
   *mstatus = __mstatus;
   return val;

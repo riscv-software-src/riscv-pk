@@ -4,7 +4,10 @@
 #include "fp_emulation.h"
 #include "fdt.h"
 #include "uart.h"
-#include "platform_interface.h"
+#include "uart16550.h"
+#include "finisher.h"
+#include "disabled_hart_mask.h"
+#include "htif.h"
 #include <string.h>
 #include <limits.h>
 
@@ -17,22 +20,28 @@ size_t plic_ndevs;
 static void mstatus_init()
 {
   // Enable FPU
-  write_csr(mstatus, MSTATUS_FS);
+  if (supports_extension('D') || supports_extension('F'))
+    write_csr(mstatus, MSTATUS_FS);
 
   // Enable user/supervisor use of perf counters
-  write_csr(scounteren, -1);
+  if (supports_extension('S'))
+    write_csr(scounteren, -1);
   write_csr(mcounteren, -1);
 
   // Enable software interrupts
   write_csr(mie, MIP_MSIP);
 
   // Disable paging
-  write_csr(sptbr, 0);
+  if (supports_extension('S'))
+    write_csr(sptbr, 0);
 }
 
 // send S-mode interrupts and most exceptions straight to S-mode
 static void delegate_traps()
 {
+  if (!supports_extension('S'))
+    return;
+
   uintptr_t interrupts = MIP_SSIP | MIP_STIP | MIP_SEIP;
   uintptr_t exceptions =
     (1U << CAUSE_MISALIGNED_FETCH) |
@@ -51,11 +60,12 @@ static void delegate_traps()
 
 static void fp_init()
 {
+  if (!supports_extension('D') && !supports_extension('F'))
+    return;
+
   assert(read_csr(mstatus) & MSTATUS_FS);
 
 #ifdef __riscv_flen
-  if (!supports_extension('D'))
-    die("FPU not found; recompile pk with -msoft-float");
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
   write_csr(fcsr, 0);
@@ -124,17 +134,22 @@ static void hart_plic_init()
 static void wake_harts()
 {
   for (int hart = 0; hart < MAX_HARTS; ++hart)
-    if ((((~platform__disabled_hart_mask & hart_mask) >> hart) & 1))
+    if ((((~disabled_hart_mask & hart_mask) >> hart) & 1))
       *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
 }
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
+  // Confirm console as early as possible
+  query_uart(dtb);
+  query_uart16550(dtb);
+  query_htif(dtb);
+
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
 
-  // Confirm console as early as possible
-  query_uart(dtb);
+  // Find the power button early as well so die() works
+  query_finisher(dtb);
 
   query_mem(dtb);
   query_harts(dtb);

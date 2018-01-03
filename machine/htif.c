@@ -1,11 +1,21 @@
 #include "htif.h"
 #include "atomic.h"
 #include "mtrap.h"
+#include "fdt.h"
+#include <string.h>
 
+extern uint64_t __htif_base;
 volatile uint64_t tohost __attribute__((section(".htif")));
 volatile uint64_t fromhost __attribute__((section(".htif")));
 volatile int htif_console_buf;
 static spinlock_t htif_lock = SPINLOCK_INIT;
+uintptr_t htif;
+
+#define TOHOST(base_int)	(uint64_t *)(base_int + TOHOST_OFFSET)
+#define FROMHOST(base_int)	(uint64_t *)(base_int + FROMHOST_OFFSET)
+
+#define TOHOST_OFFSET		((uintptr_t)tohost - (uintptr_t)__htif_base)
+#define FROMHOST_OFFSET		((uintptr_t)fromhost - (uintptr_t)__htif_base)
 
 static void __check_fromhost()
 {
@@ -84,4 +94,45 @@ void htif_poweroff()
     fromhost = 0;
     tohost = 1;
   }
+}
+
+struct htif_scan
+{
+  int compat;
+};
+
+static void htif_open(const struct fdt_scan_node *node, void *extra)
+{
+  struct htif_scan *scan = (struct htif_scan *)extra;
+  memset(scan, 0, sizeof(*scan));
+}
+
+static void htif_prop(const struct fdt_scan_prop *prop, void *extra)
+{
+  struct htif_scan *scan = (struct htif_scan *)extra;
+  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "ucb,htif0")) {
+    scan->compat = 1;
+  }
+}
+
+static void htif_done(const struct fdt_scan_node *node, void *extra)
+{
+  struct htif_scan *scan = (struct htif_scan *)extra;
+  if (!scan->compat) return;
+
+  htif = 1;
+}
+
+void query_htif(uintptr_t fdt)
+{
+  struct fdt_cb cb;
+  struct htif_scan scan;
+
+  memset(&cb, 0, sizeof(cb));
+  cb.open = htif_open;
+  cb.prop = htif_prop;
+  cb.done = htif_done;
+  cb.extra = &scan;
+
+  fdt_scan(fdt, &cb);
 }

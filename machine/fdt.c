@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include "config.h"
@@ -553,13 +554,15 @@ struct hart_filter {
   int compat;
   int hart;
   char *status;
-  unsigned long mask;
+  char *mmu_type;
+  long *disabled_hart_mask;
 };
 
 static void hart_filter_open(const struct fdt_scan_node *node, void *extra)
 {
   struct hart_filter *filter = (struct hart_filter *)extra;
-  filter->status = 0;
+  filter->status = NULL;
+  filter->mmu_type = NULL;
   filter->compat = 0;
   filter->hart = -1;
 }
@@ -575,7 +578,20 @@ static void hart_filter_prop(const struct fdt_scan_prop *prop, void *extra)
     filter->hart = reg;
   } else if (!strcmp(prop->name, "status")) {
     filter->status = (char*)prop->value;
+  } else if (!strcmp(prop->name, "mmu-type")) {
+    filter->mmu_type = (char*)prop->value;
   }
+}
+
+static bool hart_filter_mask(const struct hart_filter *filter)
+{
+  if (filter->mmu_type == NULL) return true;
+  if (strcmp(filter->status, "okay")) return true;
+  if (!strcmp(filter->mmu_type, "riscv,sv39")) return false;
+  if (!strcmp(filter->mmu_type, "riscv,sv48")) return false;
+  printm("hart_filter_mask saw unknown hart type: status=\"%s\", mmu_type=\"%s\"\n",
+         filter->status, filter->mmu_type);
+  return true;
 }
 
 static void hart_filter_done(const struct fdt_scan_node *node, void *extra)
@@ -586,14 +602,15 @@ static void hart_filter_done(const struct fdt_scan_node *node, void *extra)
   assert (filter->status);
   assert (filter->hart >= 0);
 
-  if (((filter->mask >> filter->hart) & 1) && !strcmp(filter->status, "okay")) {
+  if (hart_filter_mask(filter)) {
     strcpy(filter->status, "masked");
     uint32_t *len = (uint32_t*)filter->status;
     len[-2] = bswap(strlen("masked")+1);
+    *filter->disabled_hart_mask |= (1 << filter->hart);
   }
 }
 
-void filter_harts(uintptr_t fdt, unsigned long hart_mask)
+void filter_harts(uintptr_t fdt, long *disabled_hart_mask)
 {
   struct fdt_cb cb;
   struct hart_filter filter;
@@ -604,7 +621,8 @@ void filter_harts(uintptr_t fdt, unsigned long hart_mask)
   cb.done = hart_filter_done;
   cb.extra = &filter;
 
-  filter.mask = hart_mask;
+  filter.disabled_hart_mask = disabled_hart_mask;
+  *disabled_hart_mask = 0;
   fdt_scan(fdt, &cb);
 }
 

@@ -49,7 +49,6 @@ static void delegate_traps()
     (1U << CAUSE_BREAKPOINT) |
     (1U << CAUSE_LOAD_PAGE_FAULT) |
     (1U << CAUSE_STORE_PAGE_FAULT) |
-    (1U << CAUSE_BREAKPOINT) |
     (1U << CAUSE_USER_ECALL);
 
   write_csr(mideleg, interrupts);

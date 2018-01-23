@@ -38,7 +38,7 @@ void poweroff(uint16_t code)
   if (htif) {
     htif_poweroff();
   } else {
-    while (1);
+    while (1) { asm volatile ("#noop\n"); }
   }
 }
 

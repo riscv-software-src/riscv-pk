@@ -31,17 +31,6 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
   return 0;
 }
 
-void poweroff(uint16_t code)
-{
-  printm("Power off\n");
-  finisher_exit(code);
-  if (htif) {
-    htif_poweroff();
-  } else {
-    while (1) { asm volatile ("#noop\n"); }
-  }
-}
-
 void putstring(const char* s)
 {
   while (*s)
@@ -227,5 +216,17 @@ void trap_from_machine_mode(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
       return machine_page_fault(regs, dummy, mepc);
     default:
       bad_trap(regs, dummy, mepc);
+  }
+}
+
+void poweroff(uint16_t code)
+{
+  printm("Power off\r\n");
+  finisher_exit(code);
+  if (htif) {
+    htif_poweroff();
+  } else {
+    send_ipi_many(0, IPI_HALT);
+    while (1) { asm volatile ("wfi\n"); }
   }
 }

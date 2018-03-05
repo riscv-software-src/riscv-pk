@@ -91,6 +91,11 @@ trap_vector:
   beqz a1, 1f
   sfence.vma
 1:
+  andi a1, a0, IPI_HALT
+  beqz a1, 1f
+  wfi
+  j 1b
+1:
   j .Lmret
 
 

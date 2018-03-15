@@ -4095,6 +4095,8 @@ case "${BUILD_32BIT}" in
 	;;
 esac
 
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+
 # Check whether --enable-print-device-tree was given.
 if test "${enable_print_device_tree+set}" = set; then :
   enableval=$enable_print_device_tree;

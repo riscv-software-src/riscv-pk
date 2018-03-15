@@ -99,6 +99,8 @@ case "${BUILD_32BIT}" in
 	;;
 esac
 
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+
 AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
 AS_IF([test "x$enable_print_device_tree" == "xyes"], [
   AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])

@@ -90,7 +90,7 @@ case "${BUILD_32BIT}" in
 	echo "Building 32-bit pk"
 	CFLAGS="$default_CFLAGS -m32"
 	LDFLAGS="-m32"
-  install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
+	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
 	;;
   *)
 	CFLAGS="$default_CFLAGS"

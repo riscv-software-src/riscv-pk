@@ -17,7 +17,7 @@ bbl_asm_srcs = \
 payload.o: bbl_payload
 
 bbl_payload: $(BBL_PAYLOAD)
-	if $(READELF) -h $< 2> /dev/null > /dev/null; then $(OBJCOPY) -O binary $< $@; else cp $< $@; fi
+	if $(READELF) -h $< 2> /dev/null > /dev/null; then $(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $< $@; else cp $< $@; fi
 
 raw_logo.o: bbl_logo_file
 

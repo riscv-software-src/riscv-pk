@@ -301,7 +301,7 @@ int sys_uname(void* buf)
   const int sz = 65;
   strcpy(buf + 0*sz, "Proxy Kernel");
   strcpy(buf + 1*sz, "");
-  strcpy(buf + 2*sz, "3.4.5");
+  strcpy(buf + 2*sz, "4.15.0");
   strcpy(buf + 3*sz, "");
   strcpy(buf + 4*sz, "");
   strcpy(buf + 5*sz, "");

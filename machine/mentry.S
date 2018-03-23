@@ -91,6 +91,11 @@ trap_vector:
   beqz a1, 1f
   sfence.vma
 1:
+  andi a1, a0, IPI_HALT
+  beqz a1, 1f
+  wfi
+  j 1b
+1:
   j .Lmret
 
 
@@ -257,15 +262,8 @@ do_reset:
   slli a2, a3, RISCV_PGSHIFT
   add sp, sp, a2
 
-  # Boot on the first unmasked hart
-  la a4, disabled_hart_mask
-  LOAD a4, 0(a4)
-  addi a5, a4, 1
-  not a4, a4
-  and a4, a4, a5
-  srl a4, a4, a3
-  andi a4, a4, 1
-  bnez a4, init_first_hart
+  # Boot on the first hart
+  beqz a3, init_first_hart
 
   # set MSIE bit to receive IPI
   li a2, MIP_MSIP

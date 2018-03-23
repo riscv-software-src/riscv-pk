@@ -78,7 +78,7 @@ AC_ARG_VAR(RISCV, [top-level RISC-V install directory])
 # Set compiler flags
 #-------------------------------------------------------------------------
 
-default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks"
+default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
 
 AC_ARG_ENABLE([32bit],
 	AS_HELP_STRING([--enable-32bit], [Build a 32-bit pk]),
@@ -90,14 +90,16 @@ case "${BUILD_32BIT}" in
 	echo "Building 32-bit pk"
 	CFLAGS="$default_CFLAGS -m32"
 	LDFLAGS="-m32"
-	install_subdir="riscv32-unknown-elf"
+	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
 	;;
   *)
 	CFLAGS="$default_CFLAGS"
 	LDFLAGS=
-	install_subdir="riscv64-unknown-elf"
+	install_subdir=$host_alias
 	;;
 esac
+
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 
 AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
 AS_IF([test "x$enable_print_device_tree" == "xyes"], [

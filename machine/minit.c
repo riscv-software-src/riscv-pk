@@ -143,7 +143,12 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_uart(dtb);
   query_uart16550(dtb);
   query_htif(dtb);
+
+  // This is a workaround for a race condition. Presently printm does not work
+  // on rv32 because HTIF is not supported, so don't use the workaround on rv32.
+#if __riscv_xlen != 32
   printm("bbl loader\r\n");
+#endif
 
   hart_init();
   hls_init(0); // this might get called again from parse_config_string

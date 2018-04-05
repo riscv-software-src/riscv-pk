@@ -92,6 +92,59 @@ static uintptr_t mcall_set_timer(uint64_t when)
   return 0;
 }
 
+static uintptr_t mcall_read_perf_cnt(uintptr_t id)
+{
+  switch (id)
+  {
+  case 0:
+    return read_csr(mcycle);
+  case 1:
+    return read_csr(minstret);
+  case 2:
+    return read_csr(mhpmcounter3);
+  case 3:
+    return read_csr(mhpmcounter4);
+  }
+  return -ENOSYS;
+}
+
+static uintptr_t mcall_write_perf_cnt(uintptr_t id, uintptr_t val)
+{
+  switch (id)
+  {
+  case 0:
+    write_csr(mcycle, val);
+    return 0;
+  case 1:
+    write_csr(minstret, val);
+    return 0;
+  case 2:
+    write_csr(mhpmcounter3, val);
+    return 0;
+  case 3:
+    write_csr(mhpmcounter4, val);
+    return 0;
+  }
+  return -ENOSYS;
+}
+
+static uintptr_t mcall_write_perf_cfg(uintptr_t id, uintptr_t val)
+{
+  switch (id)
+  {
+  case 0: // mcycle - not configurable
+  case 1: // minstret - not configurable
+    return -ENOSYS;
+  case 3:
+    write_csr(mhpmevent3, val);
+    return 0;
+  case 4:
+    write_csr(mhpmevent4, val);
+    return 0;
+  }
+  return -ENOSYS;
+}
+
 static void send_ipi_many(uintptr_t* pmask, int event)
 {
   _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
@@ -161,6 +214,15 @@ send_ipi:
 #else
       retval = mcall_set_timer(arg0);
 #endif
+      break;
+    case SBI_READ_PERF_CNT:
+      retval = mcall_read_perf_cnt(arg0);
+      break;
+    case SBI_WRITE_PERF_CNT:
+      retval = mcall_write_perf_cnt(arg0, arg1);
+      break;
+    case SBI_WRITE_PERF_CFG:
+      retval = mcall_write_perf_cfg(arg0, arg1);
       break;
     default:
       retval = -ENOSYS;

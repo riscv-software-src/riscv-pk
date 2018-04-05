@@ -97,8 +97,12 @@ static uintptr_t mcall_read_perf_cnt(uintptr_t id)
   switch (id)
   {
   case 0:
-    return read_csr(mhpmcounter3);
+    return read_csr(mcycle);
   case 1:
+    return read_csr(minstret);
+  case 2:
+    return read_csr(mhpmcounter3);
+  case 3:
     return read_csr(mhpmcounter4);
   }
   return -ENOSYS;
@@ -108,10 +112,13 @@ static uintptr_t mcall_write_perf_cfg(uintptr_t id, uintptr_t val)
 {
   switch (id)
   {
-  case 0:
+  case 0: // mcycle - not configurable
+  case 1: // minstret - not configurable
+    return -ENOSYS;
+  case 3:
     write_csr(mhpmevent3, val);
     return 0;
-  case 1:
+  case 4:
     write_csr(mhpmevent4, val);
     return 0;
   }

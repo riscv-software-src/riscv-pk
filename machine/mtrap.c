@@ -108,6 +108,26 @@ static uintptr_t mcall_read_perf_cnt(uintptr_t id)
   return -ENOSYS;
 }
 
+static uintptr_t mcall_write_perf_cnt(uintptr_t id, uintptr_t val)
+{
+  switch (id)
+  {
+  case 0:
+    write_csr(mcycle, val);
+    return 0;
+  case 1:
+    write_csr(minstret, val);
+    return 0;
+  case 2:
+    write_csr(mhpmcounter3, val);
+    return 0;
+  case 3:
+    write_csr(mhpmcounter4, val);
+    return 0;
+  }
+  return -ENOSYS;
+}
+
 static uintptr_t mcall_write_perf_cfg(uintptr_t id, uintptr_t val)
 {
   switch (id)
@@ -197,6 +217,9 @@ send_ipi:
       break;
     case SBI_READ_PERF_CNT:
       retval = mcall_read_perf_cnt(arg0);
+      break;
+    case SBI_WRITE_PERF_CNT:
+      retval = mcall_write_perf_cnt(arg0, arg1);
       break;
     case SBI_WRITE_PERF_CFG:
       retval = mcall_write_perf_cfg(arg0, arg1);

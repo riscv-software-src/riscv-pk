@@ -76,8 +76,8 @@ trap_vector:
   addi a0, sp, MENTRY_IPI_PENDING_OFFSET
   amoswap.w a0, x0, (a0)
 #else
-  lw a0, MENTRY_IPI_PENDING_OFFSET(a0)
-  sw x0, MENTRY_IPI_PENDING_OFFSET(a0)
+  lw a0, MENTRY_IPI_PENDING_OFFSET(sp)
+  sw x0, MENTRY_IPI_PENDING_OFFSET(sp)
 #endif
   and a1, a0, IPI_SOFT
   beqz a1, 1f

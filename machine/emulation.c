@@ -202,12 +202,12 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
       *result = read_csr(minstreth);
       return 0;
     case CSR_MHPMCOUNTER3H:
-      if (!((counteren >> (3 + CSR_HPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
+      if (!((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter3h);
       return 0;
     case CSR_MHPMCOUNTER4H:
-      if (!((counteren >> (3 + CSR_HPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
+      if (!((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter4h);
       return 0;

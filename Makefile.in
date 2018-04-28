@@ -52,12 +52,17 @@ endif
 
 prefix       := @prefix@
 enable_stow  := @enable_stow@
+ifeq (@BUILD_32BIT@, yes)
+  install_subdir := $(shell echo @host_alias@ | sed -e 's/64/32/g')
+else
+  install_subdir := @host_alias@
+endif
 
 ifeq ($(enable_stow),yes)
   stow_pkg_dir := $(prefix)/pkgs
   INSTALLDIR ?= $(DESTDIR)/$(stow_pkg_dir)/$(project_name)-$(project_ver)
 else
-  INSTALLDIR ?= $(DESTDIR)/$(prefix)/@install_subdir@
+  INSTALLDIR ?= $(DESTDIR)/$(prefix)/$(install_subdir)
 endif
 
 install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)
@@ -116,6 +121,20 @@ INSTALL_HDR   := $(INSTALL) -m 444
 INSTALL_LIB   := $(INSTALL) -m 644
 INSTALL_EXE   := $(INSTALL) -m 555
 STOW          := @stow@
+
+# enable-32bit
+ifeq (@BUILD_32BIT@, yes)
+  opt_val = $(shell $(CC) -v 2>&1 | \
+              sed 's/ /\n/g' | grep $1 | awk -F= '{print $$2}' | sed 's/64/32/')
+  march := $(call opt_val,with-arch)
+  mabi := $(addprefix i,$(call opt_val,with-abi))
+  ifeq ($(mabi),)
+    is_fpu := $(or $(findstring g,$(march)),$(findstring d,$(march)))
+    mabi := $(if $(is_fpu),ilp32d,ilp32)
+  endif
+  COMPILE  += -march=$(march) -mabi=$(mabi)
+  LINK     += -march=$(march) -mabi=$(mabi)
+endif
 
 #-------------------------------------------------------------------------
 # Include subproject makefile fragments

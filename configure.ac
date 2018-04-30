@@ -78,28 +78,41 @@ AC_ARG_VAR(RISCV, [top-level RISC-V install directory])
 # Set compiler flags
 #-------------------------------------------------------------------------
 
-default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+LDFLAGS="-Wl,--build-id=none"
 
-AC_ARG_ENABLE([32bit],
-	AS_HELP_STRING([--enable-32bit], [Build a 32-bit pk]),
-	BUILD_32BIT=$enableval,
-	BUILD_32BIT=no)
+AC_ARG_WITH([arch],
+  AS_HELP_STRING([--with-arch], [Specify ISA string]))
+AC_ARG_WITH([abi],
+  AS_HELP_STRING([--with-abi], [Specify integer and floating-point calling convention]))
 
-case "${BUILD_32BIT}" in
-  yes|default)
-	echo "Building 32-bit pk"
-	CFLAGS="$default_CFLAGS -m32"
-	LDFLAGS="-m32"
-	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
-	;;
+FORCE_32BIT=no
+if test "x$with_arch" != x; then
+  CFLAGS="$CFLAGS -march=$with_arch"
+  case "$with_arch" in
+    rv32*)
+        FORCE_32BIT=yes
+        ;;
+    *)
+        ;;
+  esac
+fi
+
+if test "x$with_abi" != x; then
+  CFLAGS="$CFLAGS -mabi=$with_abi"
+fi
+
+case "${FORCE_32BIT}" in
+  yes)
+      # When building 32-bit pk and host=riscv64-*, host_alias would have an
+      # incorrect xlen for use as the install_subdir
+      echo "Forcing 32-bit install location"
+      install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
+      ;;
   *)
-	CFLAGS="$default_CFLAGS"
-	LDFLAGS=
-	install_subdir=$host_alias
-	;;
+      install_subdir=$host_alias
+      ;;
 esac
-
-LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 
 AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
 AS_IF([test "x$enable_print_device_tree" == "xyes"], [

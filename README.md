@@ -24,18 +24,18 @@ directory is not supported; you need to use a separate build directory.
 
     $ mkdir build
     $ cd build
-    $ ../configure --prefix=$RISCV --host=riscv64-unknown-elf
+    $ ../configure --prefix=$RISCV --host=riscv64-unknown-elf \
+                   --with-arch=rv64imafd \
+                   --with-abi=lp64d
     $ make
     $ make install
 
-Alternatively, the GNU/Linux toolchain may be used to build this package,
-by setting `--host=riscv64-unknown-linux-gnu`.
-
-By default, 64-bit (RV64) versions of `pk` and `bbl` are built.  To
-built 32-bit (RV32) versions, supply a `--enable-32bit` flag to the
-configure command.
+Alternatively, the GNU/Linux toolchain may be used to build this package, by
+setting `--host=riscv64-unknown-linux-gnu`. The `--with-arch` and `--with-abi`
+flags are optional and can be used to specify an ISA and ABI other than the
+default for the host toolchain.
 
 The `install` step installs 64-bit build products into a directory
-matching your host (e.g. `$RISCV/riscv64-unknown-elf`). 32-bit versions 
+matching your host (e.g. `$RISCV/riscv64-unknown-elf`). 32-bit versions
 are installed into a directory matching a 32-bit version of your host (e.g.
 `$RISCV/riscv32-unknown-elf`).

@@ -592,7 +592,7 @@ subprojects_enabled
 subprojects
 BBL_LOGO_FILE
 BBL_PAYLOAD
-install_subdir
+BUILD_32BIT
 RISCV
 EGREP
 GREP
@@ -4071,8 +4071,6 @@ fi
 # Set compiler flags
 #-------------------------------------------------------------------------
 
-default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
-
 # Check whether --enable-32bit was given.
 if test "${enable_32bit+set}" = set; then :
   enableval=$enable_32bit; BUILD_32BIT=$enableval
@@ -4081,22 +4079,8 @@ else
 fi
 
 
-case "${BUILD_32BIT}" in
-  yes|default)
-	echo "Building 32-bit pk"
-	CFLAGS="$default_CFLAGS -m32"
-	LDFLAGS="-m32"
-	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
-	;;
-  *)
-	CFLAGS="$default_CFLAGS"
-	LDFLAGS=
-	install_subdir=$host_alias
-
-	;;
-esac
-
-LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+LDFLAGS="-Wl,--build-id=none"
 
 # Check whether --enable-print-device-tree was given.
 if test "${enable_print_device_tree+set}" = set; then :

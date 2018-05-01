@@ -592,7 +592,7 @@ subprojects_enabled
 subprojects
 BBL_LOGO_FILE
 BBL_PAYLOAD
-install_subdir
+WITH_ARCH
 RISCV
 EGREP
 GREP
@@ -669,7 +669,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_stow
-enable_32bit
+with_arch
 enable_print_device_tree
 enable_optional_subprojects
 enable_vm
@@ -1318,7 +1318,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-stow           Enable stow-based install
-  --enable-32bit          Build a 32-bit pk
   --enable-print-device-tree
                           Print DTS when booting
   --enable-optional-subprojects
@@ -1330,6 +1329,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-arch             Set the RISC-V architecture
   --with-payload          Set ELF payload for bbl
   --with-logo             Specify a better logo
 
@@ -4071,31 +4071,12 @@ fi
 # Set compiler flags
 #-------------------------------------------------------------------------
 
-default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
 
-# Check whether --enable-32bit was given.
-if test "${enable_32bit+set}" = set; then :
-  enableval=$enable_32bit; BUILD_32BIT=$enableval
-else
-  BUILD_32BIT=no
+# Check whether --with-arch was given.
+if test "${with_arch+set}" = set; then :
+  withval=$with_arch; WITH_ARCH=$with_arch
+
 fi
-
-
-case "${BUILD_32BIT}" in
-  yes|default)
-	echo "Building 32-bit pk"
-	CFLAGS="$default_CFLAGS -m32"
-	LDFLAGS="-m32"
-	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
-	;;
-  *)
-	CFLAGS="$default_CFLAGS"
-	LDFLAGS=
-	install_subdir=$host_alias
-	;;
-esac
-
-LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 
 # Check whether --enable-print-device-tree was given.
 if test "${enable_print_device_tree+set}" = set; then :
@@ -4110,9 +4091,13 @@ $as_echo "#define PK_PRINT_DEVICE_TREE /**/" >>confdefs.h
 
 fi
 
+CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+
 
 
 LIBS="-lgcc"
+
 
 
 

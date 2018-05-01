@@ -78,38 +78,22 @@ AC_ARG_VAR(RISCV, [top-level RISC-V install directory])
 # Set compiler flags
 #-------------------------------------------------------------------------
 
-default_CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
-
-AC_ARG_ENABLE([32bit],
-	AS_HELP_STRING([--enable-32bit], [Build a 32-bit pk]),
-	BUILD_32BIT=$enableval,
-	BUILD_32BIT=no)
-
-case "${BUILD_32BIT}" in
-  yes|default)
-	echo "Building 32-bit pk"
-	CFLAGS="$default_CFLAGS -m32"
-	LDFLAGS="-m32"
-	install_subdir="`echo $host_alias | sed -e 's/64/32/g'`"
-	;;
-  *)
-	CFLAGS="$default_CFLAGS"
-	LDFLAGS=
-	install_subdir=$host_alias
-	;;
-esac
-
-LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+AC_ARG_WITH([arch], AS_HELP_STRING([--with-arch], [Set the RISC-V architecture]),
+  [AC_SUBST([WITH_ARCH], $with_arch, [Specify architecture to build the project])])
 
 AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
 AS_IF([test "x$enable_print_device_tree" == "xyes"], [
   AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
 ])
 
+CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST([LIBS], ["-lgcc"])
-AC_SUBST(install_subdir)
+AC_SUBST(WITH_ARCH)
+AC_SUBST(host_alias)
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

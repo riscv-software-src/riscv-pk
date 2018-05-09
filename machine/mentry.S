@@ -48,7 +48,7 @@ trap_vector:
   li a0, IRQ_M_TIMER * 2
   bne a0, a1, 1f
 
-  # Yes.  Simply clear MSIE and raise SSIP.
+  # Yes.  Simply clear MTIE and raise STIP.
   li a0, MIP_MTIP
   csrc mie, a0
   li a0, MIP_STIP

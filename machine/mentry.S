@@ -2,6 +2,7 @@
 
 #include "mtrap.h"
 #include "bits.h"
+#include "config.h"
 
   .data
   .align 6
@@ -18,7 +19,11 @@ trap_table:
   .word bad_trap
   .word mcall_trap
   .word bad_trap
+#ifdef BBL_BOOT_MACHINE
+  .word mcall_trap
+#else
   .word bad_trap
+#endif /* BBL_BOOT_MACHINE */
   .word bad_trap
 #define TRAP_FROM_MACHINE_MODE_VECTOR 13
   .word __trap_from_machine_mode

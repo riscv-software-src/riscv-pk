@@ -7,13 +7,21 @@
 #include "fdt.h"
 #include <string.h>
 
+extern char _payload_start, _payload_end; /* internal payload */
 static const void* entry_point;
 long disabled_hart_mask;
 
 static uintptr_t dtb_output()
 {
-  extern char _payload_end;
-  uintptr_t end = (uintptr_t) &_payload_end;
+  /*
+   * Place DTB after the payload, either the internal payload or a
+   * preloaded external payload specified in device-tree, if present.
+   *
+   * Note: linux kernel calls __va(dtb) to get the device-tree virtual
+   * address. The kernel's virtual mapping begins at its load address,
+   * thus mandating device-tree is in physical memory after the kernel.
+   */
+  uintptr_t end = kernel_end ? (uintptr_t)kernel_end : (uintptr_t)&_payload_end;
   return (end + MEGAPAGE_SIZE - 1) / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
 }
 
@@ -53,7 +61,6 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
 
 void boot_loader(uintptr_t dtb)
 {
-  extern char _payload_start;
   filter_dtb(dtb);
 #ifdef PK_ENABLE_LOGO
   print_logo();
@@ -62,6 +69,7 @@ void boot_loader(uintptr_t dtb)
   fdt_print(dtb_output());
 #endif
   mb();
-  entry_point = &_payload_start;
+  /* Use optional FDT preloaded external payload if present */
+  entry_point = kernel_start ? kernel_start : &_payload_start;
   boot_other_hart(0);
 }

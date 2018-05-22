@@ -4092,7 +4092,6 @@ case "${BUILD_32BIT}" in
 	CFLAGS="$default_CFLAGS"
 	LDFLAGS=
 	install_subdir=$host_alias
-
 	;;
 esac
 
@@ -4251,10 +4250,20 @@ fi
 
 # Check whether --with-payload was given.
 if test "${with_payload+set}" = set; then :
-  withval=$with_payload; BBL_PAYLOAD=$with_payload
+  withval=$with_payload;
+   BBL_PAYLOAD=$with_payload
+
+
+$as_echo "#define RELAXED_ALIGNMENT 0" >>confdefs.h
+
 
 else
-  BBL_PAYLOAD=dummy_payload
+
+   BBL_PAYLOAD=dummy_payload
+
+
+$as_echo "#define RELAXED_ALIGNMENT 1" >>confdefs.h
+
 
 fi
 

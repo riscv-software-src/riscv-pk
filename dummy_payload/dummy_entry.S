@@ -18,5 +18,11 @@ _start:
 
   .data
 str:
-  .asciz "This is bbl's dummy_payload.  To boot a real kernel, reconfigure\n\
-bbl with the flag --with-payload=PATH, then rebuild bbl.\n"
+  .asciz "This is bbl's dummy_payload.  To boot a real kernel, reconfigure bbl
+with the flag --with-payload=PATH, then rebuild bbl. Alternatively,
+bbl can be used in firmware-only mode by adding device-tree nodes
+for an external payload and use QEMU's -bios and -kernel options.\n
+    chosen {
+        riscv,kernel-start = <payload_start>;
+        riscv,kernel-end = <payload_end>;
+    };\n\n"

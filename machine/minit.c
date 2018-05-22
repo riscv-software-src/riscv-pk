@@ -16,6 +16,8 @@ uintptr_t mem_size;
 volatile uint64_t* mtime;
 volatile uint32_t* plic_priorities;
 size_t plic_ndevs;
+void* kernel_start;
+void* kernel_end;
 
 static void mstatus_init()
 {
@@ -162,6 +164,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_harts(dtb);
   query_clint(dtb);
   query_plic(dtb);
+  query_chosen(dtb);
 
   wake_harts();
 

@@ -79,6 +79,11 @@ static uintptr_t mcall_clear_ipi()
   return clear_csr(mip, MIP_SSIP) & MIP_SSIP;
 }
 
+static uintptr_t mcall_clear_tip()
+{
+  return clear_csr(mip, MIP_STIP);
+}
+
 static uintptr_t mcall_shutdown()
 {
   poweroff(0);
@@ -87,7 +92,7 @@ static uintptr_t mcall_shutdown()
 static uintptr_t mcall_set_timer(uint64_t when)
 {
   *HLS()->timecmp = when;
-  clear_csr(mip, MIP_STIP);
+  mcall_clear_tip();
   set_csr(mie, MIP_MTIP);
   return 0;
 }
@@ -151,6 +156,9 @@ send_ipi:
       break;
     case SBI_CLEAR_IPI:
       retval = mcall_clear_ipi();
+      break;
+    case SBI_CLEAR_TIP:
+      retval = mcall_clear_tip();
       break;
     case SBI_SHUTDOWN:
       retval = mcall_shutdown();

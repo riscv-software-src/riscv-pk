@@ -29,7 +29,7 @@ void load_elf(const char* fn, elf_info* info)
   if (IS_ERR_VALUE(file))
     goto fail;
 
-  Elf_Ehdr eh;
+  Elf64_Ehdr eh;
   ssize_t ehdr_size = file_pread(file, &eh, sizeof(eh), 0);
   if (ehdr_size < (ssize_t)sizeof(eh) ||
       !(eh.e_ident[0] == '\177' && eh.e_ident[1] == 'E' &&
@@ -37,7 +37,7 @@ void load_elf(const char* fn, elf_info* info)
     goto fail;
 
 #if __riscv_xlen == 64
-  assert(IS_ELF64(eh));
+  assert(IS_ELF(eh));
 #else
   assert(IS_ELF32(eh));
 #endif
@@ -46,15 +46,15 @@ void load_elf(const char* fn, elf_info* info)
   assert(!(eh.e_flags & EF_RISCV_RVC));
 #endif
 
-  size_t phdr_size = eh.e_phnum * sizeof(Elf_Phdr);
+  size_t phdr_size = eh.e_phnum * sizeof(Elf64_Phdr);
   if (phdr_size > info->phdr_size)
     goto fail;
   ssize_t ret = file_pread(file, (void*)info->phdr, phdr_size, eh.e_phoff);
   if (ret < (ssize_t)phdr_size)
     goto fail;
   info->phnum = eh.e_phnum;
-  info->phent = sizeof(Elf_Phdr);
-  Elf_Phdr* ph = (typeof(ph))info->phdr;
+  info->phent = sizeof(Elf64_Phdr);
+  Elf64_Phdr* ph = (typeof(ph))info->phdr;
 
   // compute highest VA in ELF
   uintptr_t max_vaddr = 0;

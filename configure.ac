@@ -108,7 +108,7 @@ AS_IF([test "x$enable_print_device_tree" == "xyes"], [
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
-AC_SUBST([LIBS], ["-lgcc"])
+# AC_SUBST([LIBS], ["-lgcc"])
 AC_SUBST(install_subdir)
 
 #-------------------------------------------------------------------------

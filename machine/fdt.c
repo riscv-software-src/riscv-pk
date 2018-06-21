@@ -580,10 +580,10 @@ static void chosen_prop(const struct fdt_scan_prop *prop, void *extra)
   if (!scan->chosen) return;
   if (!strcmp(prop->name, "riscv,kernel-start")) {
     fdt_get_address(prop->node->parent, prop->value, &val);
-    scan->kernel_start = (void*)val;
+    scan->kernel_start = (void*)(uintptr_t)val;
   } else if (!strcmp(prop->name, "riscv,kernel-end")) {
     fdt_get_address(prop->node->parent, prop->value, &val);
-    scan->kernel_end = (void*)val;
+    scan->kernel_end = (void*)(uintptr_t)val;
   }
 }
 

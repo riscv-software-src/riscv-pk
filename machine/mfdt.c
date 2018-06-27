@@ -1,8 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "config.h"
 #include "mfdt.h"
+#include "libfdt.h"
+#include "fdt.h"
 #include "mtrap.h"
 
 static inline uint32_t bswap(uint32_t x)
@@ -624,6 +627,43 @@ void filter_harts(uintptr_t fdt, long *disabled_hart_mask)
   filter.disabled_hart_mask = disabled_hart_mask;
   *disabled_hart_mask = 0;
   fdt_scan(fdt, &cb);
+}
+
+//////////////////////////////////////////// NODE ADD //////////////////////////////////////////////
+
+int set_timer_node(void *dtb, int coffset, int poffset)
+{
+  int phandle = fdt_get_phandle(dtb, poffset);
+  int toffset = fdt_add_subnode(dtb, coffset, "timer");
+  if (!phandle || toffset < 0 )
+    return -1;
+  fdt_setprop_string(dtb, toffset, "compatible", "riscv,local-timer");
+  fdt_setprop_cell(dtb, toffset, "interrupt-parent", phandle);
+  fdt_setprop_cell(dtb, toffset, "interrupts", 5);
+
+  return 0;
+}
+
+void add_timer_node(void *dtb)
+{
+  char cpu_dtpath[32];
+  char cpu_intc_dtpath[64];
+  int err, hart = 0;
+  uint64_t enabled_hart_mask = hart_mask;
+
+  while(enabled_hart_mask) {
+    if (enabled_hart_mask & 1) {
+      /* add per cpu nodes here */
+      snprintf(cpu_dtpath, 32, "/cpus/cpu@%d", hart);
+      snprintf(cpu_intc_dtpath, 64, "/cpus/cpu@%d/interrupt-controller", hart);
+      err = set_timer_node(dtb, fdt_path_offset(dtb, cpu_dtpath),
+                     fdt_path_offset(dtb, cpu_intc_dtpath));
+      if (err < 0)
+        die("%s: Couldn't set timer node property!!\n", __func__);
+    }
+   enabled_hart_mask = enabled_hart_mask >> 1;
+   hart++;
+ }
 }
 
 //////////////////////////////////////////// PRINT //////////////////////////////////////////////

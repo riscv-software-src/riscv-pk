@@ -1,5 +1,6 @@
 bbl_subproject_deps = \
 	util \
+  libfdt \
   softfloat \
   machine \
   dummy_payload \

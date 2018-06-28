@@ -1,6 +1,6 @@
 #include <string.h>
 #include "uart.h"
-#include "fdt.h"
+#include "mfdt.h"
 
 volatile uint32_t* uart;
 

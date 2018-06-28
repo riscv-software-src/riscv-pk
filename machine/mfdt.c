@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "config.h"
-#include "fdt.h"
+#include "mfdt.h"
 #include "mtrap.h"
 
 static inline uint32_t bswap(uint32_t x)

@@ -5,5 +5,6 @@ util_hdrs = \
 util_c_srcs = \
   snprintf.c \
   string.c \
+  bcopy.c \
 
 util_asm_srcs = \

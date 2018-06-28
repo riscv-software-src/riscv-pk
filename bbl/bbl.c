@@ -4,7 +4,7 @@
 #include "vm.h"
 #include "bits.h"
 #include "config.h"
-#include "fdt.h"
+#include "mfdt.h"
 #include <string.h>
 
 static const void* entry_point;

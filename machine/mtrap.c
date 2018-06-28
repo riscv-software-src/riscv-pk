@@ -7,7 +7,7 @@
 #include "uart.h"
 #include "uart16550.h"
 #include "finisher.h"
-#include "fdt.h"
+#include "mfdt.h"
 #include "unprivileged_memory.h"
 #include "disabled_hart_mask.h"
 #include <errno.h>

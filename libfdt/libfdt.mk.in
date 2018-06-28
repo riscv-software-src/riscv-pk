@@ -1,0 +1,20 @@
+libfdt_subproject_deps = \
+
+libfdt_hdrs = \
+  fdt.h \
+  libfdt_env.h \
+  libfdt.h \
+  libfdt_internal.h \
+
+libfdt_c_srcs = \
+  fdt_addresses.c \
+  fdt.c \
+  fdt_empty_tree.c \
+  fdt_overlay.c \
+  fdt_ro.c \
+  fdt_rw.c \
+  fdt_strerror.c \
+  fdt_sw.c \
+  fdt_wip.c \
+
+libfdt_asm_srcs = \

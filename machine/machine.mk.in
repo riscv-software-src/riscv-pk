@@ -1,10 +1,10 @@
 machine_subproject_deps = \
   softfloat \
-
+  libfdt \
 machine_hdrs = \
   atomic.h \
   bits.h \
-  fdt.h \
+  mfdt.h \
   emulation.h \
   encoding.h \
   fp_emulation.h \
@@ -18,7 +18,7 @@ machine_hdrs = \
   vm.h \
 
 machine_c_srcs = \
-  fdt.c \
+  mfdt.c \
   mtrap.c \
   minit.c \
   htif.c \

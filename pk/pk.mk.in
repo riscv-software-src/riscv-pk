@@ -1,5 +1,6 @@
 pk_subproject_deps = \
 	util \
+	libfdt \
 	softfloat \
 	machine \
 

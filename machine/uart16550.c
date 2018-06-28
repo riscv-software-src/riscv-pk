@@ -1,6 +1,6 @@
 #include <string.h>
 #include "uart16550.h"
-#include "fdt.h"
+#include "mfdt.h"
 
 volatile uint8_t* uart16550;
 

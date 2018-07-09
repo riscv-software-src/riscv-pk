@@ -1,3 +1,5 @@
+# See LICENSE.Batten for license details.
+#
 #=========================================================================
 # Toplevel configure.ac for the Modular C++ Build System
 #=========================================================================

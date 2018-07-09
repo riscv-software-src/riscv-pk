@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "fp_emulation.h"
 #include "unprivileged_memory.h"
 

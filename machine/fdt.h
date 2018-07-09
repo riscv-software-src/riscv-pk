@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef FDT_H
 #define FDT_H
 

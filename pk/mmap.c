@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "mmap.h"
 #include "atomic.h"
 #include "pk.h"

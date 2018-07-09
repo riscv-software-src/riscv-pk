@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "emulation.h"
 #include "fp_emulation.h"
 #include "config.h"

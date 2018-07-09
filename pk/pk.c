@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "pk.h"
 #include "mmap.h"
 #include "boot.h"

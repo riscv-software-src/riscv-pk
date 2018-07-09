@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "htif.h"
 #include "atomic.h"
 #include "mtrap.h"

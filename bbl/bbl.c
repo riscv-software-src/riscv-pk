@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "bbl.h"
 #include "mtrap.h"
 #include "atomic.h"

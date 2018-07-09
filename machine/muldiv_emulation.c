@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "emulation.h"
 
 #ifndef __riscv_muldiv

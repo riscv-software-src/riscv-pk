@@ -1,3 +1,5 @@
+// See LICENSE.SoftFloat for license details.
+
 
 #ifndef softfloat_h
 #define softfloat_h

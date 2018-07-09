@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "mtrap.h"
 #include "mcall.h"
 #include "htif.h"

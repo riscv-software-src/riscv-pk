@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "mtrap.h"
 #include "atomic.h"
 #include "vm.h"

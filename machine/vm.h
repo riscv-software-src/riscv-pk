@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _VM_H
 #define _VM_H
 

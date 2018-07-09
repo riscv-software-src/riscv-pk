@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <string.h>
 #include "uart.h"
 #include "fdt.h"

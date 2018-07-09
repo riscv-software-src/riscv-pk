@@ -1,3 +1,5 @@
+// See LICENSE.SoftFloat for license details.
+
 
 #include <stdint.h>
 #include "primitives.h"

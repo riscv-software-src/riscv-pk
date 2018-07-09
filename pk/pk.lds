@@ -1,3 +1,5 @@
+/* See LICENSE for license details. */
+
 OUTPUT_ARCH( "riscv" )
 
 ENTRY( reset_vector )

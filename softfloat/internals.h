@@ -1,3 +1,5 @@
+// See LICENSE.SoftFloat for license details.
+
 
 /*** UPDATE COMMENTS. ***/
 

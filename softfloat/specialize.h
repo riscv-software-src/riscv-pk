@@ -1,3 +1,5 @@
+// See LICENSE.SoftFloat for license details.
+
 #ifndef _softfloat_specialize_h
 #define _softfloat_specialize_h
 

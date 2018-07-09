@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _MMAP_H
 #define _MMAP_H
 

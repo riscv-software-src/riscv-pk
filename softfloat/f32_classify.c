@@ -1,4 +1,4 @@
-// See LICENSE.SoftFloat for license details.
+// See LICENSE for license details.
 
 
 #include <stdbool.h>

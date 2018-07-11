@@ -592,6 +592,7 @@ subprojects_enabled
 subprojects
 BBL_LOGO_FILE
 BBL_PAYLOAD
+BBL_ENABLE_LOGO
 WITH_ARCH
 RISCV
 EGREP
@@ -4078,6 +4079,7 @@ if test "${with_arch+set}" = set; then :
 
 fi
 
+
 # Check whether --enable-print-device-tree was given.
 if test "${enable_print_device_tree+set}" = set; then :
   enableval=$enable_print_device_tree;
@@ -4162,7 +4164,9 @@ $as_echo "$as_me: configuring default subproject : pk" >&6;}
 
 $as_echo "#define PK_ENABLED /**/" >>confdefs.h
 
-      # Check whether --enable-vm was given.
+      # See LICENSE for license details.
+
+# Check whether --enable-vm was given.
 if test "${enable_vm+set}" = set; then :
   enableval=$enable_vm;
 fi
@@ -4219,12 +4223,16 @@ $as_echo "$as_me: configuring default subproject : bbl" >&6;}
 
 $as_echo "#define BBL_ENABLED /**/" >>confdefs.h
 
-      # Check whether --enable-logo was given.
+      # See LICENSE for license details.
+
+# Check whether --enable-logo was given.
 if test "${enable_logo+set}" = set; then :
   enableval=$enable_logo;
 fi
 
 if test "x$enable_logo" == "xyes"; then :
+
+  BBL_ENABLE_LOGO=1
 
 
 $as_echo "#define PK_ENABLE_LOGO /**/" >>confdefs.h
@@ -4398,7 +4406,9 @@ $as_echo "$as_me: configuring default subproject : machine" >&6;}
 
 $as_echo "#define MACHINE_ENABLED /**/" >>confdefs.h
 
-      # Check whether --enable-fp-emulation was given.
+      # See LICENSE for license details.
+
+# Check whether --enable-fp-emulation was given.
 if test "${enable_fp_emulation+set}" = set; then :
   enableval=$enable_fp_emulation;
 fi

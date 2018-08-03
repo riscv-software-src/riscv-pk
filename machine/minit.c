@@ -95,7 +95,9 @@ static void hart_init()
 {
   mstatus_init();
   fp_init();
+#ifndef BBL_BOOT_MACHINE
   delegate_traps();
+#endif /* BBL_BOOT_MACHINE */
 }
 
 static void plic_init()
@@ -184,7 +186,7 @@ void init_other_hart(uintptr_t hartid, uintptr_t dtb)
   boot_other_hart(dtb);
 }
 
-void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
+static inline void setup_pmp(void)
 {
   // Set up a PMP to permit access to all of memory.
   // Ignore the illegal-instruction trap if PMPs aren't supported.
@@ -196,6 +198,11 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
                 ".align 2\n\t"
                 "1: csrw mtvec, t0"
                 : : "r" (pmpc), "r" (-1UL) : "t0");
+}
+
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
+{
+  setup_pmp();
 
   uintptr_t mstatus = read_csr(mstatus);
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
@@ -211,5 +218,20 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
   register uintptr_t a0 asm ("a0") = arg0;
   register uintptr_t a1 asm ("a1") = arg1;
   asm volatile ("mret" : : "r" (a0), "r" (a1));
+  __builtin_unreachable();
+}
+
+void enter_machine_mode(void (*fn)(uintptr_t, uintptr_t), uintptr_t arg0, uintptr_t arg1)
+{
+  setup_pmp();
+
+  uintptr_t mstatus = read_csr(mstatus);
+  mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
+  write_csr(mstatus, mstatus);
+  write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
+
+  /* Jump to the payload's entry point */
+  fn(arg0, arg1);
+
   __builtin_unreachable();
 }

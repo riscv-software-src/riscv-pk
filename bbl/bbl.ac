@@ -18,3 +18,8 @@ AC_ARG_WITH([payload], AS_HELP_STRING([--with-payload], [Set ELF payload for bbl
 AC_ARG_WITH([logo], AS_HELP_STRING([--with-logo], [Specify a better logo]),
   [AC_SUBST([BBL_LOGO_FILE], $with_logo, [Logo for bbl])],
   [AC_SUBST([BBL_LOGO_FILE], [riscv_logo.txt], [Logo for bbl])])
+
+AC_ARG_ENABLE([boot-machine], AS_HELP_STRING([--enable-boot-machine], [Run payload in machine mode]))
+AS_IF([test "x$enable_boot_machine" == "xyes"], [
+  AC_DEFINE([BBL_BOOT_MACHINE],,[Define to run payload in machine mode])
+])

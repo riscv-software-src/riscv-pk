@@ -677,6 +677,7 @@ enable_vm
 enable_logo
 with_payload
 with_logo
+enable_boot_machine
 enable_fp_emulation
 '
       ac_precious_vars='build_alias
@@ -1325,6 +1326,7 @@ Optional Features:
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
   --enable-logo           Enable boot logo
+  --enable-boot-machine   Run payload in machine mode
   --disable-fp-emulation  Disable floating-point emulation
 
 Optional Packages:
@@ -4271,6 +4273,19 @@ else
 
 fi
 
+
+# Check whether --enable-boot-machine was given.
+if test "${enable_boot_machine+set}" = set; then :
+  enableval=$enable_boot_machine;
+fi
+
+if test "x$enable_boot_machine" == "xyes"; then :
+
+
+$as_echo "#define BBL_BOOT_MACHINE /**/" >>confdefs.h
+
+
+fi
 
 
 

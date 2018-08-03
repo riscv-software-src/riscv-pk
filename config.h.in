@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to run payload in machine mode */
+#undef BBL_BOOT_MACHINE
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef BBL_ENABLED
 

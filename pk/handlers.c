@@ -5,6 +5,24 @@
 #include "syscall.h"
 #include "mmap.h"
 
+static void handle_instruction_access_fault(trapframe_t *tf)
+{
+  dump_tf(tf);
+  panic("Instruction access fault!");
+}
+
+static void handle_load_access_fault(trapframe_t *tf)
+{
+  dump_tf(tf);
+  panic("Load access fault!");
+}
+
+static void handle_store_access_fault(trapframe_t *tf)
+{
+  dump_tf(tf);
+  panic("Store/AMO access fault!");
+}
+
 static void handle_illegal_instruction(trapframe_t* tf)
 {
   tf->insn = *(uint16_t*)tf->epc;
@@ -29,6 +47,12 @@ static void handle_misaligned_fetch(trapframe_t* tf)
 {
   dump_tf(tf);
   panic("Misaligned instruction access!");
+}
+
+static void handle_misaligned_load(trapframe_t* tf)
+{
+  dump_tf(tf);
+  panic("Misaligned Load!");
 }
 
 static void handle_misaligned_store(trapframe_t* tf)
@@ -83,10 +107,14 @@ void handle_trap(trapframe_t* tf)
 
   const static trap_handler trap_handlers[] = {
     [CAUSE_MISALIGNED_FETCH] = handle_misaligned_fetch,
+    [CAUSE_FETCH_ACCESS] = handle_instruction_access_fault,
+    [CAUSE_LOAD_ACCESS] = handle_load_access_fault,
+    [CAUSE_STORE_ACCESS] = handle_store_access_fault,
     [CAUSE_FETCH_PAGE_FAULT] = handle_fault_fetch,
     [CAUSE_ILLEGAL_INSTRUCTION] = handle_illegal_instruction,
     [CAUSE_USER_ECALL] = handle_syscall,
     [CAUSE_BREAKPOINT] = handle_breakpoint,
+    [CAUSE_MISALIGNED_LOAD] = handle_misaligned_load,
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,
     [CAUSE_LOAD_PAGE_FAULT] = handle_fault_load,
     [CAUSE_STORE_PAGE_FAULT] = handle_fault_store,

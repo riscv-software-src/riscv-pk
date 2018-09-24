@@ -191,13 +191,14 @@ static inline void setup_pmp(void)
   // Set up a PMP to permit access to all of memory.
   // Ignore the illegal-instruction trap if PMPs aren't supported.
   uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
+  uintptr_t pmpa = ((uintptr_t)1 << (__riscv_xlen == 32 ? 31 : 53)) - 1;
   asm volatile ("la t0, 1f\n\t"
                 "csrrw t0, mtvec, t0\n\t"
                 "csrw pmpaddr0, %1\n\t"
                 "csrw pmpcfg0, %0\n\t"
                 ".align 2\n\t"
                 "1: csrw mtvec, t0"
-                : : "r" (pmpc), "r" (-1UL) : "t0");
+                : : "r" (pmpc), "r" (pmpa) : "t0");
 }
 
 void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)

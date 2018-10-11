@@ -12,6 +12,9 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef MACHINE_ENABLED
 
+/* Maximum bytes of memory */
+#undef MAX_MEMORY_BYTES
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

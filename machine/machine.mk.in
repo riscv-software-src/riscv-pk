@@ -15,6 +15,7 @@ machine_hdrs = \
   mtrap.h \
   uart.h \
   uart16550.h \
+  uart_litex.h \
   finisher.h \
   unprivileged_memory.h \
   vm.h \
@@ -30,6 +31,7 @@ machine_c_srcs = \
   fp_ldst.c \
   uart.c \
   uart16550.c \
+  uart_litex.c \
   finisher.c \
   misaligned_ldst.c \
   flush_icache.c \

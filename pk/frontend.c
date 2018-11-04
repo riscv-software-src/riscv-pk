@@ -23,7 +23,10 @@ long frontend_syscall(long n, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3
   magic_mem[6] = a5;
   magic_mem[7] = a6;
 
-  htif_syscall((uintptr_t)magic_mem);
+  if (htif)
+    htif_syscall((uintptr_t)magic_mem);
+  else
+    while (1);
 
   long ret = magic_mem[0];
 

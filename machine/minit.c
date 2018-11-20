@@ -129,7 +129,8 @@ static void hart_plic_init()
   if (!plic_ndevs)
     return;
 
-  size_t ie_words = plic_ndevs / sizeof(uintptr_t) + 1;
+  size_t ie_words = (plic_ndevs + 8 * sizeof(uintptr_t) - 1) /
+		(8 * sizeof(uintptr_t));
   for (size_t i = 0; i < ie_words; i++) {
      if (HLS()->plic_s_ie) {
         // Supervisor not always present

@@ -64,8 +64,11 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 #  endif
 # endif
 #endif
-  else
+  else {
+    mcause = CAUSE_LOAD_ACCESS;
+    write_csr(mcause, mcause);
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+  }
 
   val.int64 = 0;
   for (intptr_t i = 0; i < len; i++)
@@ -128,8 +131,11 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 #  endif
 # endif
 #endif
-  else
+  else {
+    mcause = CAUSE_STORE_ACCESS;
+    write_csr(mcause, mcause);
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
+  }
 
   uintptr_t addr = read_csr(mbadaddr);
   for (int i = 0; i < len; i++)

@@ -14,7 +14,6 @@ SECTIONS
   /* Begining of code and text segment */
   . = 0x80000000;
   _ftext = .;
-  PROVIDE( eprol = . );
 
   .text :
   {
@@ -39,7 +38,6 @@ SECTIONS
   }
 
   /* End of code and read-only segment */
-  PROVIDE( etext = . );
   _etext = .;
 
   /*--------------------------------------------------------------------*/
@@ -48,7 +46,7 @@ SECTIONS
   . = ALIGN(0x1000);
   .htif :
   {
-    PROVIDE( __htif_base = .);
+    PROVIDE( __htif_base = . );
     *(.htif)
   }
   . = ALIGN(0x1000);
@@ -72,8 +70,7 @@ SECTIONS
   }
 
   /* End of initialized data segment */
-  . = ALIGN(4);
-  PROVIDE( edata = . );
+  . = ALIGN(16);
   _edata = .;
 
   /*--------------------------------------------------------------------*/
@@ -97,11 +94,6 @@ SECTIONS
     *(.sbss*)
     *(.gnu.linkonce.b.*)
     *(COMMON)
-  }
-
-  .sbi :
-  {
-    *(.sbi)
   }
 
   .payload :

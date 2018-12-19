@@ -38,12 +38,12 @@ SECTIONS
   }
 
   /* End of code and read-only segment */
+  . = ALIGN(0x1000);
   _etext = .;
 
   /*--------------------------------------------------------------------*/
   /* HTIF, isolated onto separate page                                  */
   /*--------------------------------------------------------------------*/
-  . = ALIGN(0x1000);
   .htif :
   {
     PROVIDE( __htif_base = . );
@@ -96,10 +96,11 @@ SECTIONS
     *(COMMON)
   }
 
+  . = ALIGN(0x1000);
+  _end = .;
+
   .payload :
   {
     *(.payload)
   }
-
-  _end = .;
 }

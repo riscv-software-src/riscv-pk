@@ -14,7 +14,6 @@ SECTIONS
   /* Begining of code and text segment */
   . = 0x80000000;
   _ftext = .;
-  PROVIDE( eprol = . );
 
   .text :
   {
@@ -39,7 +38,6 @@ SECTIONS
   }
 
   /* End of code and read-only segment */
-  PROVIDE( etext = . );
   _etext = .;
 
   /*--------------------------------------------------------------------*/
@@ -72,8 +70,7 @@ SECTIONS
   }
 
   /* End of initialized data segment */
-  . = ALIGN(4);
-  PROVIDE( edata = . );
+  . = ALIGN(16);
   _edata = .;
 
   /*--------------------------------------------------------------------*/

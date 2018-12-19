@@ -40,6 +40,52 @@ static void filter_dtb(uintptr_t source)
   filter_compat(dest, "riscv,debug-013");
 }
 
+static void protect_memory(void)
+{
+  // Check to see if up to four PMP registers are implemented.
+  // Ignore the illegal-instruction trap if PMPs aren't supported.
+  uintptr_t a0 = 0, a1 = 0, a2 = 0, a3 = 0, tmp, cfg;
+  asm volatile ("la %[tmp], 1f\n\t"
+                "csrrw %[tmp], mtvec, %[tmp]\n\t"
+                "csrw pmpaddr0, %[m1]\n\t"
+                "csrr %[a0], pmpaddr0\n\t"
+                "csrw pmpaddr1, %[m1]\n\t"
+                "csrr %[a1], pmpaddr1\n\t"
+                "csrw pmpaddr2, %[m1]\n\t"
+                "csrr %[a2], pmpaddr2\n\t"
+                "csrw pmpaddr3, %[m1]\n\t"
+                "csrr %[a3], pmpaddr3\n\t"
+                ".align 2\n\t"
+                "1: csrw mtvec, %[tmp]"
+                : [tmp] "=&r" (tmp),
+                  [a0] "+r" (a0), [a1] "+r" (a1), [a2] "+r" (a2), [a3] "+r" (a3)
+                : [m1] "r" (-1UL));
+
+  // We need at least four PMP registers to protect M-mode from S-mode.
+  if (!(a0 & a1 & a2 & a3))
+    return setup_pmp();
+
+  // Prevent S-mode access to our part of memory.
+  extern char _ftext, _etext, _end;
+  a0 = (uintptr_t)&_ftext >> PMP_SHIFT;
+  a1 = (uintptr_t)&_etext >> PMP_SHIFT;
+  cfg = PMP_TOR << 8;
+  // Give S-mode free rein of everything else.
+  a2 = -1;
+  cfg |= (PMP_NAPOT | PMP_R | PMP_W | PMP_X) << 16;
+  // No use for PMP 3 just yet.
+  a3 = 0;
+
+  // Plug it all in.
+  asm volatile ("csrw pmpaddr0, %[a0]\n\t"
+                "csrw pmpaddr1, %[a1]\n\t"
+                "csrw pmpaddr2, %[a2]\n\t"
+                "csrw pmpaddr3, %[a3]\n\t"
+                "csrw pmpcfg0, %[cfg]"
+                :: [a0] "r" (a0), [a1] "r" (a1), [a2] "r" (a2), [a3] "r" (a3),
+                   [cfg] "r" (cfg));
+}
+
 void boot_other_hart(uintptr_t unused __attribute__((unused)))
 {
   const void* entry;
@@ -61,6 +107,7 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
 #ifdef BBL_BOOT_MACHINE
   enter_machine_mode(entry, hartid, dtb_output());
 #else /* Run bbl in supervisor mode */
+  protect_memory();
   enter_supervisor_mode(entry, hartid, dtb_output());
 #endif
 }

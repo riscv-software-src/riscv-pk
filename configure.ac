@@ -48,6 +48,7 @@ AC_CANONICAL_HOST
 # Checks for programs
 #-------------------------------------------------------------------------
 
+LDFLAGS="$LDFLAGS -nostartfiles -nostdlib -static"
 AC_PROG_CC
 AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])

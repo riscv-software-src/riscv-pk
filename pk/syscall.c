@@ -380,6 +380,15 @@ int sys_gettimeofday(long* loc)
   return 0;
 }
 
+long sys_clock_gettime(int clk_id, long *loc)
+{
+  uintptr_t t = rdcycle();
+  loc[0] = t / CLOCK_FREQ;
+  loc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000000);
+
+  return 0;
+}
+
 ssize_t sys_writev(int fd, const long* iov, int cnt)
 {
   ssize_t ret = 0;
@@ -455,7 +464,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_readlinkat] = sys_stub_nosys,
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_ioctl] = sys_stub_nosys,
-    [SYS_clock_gettime] = sys_stub_nosys,
+    [SYS_clock_gettime] = sys_clock_gettime,
     [SYS_getrusage] = sys_stub_nosys,
     [SYS_getrlimit] = sys_stub_nosys,
     [SYS_setrlimit] = sys_stub_nosys,

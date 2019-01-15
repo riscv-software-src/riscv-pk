@@ -2043,7 +2043,6 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 # Checks for programs
 #-------------------------------------------------------------------------
 
-LDFLAGS="$LDFLAGS -nostartfiles -nostdlib -static"
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'

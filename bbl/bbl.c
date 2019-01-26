@@ -66,9 +66,9 @@ static void protect_memory(void)
     return setup_pmp();
 
   // Prevent S-mode access to our part of memory.
-  extern char _ftext, _etext, _end;
+  extern char _ftext, _end;
   a0 = (uintptr_t)&_ftext >> PMP_SHIFT;
-  a1 = (uintptr_t)&_etext >> PMP_SHIFT;
+  a1 = (uintptr_t)&_end >> PMP_SHIFT;
   cfg = PMP_TOR << 8;
   // Give S-mode free rein of everything else.
   a2 = -1;

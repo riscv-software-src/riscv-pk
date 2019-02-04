@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # See LICENSE.Batten for license details.
 #
 #=========================================================================

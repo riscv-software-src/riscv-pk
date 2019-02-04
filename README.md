@@ -39,3 +39,12 @@ The `install` step installs 64-bit build products into a directory
 matching your host (e.g. `$RISCV/riscv64-unknown-elf`). 32-bit versions 
 are installed into a directory matching a 32-bit version of your host (e.g.
 `$RISCV/riscv32-unknown-elf`).
+
+OpenBSD Build Steps
+-------------------
+
+Install the riscv-gnu-toolchain, and follow generic build steps.
+
+    # pkg_add riscv-elf-binutils riscv-elf-gcc riscv-elf-newlib
+
+   

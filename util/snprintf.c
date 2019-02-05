@@ -9,6 +9,7 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl)
 {
   bool format = false;
   bool longarg = false;
+  bool longlongarg = false;
   size_t pos = 0;
   for( ; *s; s++)
   {
@@ -17,7 +18,12 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl)
       switch(*s)
       {
         case 'l':
-          longarg = true;
+          if (s[1] == 'l') {
+              longlongarg = true;
+              s++;
+          }
+          else
+              longarg = true;
           break;
         case 'p':
           longarg = true;
@@ -36,13 +42,19 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl)
         }
         case 'd':
         {
-          long num = longarg ? va_arg(vl, long) : va_arg(vl, int);
+          long long num;
+          if (longarg)
+              num = va_arg(vl, long);
+          else if (longlongarg)
+              num = va_arg(vl, long long);
+          else
+              num = va_arg(vl, int);
           if (num < 0) {
             num = -num;
             if (++pos < n) out[pos-1] = '-';
           }
           long digits = 1;
-          for (long nn = num; nn /= 10; digits++)
+          for (long long nn = num; nn /= 10; digits++)
             ;
           for (int i = digits-1; i >= 0; i--) {
             if (pos + i + 1 < n) out[pos + i] = '0' + (num % 10);
@@ -50,6 +62,7 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl)
           }
           pos += digits;
           longarg = false;
+          longlongarg = false;
           format = false;
           break;
         }

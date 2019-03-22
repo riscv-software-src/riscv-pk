@@ -283,11 +283,11 @@ $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
 $(2)_c_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \
   $$($(2)_install_prog_objs) $$($(2)_install_prog_deps) \
-  $$($(2)_install_prog_exes)
+  $$($(2)_install_prog_exes) $($(2)_extra_targets)
 
 # Subproject specific targets
 
-all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
+all-$(1) : lib$(1).a $$($(2)_install_prog_exes) $($(2)_extra_targets)
 
 check-$(1) : $$($(2)_test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
@@ -311,6 +311,7 @@ test_outs += $$($(2)_test_outs)
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
 install_libs += lib$(1).a
 install_exes += $$($(2)_install_prog_exes)
+extra_targets += $($(2)_extra_targets)
 
 endef
 
@@ -446,7 +447,7 @@ junk += $(project_name)-*.tar.gz
 # Default
 #-------------------------------------------------------------------------
 
-all : $(install_hdrs) $(install_libs) $(install_exes)
+all : $(install_hdrs) $(install_libs) $(install_exes) $(extra_targets)
 .PHONY : all
 
 #-------------------------------------------------------------------------

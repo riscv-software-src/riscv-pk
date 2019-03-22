@@ -102,7 +102,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 CC            := @CC@
 READELF       := @READELF@
 OBJCOPY       := @OBJCOPY@
-CFLAGS        := @CFLAGS@ $(CFLAGS) $(march) $(mabi) -DBBL_PAYLOAD=\"bbl_payload\" -DBBL_LOGO_FILE=\"bbl_logo_file\"
+CFLAGS        := @CFLAGS@ $(CFLAGS) $(march) $(mabi) -DBBL_PAYLOAD=\"bbl_payload\" -DBBL_LOGO_FILE=\"bbl_logo_file\" -fno-stack-protector -U_FORTIFY_SOURCE
 BBL_PAYLOAD   := @BBL_PAYLOAD@
 COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
                  $(sprojs_include)
@@ -111,7 +111,7 @@ COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
 #  - LIBS    : Library flags (eg. -l)
 
 LD            := $(CC)
-LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib -static $(LDFLAGS) $(march) $(mabi)
+LDFLAGS       := @LDFLAGS@ -nostartfiles -nostdlib -static $(LDFLAGS) $(march) $(mabi) -fno-stack-protector
 LIBS          := @LIBS@
 LINK          := $(LD) $(LDFLAGS)
 

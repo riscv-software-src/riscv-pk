@@ -1,14 +1,14 @@
 // See LICENSE for license details.
 
-#include "mmap.h"
 #include "pk.h"
 #include "mtrap.h"
 #include "boot.h"
 #include "bits.h"
+#include "elf.h"
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <elf.h>
 #include <string.h>
+#include "mmap.h"
 
 /**
  * The protection flags are in the p_flags section of the program header.

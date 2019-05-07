@@ -29,7 +29,7 @@ static void handle_option(const char* s)
   }
 }
 
-#define MAX_ARGS 64
+#define MAX_ARGS 1024
 typedef union {
   uint64_t buf[MAX_ARGS];
   char* argv[MAX_ARGS];
@@ -143,7 +143,7 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 
 static void rest_of_boot_loader(uintptr_t kstack_top)
 {
-  arg_buf args;
+  static arg_buf args;
   size_t argc = parse_args(&args);
   if (!argc)
     panic("tell me what ELF to load!");

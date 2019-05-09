@@ -29,7 +29,7 @@ static void handle_option(const char* s)
   }
 }
 
-#define MAX_ARGS 64
+#define MAX_ARGS 256
 typedef union {
   uint64_t buf[MAX_ARGS];
   char* argv[MAX_ARGS];
@@ -38,6 +38,9 @@ typedef union {
 static size_t parse_args(arg_buf* args)
 {
   long r = frontend_syscall(SYS_getmainvars, va2pa(args), sizeof(*args), 0, 0, 0, 0, 0);
+  if (r != 0)
+    panic("args must not exceed %d bytes", (int)sizeof(arg_buf));
+
   kassert(r == 0);
   uint64_t* pk_argv = &args->buf[1];
   // pk_argv[0] is the proxy kernel itself.  skip it and any flags.

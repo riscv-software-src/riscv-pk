@@ -126,6 +126,15 @@ const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *v
   return value;
 }
 
+const uint32_t *fdt_set_size(const struct fdt_scan_node *node, uint32_t *value, uint64_t new_value)
+{
+  for (int cells = node->size_cells; cells > 0; --cells) {
+    *value++ = new_value;
+    new_value >>= 32;
+  }
+  return value;
+}
+
 int fdt_string_list_index(const struct fdt_scan_prop *prop, const char *str)
 {
   const char *list = (const char *)prop->value;
@@ -176,9 +185,14 @@ static void mem_done(const struct fdt_scan_node *node, void *extra)
 
   while (end - value > 0) {
     uint64_t base, size;
-    value = fdt_get_address(node->parent, value, &base);
+    const uint32_t *size_ptr;
+    size_ptr = value = fdt_get_address(node->parent, value, &base);
     value = fdt_get_size   (node->parent, value, &size);
     if (base <= self && self <= base + size) { mem_size = size; }
+#ifdef MAX_MEMORY_BYTES
+    if (size > (uintptr_t)(MAX_MEMORY_BYTES))
+      fdt_set_size(node->parent, (uint32_t *)size_ptr, (uintptr_t)(MAX_MEMORY_BYTES));
+#endif
   }
   assert (end == value);
 }

@@ -88,6 +88,11 @@ AS_IF([test "x$enable_print_device_tree" = "xyes"], [
   AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
 ])
 
+AC_ARG_WITH([max-memory-bytes], AS_HELP_STRING([--with-max-memory-bytes], [Limit the maximum availiable memory]))
+AS_IF([test "x$with_max_memory_bytes" != "xno"], [
+  AC_DEFINE([MAX_MEMORY_BYTES],"$with_max_memory_bytes",[Maximum bytes of memory])
+])
+
 CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
 LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 

@@ -180,6 +180,21 @@ int sys_dup(int fd)
   return r;
 }
 
+int sys_dup3(int fd, int newfd, int flags)
+{
+  kassert(flags == 0);
+  int r = -EBADF;
+  file_t* f = file_get(fd);
+
+  if (f)
+  {
+    r = file_dup3(f, newfd);
+    file_decref(f);
+  }
+
+  return r;
+}
+
 ssize_t sys_lseek(int fd, size_t ptr, int dir)
 {
   ssize_t r = -EBADF;
@@ -461,6 +476,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_ftruncate] = sys_ftruncate,
     [SYS_getdents] = sys_getdents,
     [SYS_dup] = sys_dup,
+    [SYS_dup3] = sys_dup3,
     [SYS_readlinkat] = sys_stub_nosys,
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_ioctl] = sys_stub_nosys,

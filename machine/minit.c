@@ -30,7 +30,8 @@ static void mstatus_init()
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))
     write_csr(scounteren, -1);
-  write_csr(mcounteren, -1);
+  if (supports_extension('U'))
+    write_csr(mcounteren, -1);
 
   // Enable software interrupts
   write_csr(mie, MIP_MSIP);

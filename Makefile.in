@@ -278,7 +278,7 @@ $$($(2)_install_prog_objs) : %.o : %.c
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS) -T $(src_dir)/$(2)/$(2).lds
+	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS) -Wl,--defsym=MEM_START=@MEM_START@,-T,$(src_dir)/$(2)/$(2).lds
 
 $(2)_c_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \

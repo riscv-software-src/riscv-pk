@@ -97,6 +97,13 @@ AC_SUBST([LIBS], ["-lgcc"])
 AC_SUBST(WITH_ARCH)
 AC_SUBST(host_alias)
 
+AC_ARG_WITH([mem-start], AS_HELP_STRING([--with-mem-start], [Set physical memory start address]),
+  [
+   AC_SUBST([MEM_START], $with_mem_start, [Physical memory start address])
+  ], [
+   AC_SUBST([MEM_START], [0x80000000], [Physical memory start address])
+  ])
+
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
 #-------------------------------------------------------------------------

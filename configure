@@ -593,6 +593,7 @@ subprojects
 BBL_LOGO_FILE
 BBL_PAYLOAD
 BBL_ENABLE_LOGO
+MEM_START
 WITH_ARCH
 RISCV
 EGREP
@@ -672,6 +673,7 @@ enable_option_checking
 enable_stow
 with_arch
 enable_print_device_tree
+with_mem_start
 enable_optional_subprojects
 enable_vm
 enable_logo
@@ -1333,6 +1335,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-arch             Set the RISC-V architecture
+  --with-mem-start        Set physical memory start address
   --with-payload          Set ELF payload for bbl
   --with-logo             Specify a better logo
 
@@ -4103,6 +4106,21 @@ LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 LIBS="-lgcc"
 
 
+
+
+
+# Check whether --with-mem-start was given.
+if test "${with_mem_start+set}" = set; then :
+  withval=$with_mem_start;
+   MEM_START=$with_mem_start
+
+
+else
+
+   MEM_START=0x80000000
+
+
+fi
 
 
 #-------------------------------------------------------------------------

@@ -12,7 +12,7 @@ SECTIONS
   /*--------------------------------------------------------------------*/
 
   /* Begining of code and text segment */
-  . = 0x80000000;
+  . = MEM_START;
   _ftext = .;
 
   .text :

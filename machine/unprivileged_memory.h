@@ -10,6 +10,7 @@
 #define DECLARE_UNPRIVILEGED_LOAD_FUNCTION(type, insn)              \
   static inline type load_##type(const type* addr, uintptr_t mepc)  \
   {                                                                 \
+    register uintptr_t __mstatus_adjust asm ("a1") = MSTATUS_MPRV;  \
     register uintptr_t __mepc asm ("a2") = mepc;                    \
     register uintptr_t __mstatus asm ("a3");                        \
     type val;                                                       \
@@ -17,20 +18,21 @@
          #insn " %1, %2\n"                                          \
          "csrw mstatus, %0"                                         \
          : "+&r" (__mstatus), "=&r" (val)                           \
-         : "m" (*addr), "r" (MSTATUS_MPRV), "r" (__mepc));          \
+         : "m" (*addr), "r" (__mstatus_adjust), "r" (__mepc));      \
     return val;                                                     \
   }
 
 #define DECLARE_UNPRIVILEGED_STORE_FUNCTION(type, insn)                 \
   static inline void store_##type(type* addr, type val, uintptr_t mepc) \
   {                                                                     \
+    register uintptr_t __mstatus_adjust asm ("a1") = MSTATUS_MPRV;      \
     register uintptr_t __mepc asm ("a2") = mepc;                        \
     register uintptr_t __mstatus asm ("a3");                            \
     asm volatile ("csrrs %0, mstatus, %3\n"                             \
                   #insn " %1, %2\n"                                     \
                   "csrw mstatus, %0"                                    \
                   : "+&r" (__mstatus)                                   \
-                  : "r" (val), "m" (*addr), "r" (MSTATUS_MPRV),         \
+                  : "r" (val), "m" (*addr), "r" (__mstatus_adjust),     \
                     "r" (__mepc));                                      \
   }
 
@@ -66,6 +68,7 @@ static inline void store_uint64_t(uint64_t* addr, uint64_t val, uintptr_t mepc)
 
 static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr_t* mstatus)
 {
+  register uintptr_t __mstatus_adjust asm ("a1") = MSTATUS_MPRV | MSTATUS_MXR;
   register uintptr_t __mepc asm ("a2") = mepc;
   register uintptr_t __mstatus asm ("a3");
   uintptr_t val;
@@ -74,7 +77,7 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
        STR(LWU) " %[insn], (%[addr])\n"
        "csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val)
-       : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc));
+       : [mprv] "r" (__mstatus_adjust), [addr] "r" (__mepc));
 #else
   uintptr_t rvc_mask = 3, tmp;
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
@@ -95,7 +98,7 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
        "add %[insn], %[insn], %[tmp]\n"
        "2: csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val), [tmp] "=&r" (tmp)
-       : [mprv] "r" (MSTATUS_MPRV | MSTATUS_MXR), [addr] "r" (__mepc),
+       : [mprv] "r" (__mstatus_adjust), [addr] "r" (__mepc),
          [rvc_mask] "r" (rvc_mask), [xlen_minus_16] "i" (__riscv_xlen - 16));
 #endif
   *mstatus = __mstatus;

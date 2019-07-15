@@ -116,7 +116,12 @@ trap_vector:
   STORE t2, 7*REGBYTES(sp)
   add t1, t0, t1                   # t1 <- %hi(trap_table)[mcause]
   STORE s0, 8*REGBYTES(sp)
+
+  auipc t2, %pcrel_hi(trap_table)
+  srli t2, t2, 32
+  slli t2, t2, 32
   LWU t1, %pcrel_lo(1b)(t1)         # t1 <- trap_table[mcause]
+  or t1, t1, t2
   STORE s1, 9*REGBYTES(sp)
   mv a0, sp                        # a0 <- regs
   STORE a2,12*REGBYTES(sp)

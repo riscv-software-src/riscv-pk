@@ -145,6 +145,11 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   extern uint32_t illegal_insn_trap_table[];
   uint32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
   emulation_func f = (emulation_func)(uintptr_t)*pf;
+#if __INTPTR_WIDTH__ == 64
+  uint64_t addr = f;
+  addr |= ((uint64_t)illegal_insn_trap) & 0xffffffff00000000;
+  f = (emulation_func)addr;
+#endif
   f(regs, mcause, mepc, mstatus, insn);
 }
 

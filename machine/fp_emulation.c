@@ -10,38 +10,38 @@ DECLARE_EMULATION_FUNC(emulate_fp)
 {
   asm (".pushsection .rodata\n"
        "fp_emulation_table:\n"
-       "  .word emulate_fadd\n"
-       "  .word emulate_fsub\n"
-       "  .word emulate_fmul\n"
-       "  .word emulate_fdiv\n"
-       "  .word emulate_fsgnj\n"
-       "  .word emulate_fmin\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fcvt_ff\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fsqrt\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fcmp\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fcvt_if\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fcvt_fi\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fmv_if\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_fmv_fi\n"
-       "  .word truly_illegal_insn\n"
+       "  .word emulate_fadd - fp_emulation_table\n"
+       "  .word emulate_fsub - fp_emulation_table\n"
+       "  .word emulate_fmul - fp_emulation_table\n"
+       "  .word emulate_fdiv - fp_emulation_table\n"
+       "  .word emulate_fsgnj - fp_emulation_table\n"
+       "  .word emulate_fmin - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fcvt_ff - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fsqrt - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fcmp - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fcvt_if - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fcvt_fi - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fmv_if - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
+       "  .word emulate_fmv_fi - fp_emulation_table\n"
+       "  .word truly_illegal_insn - fp_emulation_table\n"
        "  .popsection");
 
   // if FPU is disabled, punt back to the OS
@@ -49,8 +49,8 @@ DECLARE_EMULATION_FUNC(emulate_fp)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 
   extern uint32_t fp_emulation_table[];
-  uint32_t* pf = (void*)fp_emulation_table + ((insn >> 25) & 0x7c);
-  emulation_func f = (emulation_func)(uintptr_t)*pf;
+  int32_t* pf = (void*)fp_emulation_table + ((insn >> 25) & 0x7c);
+  emulation_func f = (emulation_func)((void*)fp_emulation_table + *pf);
 
   SETUP_STATIC_ROUNDING(insn);
   return f(regs, mcause, mepc, mstatus, insn);

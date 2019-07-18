@@ -72,62 +72,62 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
   asm (".pushsection .rodata\n"
        "illegal_insn_trap_table:\n"
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
-       "  .word emulate_float_load\n"
+       "  .word emulate_float_load - illegal_insn_trap_table\n"
 #else
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
-       "  .word emulate_float_store\n"
+       "  .word emulate_float_store - illegal_insn_trap_table\n"
 #else
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #if !defined(__riscv_muldiv)
-       "  .word emulate_mul_div\n"
+       "  .word emulate_mul_div - illegal_insn_trap_table\n"
 #else
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #endif
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #if !defined(__riscv_muldiv) && __riscv_xlen >= 64
-       "  .word emulate_mul_div32\n"
+       "  .word emulate_mul_div32 - illegal_insn_trap_table\n"
 #else
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #endif
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #ifdef PK_ENABLE_FP_EMULATION
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fmadd\n"
-       "  .word emulate_fp\n"
+       "  .word emulate_fmadd - illegal_insn_trap_table\n"
+       "  .word emulate_fmadd - illegal_insn_trap_table\n"
+       "  .word emulate_fmadd - illegal_insn_trap_table\n"
+       "  .word emulate_fmadd - illegal_insn_trap_table\n"
+       "  .word emulate_fp - illegal_insn_trap_table\n"
 #else
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
 #endif
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word emulate_system_opcode\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
-       "  .word truly_illegal_insn\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word emulate_system_opcode - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
+       "  .word truly_illegal_insn - illegal_insn_trap_table\n"
        "  .popsection");
 
   uintptr_t mstatus = read_csr(mstatus);
@@ -143,8 +143,8 @@ void illegal_insn_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   write_csr(mepc, mepc + 4);
 
   extern uint32_t illegal_insn_trap_table[];
-  uint32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
-  emulation_func f = (emulation_func)(uintptr_t)*pf;
+  int32_t* pf = (void*)illegal_insn_trap_table + (insn & 0x7c);
+  emulation_func f = (emulation_func)((void*)illegal_insn_trap_table + *pf);
   f(regs, mcause, mepc, mstatus, insn);
 }
 

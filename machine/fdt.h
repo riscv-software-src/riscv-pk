@@ -54,6 +54,7 @@ uint32_t fdt_size(uintptr_t fdt);
 // Extract fields
 const uint32_t *fdt_get_address(const struct fdt_scan_node *node, const uint32_t *base, uint64_t *value);
 const uint32_t *fdt_get_size(const struct fdt_scan_node *node, const uint32_t *base, uint64_t *value);
+uint32_t fdt_get_value(const struct fdt_scan_prop *prop, uint32_t index);
 int fdt_string_list_index(const struct fdt_scan_prop *prop, const char *str); // -1 if not found
 
 // Setup memory+clint+plic

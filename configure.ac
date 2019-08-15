@@ -32,7 +32,7 @@ m4_define( proj_abbreviation, [riscv-pk])
 # distribution knows what version it came from. If you are not using
 # version control then it is fine to set this directly.
 
-m4_define( proj_version, [?])
+m4_define( proj_version, [1.0.0])
 
 #-------------------------------------------------------------------------
 # Setup

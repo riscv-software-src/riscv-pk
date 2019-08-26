@@ -35,7 +35,6 @@ default : all
 project_name := @PACKAGE_TARNAME@
 src_dir      := @srcdir@
 scripts_dir  := $(src_dir)/scripts
-bbl_payload  := @BBL_PAYLOAD@
 
 # If the version information is not in the configure script, then we
 # assume that we are in a working directory. We use the vcs-version.sh
@@ -84,7 +83,10 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
 
 CC            := @CC@
-CFLAGS        := @CFLAGS@ $(CFLAGS) -DBBL_PAYLOAD=\"$(bbl_payload)\"
+READELF       := @READELF@
+OBJCOPY       := @OBJCOPY@
+CFLAGS        := @CFLAGS@ $(CFLAGS) -DBBL_PAYLOAD=\"bbl_payload\" -DBBL_LOGO_FILE=\"bbl_logo_file\"
+BBL_PAYLOAD   := @BBL_PAYLOAD@
 COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
                  $(sprojs_include)
 # Linker

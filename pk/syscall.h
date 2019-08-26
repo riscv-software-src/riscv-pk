@@ -33,6 +33,7 @@
 #define SYS_munmap 215
 #define SYS_mremap 216
 #define SYS_mprotect 226
+#define SYS_prlimit64 261
 #define SYS_getmainvars 2011
 #define SYS_rt_sigaction 134
 #define SYS_writev 66

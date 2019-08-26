@@ -50,6 +50,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
+AC_CHECK_TOOL([READELF],[readelf])
+AC_CHECK_TOOL([OBJCOPY],[objcopy])
 
 #-------------------------------------------------------------------------
 # MCPPBS specific program checks
@@ -96,6 +98,11 @@ case "${BUILD_32BIT}" in
 	install_subdir="riscv64-unknown-elf"
 	;;
 esac
+
+AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
+AS_IF([test "x$enable_print_device_tree" == "xyes"], [
+  AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
+])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)

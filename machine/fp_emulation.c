@@ -201,7 +201,7 @@ DECLARE_EMULATION_FUNC(emulate_fcvt_fi)
   {
     case 0: // int32
       negative = (int32_t)uint_val < 0;
-      uint_val = negative ? -(int32_t)uint_val : (int32_t)uint_val;
+      uint_val = (uint32_t)(negative ? -uint_val : uint_val);
       break;
     case 1: // uint32
       uint_val = (uint32_t)uint_val;
@@ -331,6 +331,7 @@ DECLARE_EMULATION_FUNC(emulate_fcmp)
   }
   return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
 success:
+  SET_FS_DIRTY();
   SET_RD(insn, regs, result);
 }
 
@@ -343,7 +344,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_if)
   if (GET_PRECISION(insn) == PRECISION_S) {
     result = GET_F32_RS1(insn, regs);
     switch (GET_RM(insn)) {
-      case GET_RM(MATCH_FMV_X_S): break;
+      case GET_RM(MATCH_FMV_X_W): break;
       case GET_RM(MATCH_FCLASS_S): result = f32_classify(result); break;
       default: return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
     }
@@ -358,6 +359,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_if)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
   }
 
+  SET_FS_DIRTY();
   SET_RD(insn, regs, result);
 }
 
@@ -365,7 +367,7 @@ DECLARE_EMULATION_FUNC(emulate_fmv_fi)
 {
   uintptr_t rs1 = GET_RS1(insn, regs);
 
-  if ((insn & MASK_FMV_S_X) == MATCH_FMV_S_X)
+  if ((insn & MASK_FMV_W_X) == MATCH_FMV_W_X)
     SET_F32_RD(insn, regs, rs1);
 #if __riscv_xlen == 64
   else if ((insn & MASK_FMV_D_X) == MATCH_FMV_D_X)

@@ -11,9 +11,9 @@
 
 #ifndef __ASSEMBLER__
 
-#include "sbi.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 #define read_const_csr(reg) ({ unsigned long __tmp; \
   asm ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -29,29 +29,22 @@ static inline int xlen()
   return read_const_csr(misa) < 0 ? 64 : 32;
 }
 
-extern uintptr_t first_free_paddr;
 extern uintptr_t mem_size;
-extern uintptr_t num_harts;
 extern volatile uint64_t* mtime;
 extern volatile uint32_t* plic_priorities;
 extern size_t plic_ndevs;
 
 typedef struct {
-  uint64_t* timecmp;
-  uint32_t* ipi;
+  volatile uint32_t* ipi;
   volatile int mipi_pending;
-  volatile int sipi_pending;
-  int console_ibuf;
+
+  volatile uint64_t* timecmp;
 
   volatile uint32_t* plic_m_thresh;
   volatile uintptr_t* plic_m_ie;
   volatile uint32_t* plic_s_thresh;
   volatile uintptr_t* plic_s_ie;
 } hls_t;
-
-#define IPI_SOFT      0x1
-#define IPI_FENCE_I   0x2
-#define IPI_SFENCE_VM 0x4
 
 #define MACHINE_STACK_TOP() ({ \
   register uintptr_t sp asm ("sp"); \
@@ -63,16 +56,17 @@ typedef struct {
 
 hls_t* hls_init(uintptr_t hart_id);
 void parse_config_string();
-void poweroff(void) __attribute((noreturn));
+void poweroff(uint16_t code) __attribute((noreturn));
 void printm(const char* s, ...);
+void vprintm(const char *s, va_list args);
 void putstring(const char* s);
 #define assert(x) ({ if (!(x)) die("assertion failed: %s", #x); })
-#define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(); })
+#define die(str, ...) ({ printm("%s:%d: " str "\n", __FILE__, __LINE__, ##__VA_ARGS__); poweroff(-1); })
 
-void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t stack)
+void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1)
   __attribute__((noreturn));
-void boot_loader();
-void boot_other_hart();
+void boot_loader(uintptr_t dtb);
+void boot_other_hart(uintptr_t dtb);
 
 static inline void wfi()
 {
@@ -81,9 +75,15 @@ static inline void wfi()
 
 #endif // !__ASSEMBLER__
 
+#define IPI_SOFT       0x1
+#define IPI_FENCE_I    0x2
+#define IPI_SFENCE_VMA 0x4
+
 #define MACHINE_STACK_SIZE RISCV_PGSIZE
-#define MENTRY_FRAME_SIZE (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE \
-                           + HLS_SIZE)
+#define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)
+#define MENTRY_FRAME_SIZE (MENTRY_HLS_OFFSET + HLS_SIZE)
+#define MENTRY_IPI_OFFSET (MENTRY_HLS_OFFSET)
+#define MENTRY_IPI_PENDING_OFFSET (MENTRY_HLS_OFFSET + REGBYTES)
 
 #ifdef __riscv_flen
 # define SOFT_FLOAT_CONTEXT_SIZE 0

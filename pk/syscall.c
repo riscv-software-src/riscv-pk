@@ -442,6 +442,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_munmap] = sys_munmap,
     [SYS_mremap] = sys_mremap,
     [SYS_mprotect] = sys_mprotect,
+    [SYS_prlimit64] = sys_stub_nosys,
     [SYS_rt_sigaction] = sys_rt_sigaction,
     [SYS_gettimeofday] = sys_gettimeofday,
     [SYS_times] = sys_times,

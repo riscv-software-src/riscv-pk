@@ -19,6 +19,8 @@ Build Steps
 
 We assume that the RISCV environment variable is set to the RISC-V tools
 install path, and that the riscv-gnu-toolchain package is installed.
+Please note that building the binaries directly inside the source
+directory is not supported; you need to use a separate build directory.
 
     $ mkdir build
     $ cd build

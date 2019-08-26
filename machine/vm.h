@@ -6,11 +6,11 @@
 
 #define MEGAPAGE_SIZE ((uintptr_t)(RISCV_PGSIZE << RISCV_PGLEVEL_BITS))
 #if __riscv_xlen == 64
-# define VM_CHOICE VM_SV39
+# define SATP_MODE_CHOICE INSERT_FIELD(0, SATP64_MODE, SATP_MODE_SV39)
 # define VA_BITS 39
 # define GIGAPAGE_SIZE (MEGAPAGE_SIZE << RISCV_PGLEVEL_BITS)
 #else
-# define VM_CHOICE VM_SV32
+# define SATP_MODE_CHOICE INSERT_FIELD(0, SATP32_MODE, SATP_MODE_SV32)
 # define VA_BITS 32
 #endif
 
@@ -19,7 +19,7 @@ extern pte_t* root_page_table;
 
 static inline void flush_tlb()
 {
-  asm volatile("sfence.vm");
+  asm volatile ("sfence.vma");
 }
 
 static inline pte_t pte_create(uintptr_t ppn, int type)

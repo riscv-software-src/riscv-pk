@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 elf_info current;
+long disabled_hart_mask;
 
 static void handle_option(const char* s)
 {
@@ -154,18 +155,19 @@ static void rest_of_boot_loader(uintptr_t kstack_top)
   run_loaded_program(argc, args.argv, kstack_top);
 }
 
-void boot_loader()
+void boot_loader(uintptr_t dtb)
 {
   extern char trap_entry;
   write_csr(stvec, &trap_entry);
   write_csr(sscratch, 0);
   write_csr(sie, 0);
+  set_csr(sstatus, SSTATUS_SUM);
 
   file_init();
-  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init());
+  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);
 }
 
-void boot_other_hart()
+void boot_other_hart(uintptr_t dtb)
 {
   // stall all harts besides hart 0
   while (1)

@@ -71,6 +71,9 @@ void load_elf(const char* fn, elf_info* info)
   info->entry = eh.e_entry + bias;
   int flags = MAP_FIXED | MAP_PRIVATE;
   for (int i = eh.e_phnum - 1; i >= 0; i--) {
+    if(ph[i].p_type == PT_INTERP) {
+      panic("not a statically linked ELF program");
+    }
     if(ph[i].p_type == PT_LOAD && ph[i].p_memsz) {
       uintptr_t prepad = ph[i].p_vaddr % RISCV_PGSIZE;
       uintptr_t vaddr = ph[i].p_vaddr + bias;

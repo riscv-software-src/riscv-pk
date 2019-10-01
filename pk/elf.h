@@ -26,6 +26,7 @@
 #define EF_RISCV_RVC 1
 
 #define PT_LOAD 1
+#define PT_INTERP 3
 
 #define AT_NULL   0
 #define AT_PHDR   3

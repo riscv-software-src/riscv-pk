@@ -132,9 +132,9 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   STACK_INIT(uintptr_t);
 
   if (current.cycle0) { // start timer if so requested
-    current.time0 = rdtime();
-    current.cycle0 = rdcycle();
-    current.instret0 = rdinstret();
+    current.time0 = rdtime64();
+    current.cycle0 = rdcycle64();
+    current.instret0 = rdinstret64();
   }
 
   trapframe_t tf;

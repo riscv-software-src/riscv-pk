@@ -23,6 +23,7 @@ file_t* file_open(const char* fn, int flags, int mode);
 void file_decref(file_t*);
 void file_incref(file_t*);
 int file_dup(file_t*);
+int file_dup3(file_t*, int newfd);
 
 file_t* file_openat(int dirfd, const char* fn, int flags, int mode);
 ssize_t file_pwrite(file_t* f, const void* buf, size_t n, off_t off);

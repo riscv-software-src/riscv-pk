@@ -53,6 +53,20 @@ int file_dup(file_t* f)
   return -1;
 }
 
+int file_dup3(file_t* f, int newfd)
+{
+  if (newfd < 0 || newfd >= MAX_FDS)
+      return -1;
+
+  if (atomic_cas(&fds[newfd], 0, f) == 0)
+  {
+      file_incref(f);
+      return newfd;
+  }
+
+  return -1;
+}
+
 void file_init()
 {
   // create stdin, stdout, stderr and FDs 0-2

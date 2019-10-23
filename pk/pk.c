@@ -11,22 +11,43 @@
 elf_info current;
 long disabled_hart_mask;
 
-static void handle_option(const char* s)
+static void help()
 {
-  switch (s[1])
-  {
-    case 's': // print cycle count upon termination
-      current.cycle0 = 1;
-      break;
+  printk("Proxy kernel\n\n");
+  printk("usage: pk [pk options] <user program> [program options]\n");
+  printk("Options:\n");
+  printk("  -h, --help            Print this help message\n");
+  printk("  -p                    Disable on-demand program paging\n");
+  printk("  -s                    Print cycles upon termination\n");
 
-    case 'p': // disable demand paging
-      demand_paging = 0;
-      break;
+  shutdown(0);
+}
 
-    default:
-      panic("unrecognized option: `%c'", s[1]);
-      break;
+static void suggest_help()
+{
+  printk("Try 'pk --help' for more information.\n");
+  shutdown(1);
+}
+
+static void handle_option(const char* arg)
+{
+  if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+    help();
+    return;
   }
+
+  if (strcmp(arg, "-s") == 0) {  // print cycle count upon termination
+    current.cycle0 = 1;
+    return;
+  }
+
+  if (strcmp(arg, "-p") == 0) { // disable demand paging
+    demand_paging = 0;
+    return;
+  }
+
+  panic("unrecognized option: `%s'", arg);
+  suggest_help();
 }
 
 #define MAX_ARGS 256

@@ -25,7 +25,10 @@ static uint32_t uart16550_clock = 1843200;   // a "common" base clock
 #define UART_REG_STATUS_RX 0x01
 #define UART_REG_STATUS_TX 0x20
 
+// We cannot use the word DEFAULT for a parameter that cannot be overridden due to -Werror
+#ifndef UART_DEFAULT_BAUD
 #define UART_DEFAULT_BAUD  38400
+#endif
 
 void uart16550_putchar(uint8_t ch)
 {
@@ -47,18 +50,21 @@ struct uart16550_scan
   uint32_t reg_offset;
   uint32_t reg_shift;
   uint32_t clock_freq;
+  uint32_t baud;
 };
 
 static void uart16550_open(const struct fdt_scan_node *node, void *extra)
 {
   struct uart16550_scan *scan = (struct uart16550_scan *)extra;
   memset(scan, 0, sizeof(*scan));
+  scan->baud = UART_DEFAULT_BAUD;
 }
 
 static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct uart16550_scan *scan = (struct uart16550_scan *)extra;
-  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "ns16550a") != -1) {
+  // For the purposes of the boot loader, the 16750 is a superset of what 16550a provides
+  if (!strcmp(prop->name, "compatible") && ((fdt_string_list_index(prop, "ns16550a") != -1) || (fdt_string_list_index(prop, "ns16750") != -1))) {
     scan->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);
@@ -66,6 +72,9 @@ static void uart16550_prop(const struct fdt_scan_prop *prop, void *extra)
     scan->reg_shift = fdt_get_value(prop, 0);
   } else if (!strcmp(prop->name, "reg-offset")) {
     scan->reg_offset = fdt_get_value(prop, 0);
+  } else if (!strcmp(prop->name, "current-speed")) {
+    // This is the property that Linux uses
+    scan->baud = fdt_get_value(prop, 0);
   } else if (!strcmp(prop->name, "clock-frequency")) {
     scan->clock_freq = fdt_get_value(prop, 0);
   }
@@ -81,8 +90,11 @@ static void uart16550_done(const struct fdt_scan_node *node, void *extra)
     uart16550_clock = scan->clock_freq;
   // if device tree doesn't supply a clock, fallback to default clock of 1843200
 
-  uint32_t divisor = uart16550_clock / (16 * UART_DEFAULT_BAUD);
-  assert (divisor < 0x10000u);
+  // Check for divide by zero
+  uint32_t divisor = uart16550_clock / (16 * (scan->baud ? scan->baud : UART_DEFAULT_BAUD));
+  // If the divisor is out of range, don't assert, set the rate back to the default
+  if (divisor >= 0x10000u)
+    divisor = uart16550_clock / (16 * UART_DEFAULT_BAUD);
 
   uart16550 = (void*)((uintptr_t)scan->reg + scan->reg_offset);
   uart16550_reg_shift = scan->reg_shift;

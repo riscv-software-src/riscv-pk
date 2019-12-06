@@ -2,10 +2,6 @@
 
 #ifdef __riscv_flen
 
-#if __riscv_flen != 64
-# error single-float only is not supported
-#endif
-
 #define get_f32(which) fmv.x.s a0, which; jr t0
 #define put_f32(which) fmv.s.x which, a0; jr t0
 #if __riscv_xlen == 64
@@ -88,7 +84,9 @@
     put_f32(f29)
     put_f32(f30)
     put_f32(f31)
-  
+
+ #if __riscv_flen > 32
+
   .text
   .globl get_f64_reg
   get_f64_reg:
@@ -160,5 +158,7 @@
     put_f64(f29)
     put_f64(f30)
     put_f64(f31)
+
+#endif
 
 #endif

@@ -6,6 +6,12 @@
 #include "internals.h"
 #include "config.h"
 
+#ifdef PK_ENABLE_FP_EMULATION
+
+#if defined(__riscv_flen) && __riscv_flen != 64
+# error single-float only is not supported
+#endif
+
 DECLARE_EMULATION_FUNC(emulate_fp)
 {
   asm (".pushsection .rodata\n"
@@ -406,3 +412,5 @@ DECLARE_EMULATION_FUNC(emulate_fmadd)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
   }
 }
+
+#endif

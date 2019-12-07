@@ -594,6 +594,7 @@ BBL_LOGO_FILE
 BBL_PAYLOAD
 BBL_ENABLE_LOGO
 MEM_START
+WITH_ABI
 WITH_ARCH
 RISCV
 EGREP
@@ -671,6 +672,7 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 with_arch
+with_abi
 enable_print_device_tree
 with_mem_start
 enable_optional_subprojects
@@ -1323,6 +1325,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-arch             Set the RISC-V architecture
+  --with-abi              Set the RISC-V ABI
   --with-mem-start        Set physical memory start address
   --with-payload          Set ELF payload for bbl
   --with-logo             Specify a better logo
@@ -4069,6 +4072,14 @@ fi
 # Check whether --with-arch was given.
 if test "${with_arch+set}" = set; then :
   withval=$with_arch; WITH_ARCH=$with_arch
+
+fi
+
+
+
+# Check whether --with-abi was given.
+if test "${with_abi+set}" = set; then :
+  withval=$with_abi; WITH_ABI=$with_abi
 
 fi
 

@@ -83,6 +83,9 @@ AC_ARG_VAR(RISCV, [top-level RISC-V install directory])
 AC_ARG_WITH([arch], AS_HELP_STRING([--with-arch], [Set the RISC-V architecture]),
   [AC_SUBST([WITH_ARCH], $with_arch, [Specify architecture to build the project])])
 
+AC_ARG_WITH([abi], AS_HELP_STRING([--with-abi], [Set the RISC-V ABI]),
+  [AC_SUBST([WITH_ABI], $with_abi, [Specify ABI to build the project])])
+
 AC_ARG_ENABLE([print-device-tree], AS_HELP_STRING([--enable-print-device-tree], [Print DTS when booting]))
 AS_IF([test "x$enable_print_device_tree" = "xyes"], [
   AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])

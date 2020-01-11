@@ -27,6 +27,10 @@ static void mstatus_init()
   if (supports_extension('F'))
     write_csr(mstatus, MSTATUS_FS);
 
+  // Enable vector extension
+  if (supports_extension('V'))
+    write_csr(mstatus, MSTATUS_VS);
+
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))
     write_csr(scounteren, -1);

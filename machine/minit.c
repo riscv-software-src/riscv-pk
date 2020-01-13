@@ -23,13 +23,17 @@ void* kernel_end;
 
 static void mstatus_init()
 {
+  uintptr_t mstatus = 0;
+
   // Enable FPU
   if (supports_extension('F'))
-    write_csr(mstatus, MSTATUS_FS);
+    mstatus |= MSTATUS_FS;
 
   // Enable vector extension
   if (supports_extension('V'))
-    write_csr(mstatus, MSTATUS_VS);
+    mstatus |= MSTATUS_VS;
+
+  write_csr(mstatus, mstatus);
 
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))

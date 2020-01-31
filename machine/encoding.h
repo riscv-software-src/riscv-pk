@@ -16,6 +16,7 @@
 #define MSTATUS_MPP         0x00001800
 #define MSTATUS_VS          0x01800000
 #define MSTATUS_FS          0x00006000
+#define MSTATUS_VS          0x01800000
 #define MSTATUS_XS          0x00018000
 #define MSTATUS_MPRV        0x00020000
 #define MSTATUS_SUM         0x00040000
@@ -35,6 +36,7 @@
 #define SSTATUS_SPP         0x00000100
 #define SSTATUS_VS          0x01800000
 #define SSTATUS_FS          0x00006000
+#define SSTATUS_VS          0x01800000
 #define SSTATUS_XS          0x00018000
 #define SSTATUS_SUM         0x00040000
 #define SSTATUS_MXR         0x00080000

@@ -35,6 +35,9 @@ static void mstatus_init()
 
   write_csr(mstatus, mstatus);
 
+  if (supports_extension('V'))
+    write_csr(mstatus, MSTATUS_FS | read_csr(mstatus));
+
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))
     write_csr(scounteren, -1);

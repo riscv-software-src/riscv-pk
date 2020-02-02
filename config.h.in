@@ -56,3 +56,6 @@
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef UTIL_ENABLED
+
+/* Define if BSS should be manually zeroed when booting */
+#undef ZERO_BSS

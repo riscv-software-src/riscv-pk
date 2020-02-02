@@ -267,9 +267,23 @@ do_reset:
   slli a2, a3, RISCV_PGSHIFT
   add sp, sp, a2
 
-  # Boot on the first hart
-  beqz a3, init_first_hart
+  bnez a3, .LmultiHartInit
 
+#ifdef ZERO_BSS
+  # Zero out BSS; linker script provides alignment and padding
+  la t0, _fbss
+  la t1, _end
+  beq t0, t1, 2f
+1:STORE zero, 0(t0)
+  addi t0, t0, REGBYTES
+  bne t0, t1, 1b
+2:
+#endif
+
+  # Boot on the first hart
+  j init_first_hart
+
+.LmultiHartInit:
   # set MSIE bit to receive IPI
   li a2, MIP_MSIP
   csrw mie, a2

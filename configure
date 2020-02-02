@@ -675,6 +675,7 @@ with_arch
 with_abi
 enable_print_device_tree
 with_mem_start
+enable_zero_bss
 enable_optional_subprojects
 enable_vm
 enable_logo
@@ -1314,6 +1315,7 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-print-device-tree
                           Print DTS when booting
+  --enable-zero-bss       Manually zero out BSS when booting
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-vm            Disable virtual memory
@@ -4121,6 +4123,19 @@ else
 
 fi
 
+
+# Check whether --enable-zero-bss was given.
+if test "${enable_zero_bss+set}" = set; then :
+  enableval=$enable_zero_bss;
+fi
+
+if test "x$enable_zero_bss" = "xyes"; then :
+
+
+$as_echo "#define ZERO_BSS /**/" >>confdefs.h
+
+
+fi
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

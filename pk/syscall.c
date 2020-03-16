@@ -24,7 +24,7 @@ void sys_exit(int code)
     printk("%lld cycles\n", dc);
     printk("%lld instructions\n", di);
     printk("%d.%d%d CPI\n", (int)(dc/di), (int)(10ULL*dc/di % 10),
-        (int)((100ULL*dc + di/2)/di % 10));
+        (int)((100ULL*dc)/di % 10));
   }
   shutdown(code);
 }

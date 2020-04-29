@@ -9,7 +9,14 @@
 #include "fdt.h"
 #include <string.h>
 
+#ifdef BBL_PAYLOAD
 extern char _payload_start, _payload_end; /* internal payload */
+# define PAYLOAD_START &_payload_start
+# define PAYLOAD_END ROUNDUP((uintptr_t)&_payload_end, MEGAPAGE_SIZE)
+#else
+# define PAYLOAD_START (void*)(MEM_START + MEGAPAGE_SIZE)
+# define PAYLOAD_END (void*)(MEM_START + 0x2200000)
+#endif
 static const void* entry_point;
 long disabled_hart_mask;
 
@@ -23,8 +30,9 @@ static uintptr_t dtb_output()
    * address. The kernel's virtual mapping begins at its load address,
    * thus mandating device-tree is in physical memory after the kernel.
    */
-  uintptr_t end = kernel_end ? (uintptr_t)kernel_end : (uintptr_t)&_payload_end;
-  return (end + MEGAPAGE_SIZE - 1) / MEGAPAGE_SIZE * MEGAPAGE_SIZE;
+  uintptr_t end = kernel_end ? ROUNDUP((uintptr_t)kernel_end, MEGAPAGE_SIZE)
+                             : (uintptr_t)PAYLOAD_END;
+  return end;
 }
 
 static void filter_dtb(uintptr_t source)
@@ -123,6 +131,6 @@ void boot_loader(uintptr_t dtb)
 #endif
   mb();
   /* Use optional FDT preloaded external payload if present */
-  entry_point = kernel_start ? kernel_start : &_payload_start;
+  entry_point = kernel_start ? kernel_start : PAYLOAD_START;
   boot_other_hart(0);
 }

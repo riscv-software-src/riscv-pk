@@ -45,6 +45,6 @@ bbl_install_prog_srcs = \
   bbl.c \
 
 bbl.bin: bbl
-	$(OBJCOPY) -S -O binary --change-addresses -0x80000000 $< $@
+	$(OBJCOPY) -S -O binary --change-addresses -@MEM_START@ $< $@
 
 bbl_extra_targets = bbl.bin

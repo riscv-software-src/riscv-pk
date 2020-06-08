@@ -45,7 +45,7 @@ static void uart_open(const struct fdt_scan_node *node, void *extra)
 static void uart_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct uart_scan *scan = (struct uart_scan *)extra;
-  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "sifive,uart0")) {
+  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "sifive,uart0") >= 0) {
     scan->compat = 1;
   } else if (!strcmp(prop->name, "reg")) {
     fdt_get_address(prop->node->parent, prop->value, &scan->reg);

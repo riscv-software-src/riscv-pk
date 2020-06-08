@@ -128,7 +128,7 @@ static void htif_open(const struct fdt_scan_node *node, void *extra)
 static void htif_prop(const struct fdt_scan_prop *prop, void *extra)
 {
   struct htif_scan *scan = (struct htif_scan *)extra;
-  if (!strcmp(prop->name, "compatible") && !strcmp((const char*)prop->value, "ucb,htif0")) {
+  if (!strcmp(prop->name, "compatible") && fdt_string_list_index(prop, "ucb,htif0") >= 0) {
     scan->compat = 1;
   }
 }

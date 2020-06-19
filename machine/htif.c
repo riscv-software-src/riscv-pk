@@ -109,8 +109,9 @@ void htif_console_putchar(uint8_t ch)
 void htif_poweroff()
 {
   while (1) {
-    fromhost = 0;
-    tohost = 1;
+    spinlock_lock(&htif_lock);
+    __set_tohost(0, 0, 1);
+    spinlock_unlock(&htif_lock);
   }
 }
 

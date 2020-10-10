@@ -40,7 +40,7 @@ static void handle_breakpoint(trapframe_t* tf)
 {
   dump_tf(tf);
   printk("Breakpoint!\n");
-  tf->epc += 4;
+  tf->epc += insn_len(*(uint16_t*)tf->epc);
 }
 
 static void handle_misaligned_fetch(trapframe_t* tf)

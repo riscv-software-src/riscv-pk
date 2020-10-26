@@ -37,3 +37,8 @@ machine_c_srcs = \
 machine_asm_srcs = \
   mentry.S \
   fp_asm.S \
+  
+mentry.o: machine.dtb
+
+machine.dtb: $(MACHINE_DTS)
+	dtc -O dtb $^ -o $@

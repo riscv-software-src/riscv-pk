@@ -41,11 +41,13 @@ static void filter_dtb(uintptr_t source)
   uint32_t size = fdt_size(source);
   memcpy((void*)dest, (void*)source, size);
 
+#ifndef MACHINE_DTS
   // Remove information from the chained FDT
   filter_harts(dest, &disabled_hart_mask);
   filter_plic(dest);
   filter_compat(dest, "riscv,clint0");
   filter_compat(dest, "riscv,debug-013");
+#endif
 }
 
 static void protect_memory(void)

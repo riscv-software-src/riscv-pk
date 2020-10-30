@@ -67,7 +67,6 @@ SECTIONS
     *(.srodata*)
     *(.gnu.linkonce.d.*)
     *(.comment)
-    *(.dtb)
   }
 
   /* End of initialized data segment */

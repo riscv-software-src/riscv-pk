@@ -5,6 +5,7 @@ AS_IF([test "x$enable_fp_emulation" != "xno"], [
   AC_DEFINE([PK_ENABLE_FP_EMULATION],,[Define if floating-point emulation is enabled])
 ])
 
-AC_ARG_WITH([dts], AS_HELP_STRING([--with-dts], [Support a machine dts]),
-  [AC_SUBST([MACHINE_DTS], $with_dts, [machine dts])]
+AC_ARG_WITH([dts], AS_HELP_STRING([--with-dts], [Specify a customize dts]),
+  [AC_SUBST([CUSTOM_DTS], $with_dts, [customize dts])],
+  [AC_SUBST([CUSTOM_DTS], [no], [customize dts])]
 )

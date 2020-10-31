@@ -590,7 +590,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subprojects_enabled
 subprojects
-MACHINE_DTS
+CUSTOM_DTS
 BBL_LOGO_FILE
 BBL_PAYLOAD
 BBL_ENABLE_LOGO
@@ -1345,7 +1345,7 @@ Optional Packages:
   --with-mem-start        Set physical memory start address
   --with-payload          Set ELF payload for bbl
   --with-logo             Specify a better logo
-  --with-dts              Support a machine dts
+  --with-dts              Specify a customize dts
 
 Some influential environment variables:
   CC          C compiler command
@@ -4486,7 +4486,10 @@ fi
 
 # Check whether --with-dts was given.
 if test "${with_dts+set}" = set; then :
-  withval=$with_dts; MACHINE_DTS=$with_dts
+  withval=$with_dts; CUSTOM_DTS=$with_dts
+
+else
+  CUSTOM_DTS=no
 
 
 fi

@@ -37,8 +37,10 @@ machine_c_srcs = \
 machine_asm_srcs = \
   mentry.S \
   fp_asm.S \
-  
-mentry.o: machine.dtb
 
-machine.dtb: $(MACHINE_DTS)
+ifneq (@CUSTOM_DTS@,no)
+mentry.o: custom.dtb
+
+custom.dtb: $(CUSTOM_DTS)
 	dtc -O dtb $^ -o $@
+endif

@@ -281,7 +281,7 @@ do_reset:
 #endif
 
   # Boot on the first hart
-#ifdef MACHINE_DTS
+#ifdef CUSTOM_DTS
   csrr a0, mhartid
   la a1, dtb_start
 #endif
@@ -317,12 +317,12 @@ do_reset:
   wfi
   j .LmultiHart
 
-#ifdef MACHINE_DTS
+#ifdef CUSTOM_DTS
 .section .dtb
 .align 3
 .global dtb_start, dtb_end
 dtb_start:
-.incbin "machine.dtb"
+.incbin "custom.dtb"
 dtb_end:
 #endif
 

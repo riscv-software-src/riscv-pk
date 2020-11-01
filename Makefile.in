@@ -116,6 +116,10 @@ ifneq (@BBL_PAYLOAD@,no)
 CFLAGS        := $(CFLAGS) -DBBL_PAYLOAD=\"bbl_payload\"
 endif
 BBL_PAYLOAD   := @BBL_PAYLOAD@
+ifneq (@CUSTOM_DTS@,no)
+CFLAGS        := $(CFLAGS) -DCUSTOM_DTS=\"custom_dts\"
+endif
+CUSTOM_DTS   := @CUSTOM_DTS@
 COMPILE       := $(CC) -MMD -MP $(CFLAGS) \
                  $(sprojs_include)
 # Linker

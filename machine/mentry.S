@@ -281,6 +281,10 @@ do_reset:
 #endif
 
   # Boot on the first hart
+#ifdef CUSTOM_DTS
+  csrr a0, mhartid
+  la a1, dtb_start
+#endif
   j init_first_hart
 
 .LmultiHartInit:
@@ -312,6 +316,15 @@ do_reset:
 #endif
   wfi
   j .LmultiHart
+
+#ifdef CUSTOM_DTS
+.section .dtb
+.align 3
+.global dtb_start, dtb_end
+dtb_start:
+.incbin "custom.dtb"
+dtb_end:
+#endif
 
   .bss
   .align RISCV_PGSHIFT

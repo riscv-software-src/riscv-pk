@@ -129,15 +129,15 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   // place argc, argv, envp, auxp on stack
   #define PUSH_ARG(type, value) do { \
     *((type*)sp) = (type)value; \
-    sp += sizeof(type); \
+    sp ++; \
   } while (0)
 
   #define STACK_INIT(type) do { \
     unsigned naux = sizeof(aux)/sizeof(aux[0]); \
     stack_top -= (1 + argc + 1 + envc + 1 + 2*naux) * sizeof(type); \
     stack_top &= -16; \
-    long sp = stack_top; \
-    PUSH_ARG(type, argc); \
+    type *sp = (void*)stack_top; \
+    PUSH_ARG(int, argc); \
     for (unsigned i = 0; i < argc; i++) \
       PUSH_ARG(type, argv[i]); \
     PUSH_ARG(type, 0); /* argv[argc] = NULL */ \

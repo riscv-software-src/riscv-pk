@@ -226,7 +226,7 @@ long sys_fstatat(int dirfd, const char* name, void* st, int flags)
     struct frontend_stat buf;
     size_t name_size = strlen(name)+1;
     long ret = frontend_syscall(SYS_fstatat, kfd, va2pa(name), name_size, va2pa(&buf), flags, 0, 0);
-    copy_stat(st, &buf);
+    memcpy(st, &buf, sizeof(buf));
     return ret;
   }
   return -EBADF;

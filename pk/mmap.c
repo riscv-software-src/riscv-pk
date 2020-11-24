@@ -402,10 +402,10 @@ uintptr_t pk_vm_init()
   first_free_paddr = first_free_page + free_pages * RISCV_PGSIZE;
 
   root_page_table = (void*)__page_alloc();
-  __map_kernel_range(DRAM_BASE, DRAM_BASE, first_free_paddr - DRAM_BASE, PROT_READ|PROT_WRITE|PROT_EXEC);
+  __map_kernel_range(MEM_START, MEM_START, first_free_paddr - MEM_START, PROT_READ|PROT_WRITE|PROT_EXEC);
 
   current.mmap_max = current.brk_max =
-    MIN(DRAM_BASE, mem_size - (first_free_paddr - DRAM_BASE));
+    MIN(MEM_START, mem_size - (first_free_paddr - MEM_START));
 
   size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);

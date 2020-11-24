@@ -79,22 +79,37 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val)
        : [mprv] "r" (__mstatus_adjust), [addr] "r" (__mepc));
 #else
-  uintptr_t rvc_mask = 3, tmp;
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  uintptr_t rvc_mask = 3 << 24;
+#else
+  uintptr_t rvc_mask = 3;
+#endif
+  uintptr_t tmp;
   asm ("csrrs %[mstatus], mstatus, %[mprv]\n"
        "and %[tmp], %[addr], 2\n"
        "bnez %[tmp], 1f\n"
        STR(LWU) " %[insn], (%[addr])\n"
        "and %[tmp], %[insn], %[rvc_mask]\n"
        "beq %[tmp], %[rvc_mask], 2f\n"
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
        "sll %[insn], %[insn], %[xlen_minus_16]\n"
        "srl %[insn], %[insn], %[xlen_minus_16]\n"
+#else
+       "srl %[insn], %[insn], 16\n"
+       "sll %[insn], %[insn], 16\n"
+#endif
        "j 2f\n"
        "1:\n"
        "lhu %[insn], (%[addr])\n"
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+       "sll %[insn], %[insn], 16\n"
+#endif
        "and %[tmp], %[insn], %[rvc_mask]\n"
        "bne %[tmp], %[rvc_mask], 2f\n"
        "lhu %[tmp], 2(%[addr])\n"
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
        "sll %[tmp], %[tmp], 16\n"
+#endif
        "add %[insn], %[insn], %[tmp]\n"
        "2: csrw mstatus, %[mstatus]"
        : [mstatus] "+&r" (__mstatus), [insn] "=&r" (val), [tmp] "=&r" (tmp)
@@ -102,7 +117,11 @@ static uintptr_t __attribute__((always_inline)) get_insn(uintptr_t mepc, uintptr
          [rvc_mask] "r" (rvc_mask), [xlen_minus_16] "i" (__riscv_xlen - 16));
 #endif
   *mstatus = __mstatus;
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  return __builtin_bswap32(val);
+#else
   return val;
+#endif
 }
 
 #endif

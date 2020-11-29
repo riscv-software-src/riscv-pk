@@ -132,7 +132,9 @@ int sys_fstat(int fd, void* st)
 
   if (f)
   {
-    r = file_stat(f, st);
+    struct frontend_stat buf;
+    r = frontend_syscall(SYS_fstat, f->kfd, va2pa(&buf), 0, 0, 0, 0, 0);
+    memcpy(st, &buf, sizeof(buf));
     file_decref(f);
   }
 
@@ -215,7 +217,7 @@ long sys_lstat(const char* name, void* st)
   struct frontend_stat buf;
   size_t name_size = strlen(name)+1;
   long ret = frontend_syscall(SYS_lstat, va2pa(name), name_size, va2pa(&buf), 0, 0, 0, 0);
-  copy_stat(st, &buf);
+  memcpy(st, &buf, sizeof(buf));
   return ret;
 }
 

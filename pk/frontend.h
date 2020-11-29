@@ -32,6 +32,4 @@ struct frontend_stat {
   uint32_t __unused5;
 };
 
-void copy_stat(struct stat* dest, struct frontend_stat* src);
-
 #endif

@@ -155,14 +155,6 @@ ssize_t file_pwrite(file_t* f, const void* buf, size_t size, off_t offset)
   return frontend_syscall(SYS_pwrite, f->kfd, va2pa(buf), size, offset, 0, 0, 0);
 }
 
-int file_stat(file_t* f, struct stat* s)
-{
-  struct frontend_stat buf;
-  long ret = frontend_syscall(SYS_fstat, f->kfd, va2pa(&buf), 0, 0, 0, 0, 0);
-  copy_stat(s, &buf);
-  return ret;
-}
-
 int file_truncate(file_t* f, off_t len)
 {
   return frontend_syscall(SYS_ftruncate, f->kfd, len, 0, 0, 0, 0, 0);

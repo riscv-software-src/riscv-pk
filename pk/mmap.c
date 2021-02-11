@@ -18,38 +18,69 @@ typedef struct {
   int prot;
 } vmr_t;
 
+#define RISCV_PGLEVELS ((VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS)
+
 #define MAX_VMR (RISCV_PGSIZE / sizeof(vmr_t))
 static spinlock_t vm_lock = SPINLOCK_INIT;
 static vmr_t* vmrs;
 
-uintptr_t first_free_paddr;
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
 
 int demand_paging = 1; // unless -p flag is given
 
+struct freelist_node_t {
+  struct freelist_node_t* next;
+  uintptr_t addr;
+};
+
+static struct freelist_node_t* freelist_head;
+static struct freelist_node_t* freelist_node_array;
+
+static void __augment_freelist()
+{
+  if (next_free_page == free_pages)
+    panic("Out of memory!");
+
+  struct freelist_node_t* node = &freelist_node_array[next_free_page];
+  node->addr = first_free_page + RISCV_PGSIZE * next_free_page;
+  node->next = freelist_head;
+  freelist_head = node;
+
+  next_free_page++;
+}
+
 static uintptr_t __page_alloc()
 {
-  kassert(next_free_page != free_pages);
-  uintptr_t addr = first_free_page + RISCV_PGSIZE * next_free_page++;
-  memset((void*)addr, 0, RISCV_PGSIZE);
-  return addr;
+  if (freelist_head == NULL)
+    __augment_freelist();
+
+  struct freelist_node_t* node = freelist_head;
+  uintptr_t addr = node->addr;
+  freelist_head = node->next;
+  node->next = NULL;
+
+  return (uintptr_t)memset((void*)addr, 0, RISCV_PGSIZE);
+}
+
+static void __page_free(uintptr_t addr)
+{
+  size_t idx = (addr - first_free_page) / RISCV_PGSIZE;
+  kassert(idx < free_pages);
+  struct freelist_node_t* node = &freelist_node_array[idx];
+  kassert(node->addr == addr);
+  kassert(node->next == NULL);
+
+  node->next = freelist_head;
+  freelist_head = node;
 }
 
 static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
                           size_t offset, unsigned refcnt, int prot)
 {
-  if (!vmrs) {
-    spinlock_lock(&vm_lock);
-      if (!vmrs) {
-        vmr_t* page = (vmr_t*)__page_alloc();
-        mb();
-        vmrs = page;
-      }
-    spinlock_unlock(&vm_lock);
-  }
-  mb();
+  if (!vmrs)
+    vmrs = (vmr_t*)__page_alloc();
 
   for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
     if (v->refcnt == 0) {
@@ -92,34 +123,30 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static pte_t* __walk_create(uintptr_t addr);
-
-static pte_t* __attribute__((noinline)) __continue_walk_create(uintptr_t addr, pte_t* pte)
-{
-  *pte = ptd_create(ppn(__page_alloc()));
-  return __walk_create(addr);
-}
-
-static pte_t* __walk_internal(uintptr_t addr, int create)
+static pte_t* __walk_internal(uintptr_t addr, int create, int level)
 {
   pte_t* t = root_page_table;
-  for (int i = (VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS - 1; i > 0; i--) {
+  for (int i = RISCV_PGLEVELS - 1; i > level; i--) {
     size_t idx = pt_idx(addr, i);
-    if (unlikely(!(t[idx] & PTE_V)))
-      return create ? __continue_walk_create(addr, &t[idx]) : 0;
+    if (unlikely(!(t[idx] & PTE_V))) {
+      if (create)
+        t[idx] = ptd_create(ppn(__page_alloc()));
+      else
+        return 0;
+    }
     t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
-  return &t[pt_idx(addr, 0)];
+  return &t[pt_idx(addr, level)];
 }
 
 static pte_t* __walk(uintptr_t addr)
 {
-  return __walk_internal(addr, 0);
+  return __walk_internal(addr, 0, 0);
 }
 
 static pte_t* __walk_create(uintptr_t addr)
 {
-  return __walk_internal(addr, 1);
+  return __walk_internal(addr, 1, 0);
 }
 
 static int __va_avail(uintptr_t vaddr)
@@ -174,8 +201,8 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     return -1;
   else if (!(*pte & PTE_V))
   {
-    uintptr_t ppn = vpn + (first_free_paddr / RISCV_PGSIZE);
-    uintptr_t kva = ppn * RISCV_PGSIZE;
+    uintptr_t kva = __page_alloc();
+    uintptr_t ppn = kva / RISCV_PGSIZE;
 
     vmr_t* v = (vmr_t*)*pte;
     *pte = pte_create(ppn, prot_to_type(PROT_READ|PROT_WRITE, 0));
@@ -218,7 +245,9 @@ static void __do_munmap(uintptr_t addr, size_t len)
     if (pte == 0 || *pte == 0)
       continue;
 
-    if (!(*pte & PTE_V))
+    if (*pte & PTE_V)
+      __page_free(pte_ppn(*pte) << RISCV_PGSHIFT);
+    else
       __vmr_decref((vmr_t*)*pte, 1);
 
     *pte = 0;
@@ -371,11 +400,19 @@ void __map_kernel_range(uintptr_t vaddr, uintptr_t paddr, size_t len, int prot)
 {
   uintptr_t n = ROUNDUP(len, RISCV_PGSIZE) / RISCV_PGSIZE;
   uintptr_t offset = paddr - vaddr;
-  for (uintptr_t a = vaddr, i = 0; i < n; i++, a += RISCV_PGSIZE)
-  {
-    pte_t* pte = __walk_create(a);
+
+  while (len > 0) {
+    size_t megapage_size = RISCV_PGSIZE << RISCV_PGLEVEL_BITS;
+    int level = (vaddr | paddr) % megapage_size == 0 && len >= megapage_size;
+    size_t pgsize = RISCV_PGSIZE << (level * RISCV_PGLEVEL_BITS);
+
+    pte_t* pte = __walk_internal(vaddr, 1, level);
     kassert(pte);
-    *pte = pte_create((a + offset) >> RISCV_PGSHIFT, prot_to_type(prot, 0));
+    *pte = pte_create((vaddr + offset) >> RISCV_PGSHIFT, prot_to_type(prot, 0));
+
+    len -= pgsize;
+    vaddr += pgsize;
+    paddr += pgsize;
   }
 }
 
@@ -393,21 +430,21 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
-  // HTIF address signedness and va2pa macro both cap memory size to 2 GiB
-  mem_size = MIN(mem_size, 1U << 31);
-  size_t mem_pages = mem_size >> RISCV_PGSHIFT;
-  free_pages = MAX(8, mem_pages >> (RISCV_PGLEVEL_BITS-1));
-
   extern char _end;
   first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
-  first_free_paddr = first_free_page + free_pages * RISCV_PGSIZE;
+  free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
+
+  size_t num_freelist_nodes = mem_size / RISCV_PGSIZE;
+  size_t freelist_node_array_size = ROUNDUP(num_freelist_nodes * sizeof(struct freelist_node_t), RISCV_PGSIZE);
+  freelist_node_array = (struct freelist_node_t*)first_free_page;
+  next_free_page = freelist_node_array_size / RISCV_PGSIZE;
 
   root_page_table = (void*)__page_alloc();
-  __map_kernel_range(MEM_START, MEM_START, first_free_paddr - MEM_START, PROT_READ|PROT_WRITE|PROT_EXEC);
+  __map_kernel_range(MEM_START, MEM_START, mem_size, PROT_READ|PROT_WRITE|PROT_EXEC);
 
-  current.mmap_max = current.brk_max =
-    MIN(MEM_START, mem_size - (first_free_paddr - MEM_START));
+  current.mmap_max = current.brk_max = MEM_START;
 
+  size_t mem_pages = mem_size >> RISCV_PGSHIFT;
   size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);

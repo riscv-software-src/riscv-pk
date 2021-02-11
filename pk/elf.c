@@ -5,6 +5,7 @@
 #include "boot.h"
 #include "bits.h"
 #include "elf.h"
+#include "usermem.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -83,7 +84,7 @@ void load_elf(const char* fn, elf_info* info)
       int prot = get_prot(ph[i].p_flags);
       if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot | PROT_WRITE, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
         goto fail;
-      memset((void*)vaddr - prepad, 0, prepad);
+      memset_user((void*)vaddr - prepad, 0, prepad);
       if (!(prot & PROT_WRITE))
         if (do_mprotect(vaddr - prepad, ph[i].p_filesz + prepad, prot))
           goto fail;

@@ -13,6 +13,7 @@ pk_hdrs = \
 	mmap.h \
 	pk.h \
 	syscall.h \
+	usermem.h \
 
 pk_c_srcs = \
 	file.c \
@@ -22,6 +23,7 @@ pk_c_srcs = \
 	elf.c \
 	console.c \
 	mmap.c \
+	usermem.c \
 
 pk_asm_srcs = \
 	entry.S \

@@ -3,15 +3,19 @@
 #include "syscall.h"
 #include "pk.h"
 #include "file.h"
+#include "bits.h"
 #include "frontend.h"
 #include "mmap.h"
 #include "boot.h"
+#include "usermem.h"
 #include <string.h>
 #include <errno.h>
 
 typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
 #define CLOCK_FREQ 1000000000
+
+#define MAX_BUF 512
 
 void sys_exit(int code)
 {
@@ -33,10 +37,25 @@ ssize_t sys_read(int fd, char* buf, size_t n)
 {
   ssize_t r = -EBADF;
   file_t* f = file_get(fd);
+  char kbuf[MAX_BUF];
 
-  if (f)
-  {
-    r = file_read(f, buf, n);
+  if (f) {
+    for (size_t total = 0; ; ) {
+      size_t cur = MIN(n - total, MAX_BUF);
+      r = file_read(f, kbuf, cur);
+      if (r < 0)
+        break;
+
+      memcpy_to_user(buf, kbuf, r);
+
+      total += r;
+      buf += r;
+      if (r < cur || total == n) {
+        r = total;
+        break;
+      }
+    }
+
     file_decref(f);
   }
 
@@ -47,10 +66,26 @@ ssize_t sys_pread(int fd, char* buf, size_t n, off_t offset)
 {
   ssize_t r = -EBADF;
   file_t* f = file_get(fd);
+  char kbuf[MAX_BUF];
 
-  if (f)
-  {
-    r = file_pread(f, buf, n, offset);
+  if (f) {
+    for (size_t total = 0; ; ) {
+      size_t cur = MIN(n - total, MAX_BUF);
+      r = file_pread(f, kbuf, cur, offset);
+      if (r < 0)
+        break;
+
+      memcpy_to_user(buf, kbuf, r);
+
+      total += r;
+      buf += r;
+      offset += r;
+      if (r < cur || total == n) {
+        r = total;
+        break;
+      }
+    }
+
     file_decref(f);
   }
 
@@ -61,10 +96,26 @@ ssize_t sys_write(int fd, const char* buf, size_t n)
 {
   ssize_t r = -EBADF;
   file_t* f = file_get(fd);
+  char kbuf[MAX_BUF];
 
-  if (f)
-  {
-    r = file_write(f, buf, n);
+  if (f) {
+    for (size_t total = 0; ; ) {
+      size_t cur = MIN(n - total, MAX_BUF);
+      memcpy_from_user(kbuf, buf, cur);
+
+      r = file_write(f, kbuf, cur);
+
+      if (r < 0)
+        break;
+
+      total += r;
+      buf += r;
+      if (r < cur || total == n) {
+        r = total;
+        break;
+      }
+    }
+
     file_decref(f);
   }
 
@@ -85,7 +136,11 @@ int sys_openat(int dirfd, const char* name, int flags, int mode)
 {
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
-    file_t* file = file_openat(kfd, name, flags, mode);
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    file_t* file = file_openat(kfd, kname, flags, mode);
     if (IS_ERR_VALUE(file))
       return PTR_ERR(file);
 
@@ -114,13 +169,19 @@ int sys_close(int fd)
 }
 
 int sys_renameat(int old_fd, const char *old_path, int new_fd, const char *new_path) {
+
   int old_kfd = at_kfd(old_fd);
   int new_kfd = at_kfd(new_fd);
   if(old_kfd != -1 && new_kfd != -1) {
-    size_t old_size = strlen(old_path)+1;
-    size_t new_size = strlen(new_path)+1;
-    return frontend_syscall(SYS_renameat, old_kfd, va2pa(old_path), old_size,
-                                           new_kfd, va2pa(new_path), new_size, 0);
+    char kold_path[MAX_BUF], knew_path[MAX_BUF];
+    if (!strcpy_from_user(kold_path, old_path, MAX_BUF) || !strcpy_from_user(knew_path, new_path, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t old_size = strlen(kold_path)+1;
+    size_t new_size = strlen(knew_path)+1;
+
+    return frontend_syscall(SYS_renameat, old_kfd, kva2pa(kold_path), old_size,
+                                           new_kfd, kva2pa(knew_path), new_size, 0);
   }
   return -EBADF;
 }
@@ -133,8 +194,8 @@ int sys_fstat(int fd, void* st)
   if (f)
   {
     struct frontend_stat buf;
-    r = frontend_syscall(SYS_fstat, f->kfd, va2pa(&buf), 0, 0, 0, 0, 0);
-    memcpy(st, &buf, sizeof(buf));
+    r = frontend_syscall(SYS_fstat, f->kfd, kva2pa(&buf), 0, 0, 0, 0, 0);
+    memcpy_to_user(st, &buf, sizeof(buf));
     file_decref(f);
   }
 
@@ -215,8 +276,14 @@ ssize_t sys_lseek(int fd, size_t ptr, int dir)
 long sys_lstat(const char* name, void* st)
 {
   struct frontend_stat buf;
-  size_t name_size = strlen(name)+1;
-  long ret = frontend_syscall(SYS_lstat, va2pa(name), name_size, va2pa(&buf), 0, 0, 0, 0);
+
+  char kname[MAX_BUF];
+  if (!strcpy_from_user(kname, name, MAX_BUF))
+    return -ENAMETOOLONG;
+
+  size_t name_size = strlen(kname)+1;
+
+  long ret = frontend_syscall(SYS_lstat, kva2pa(kname), name_size, kva2pa(&buf), 0, 0, 0, 0);
   memcpy(st, &buf, sizeof(buf));
   return ret;
 }
@@ -226,9 +293,15 @@ long sys_fstatat(int dirfd, const char* name, void* st, int flags)
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
     struct frontend_stat buf;
-    size_t name_size = strlen(name)+1;
-    long ret = frontend_syscall(SYS_fstatat, kfd, va2pa(name), name_size, va2pa(&buf), flags, 0, 0);
-    memcpy(st, &buf, sizeof(buf));
+
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t name_size = strlen(kname)+1;
+
+    long ret = frontend_syscall(SYS_fstatat, kfd, kva2pa(kname), name_size, kva2pa(&buf), flags, 0, 0);
+    memcpy_to_user(st, &buf, sizeof(buf));
     return ret;
   }
   return -EBADF;
@@ -243,8 +316,13 @@ long sys_faccessat(int dirfd, const char *name, int mode)
 {
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
-    size_t name_size = strlen(name)+1;
-    return frontend_syscall(SYS_faccessat, kfd, va2pa(name), name_size, mode, 0, 0, 0);
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t name_size = strlen(kname)+1;
+
+    return frontend_syscall(SYS_faccessat, kfd, kva2pa(kname), name_size, mode, 0, 0, 0);
   }
   return -EBADF;
 }
@@ -259,10 +337,16 @@ long sys_linkat(int old_dirfd, const char* old_name, int new_dirfd, const char* 
   int old_kfd = at_kfd(old_dirfd);
   int new_kfd = at_kfd(new_dirfd);
   if (old_kfd != -1 && new_kfd != -1) {
-    size_t old_size = strlen(old_name)+1;
-    size_t new_size = strlen(new_name)+1;
-    return frontend_syscall(SYS_linkat, old_kfd, va2pa(old_name), old_size,
-                                        new_kfd, va2pa(new_name), new_size,
+
+    char kold_name[MAX_BUF], knew_name[MAX_BUF];
+    if (!strcpy_from_user(kold_name, old_name, MAX_BUF) || !strcpy_from_user(knew_name, new_name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t old_size = strlen(kold_name)+1;
+    size_t new_size = strlen(knew_name)+1;
+
+    return frontend_syscall(SYS_linkat, old_kfd, kva2pa(kold_name), old_size,
+                                        new_kfd, kva2pa(knew_name), new_size,
                                         flags);
   }
   return -EBADF;
@@ -277,8 +361,13 @@ long sys_unlinkat(int dirfd, const char* name, int flags)
 {
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
-    size_t name_size = strlen(name)+1;
-    return frontend_syscall(SYS_unlinkat, kfd, va2pa(name), name_size, flags, 0, 0, 0);
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t name_size = strlen(kname)+1;
+
+    return frontend_syscall(SYS_unlinkat, kfd, kva2pa(kname), name_size, flags, 0, 0, 0);
   }
   return -EBADF;
 }
@@ -292,8 +381,13 @@ long sys_mkdirat(int dirfd, const char* name, int mode)
 {
   int kfd = at_kfd(dirfd);
   if (kfd != -1) {
-    size_t name_size = strlen(name)+1;
-    return frontend_syscall(SYS_mkdirat, kfd, va2pa(name), name_size, mode, 0, 0, 0);
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t name_size = strlen(kname)+1;
+
+    return frontend_syscall(SYS_mkdirat, kfd, kva2pa(kname), name_size, mode, 0, 0, 0);
   }
   return -EBADF;
 }
@@ -303,10 +397,13 @@ long sys_mkdir(const char* name, int mode)
   return sys_mkdirat(AT_FDCWD, name, mode);
 }
 
-long sys_getcwd(const char* buf, size_t size)
+long sys_getcwd(char* buf, size_t size)
 {
-  populate_mapping(buf, size, PROT_WRITE);
-  return frontend_syscall(SYS_getcwd, va2pa(buf), size, 0, 0, 0, 0, 0);
+  char kbuf[MAX_BUF];
+  long ret = frontend_syscall(SYS_getcwd, kva2pa(kbuf), MIN(size, MAX_BUF), 0, 0, 0, 0, 0);
+  if (ret == 0)
+    memcpy_to_user(buf, kbuf, strlen(kbuf) + 1);
+  return ret;
 }
 
 size_t sys_brk(size_t pos)
@@ -316,13 +413,19 @@ size_t sys_brk(size_t pos)
 
 int sys_uname(void* buf)
 {
-  const int sz = 65;
-  strcpy(buf + 0*sz, "Proxy Kernel");
-  strcpy(buf + 1*sz, "");
-  strcpy(buf + 2*sz, "4.15.0");
-  strcpy(buf + 3*sz, "");
-  strcpy(buf + 4*sz, "");
-  strcpy(buf + 5*sz, "");
+  const int sz = 65, sz_total = sz * 6;
+  char kbuf[sz_total];
+  memset(kbuf, 0, sz_total);
+
+  strcpy(kbuf + 0*sz, "Proxy Kernel");
+  strcpy(kbuf + 1*sz, "");
+  strcpy(kbuf + 2*sz, "4.15.0");
+  strcpy(kbuf + 3*sz, "");
+  strcpy(kbuf + 4*sz, "");
+  strcpy(kbuf + 5*sz, "");
+
+  memcpy_to_user(buf, kbuf, sz_total);
+
   return 0;
 }
 
@@ -363,17 +466,19 @@ uintptr_t sys_mprotect(uintptr_t addr, size_t length, int prot)
 
 int sys_rt_sigaction(int sig, const void* act, void* oact, size_t sssz)
 {
-  if (oact)
-    memset(oact, 0, sizeof(long) * 3);
+  if (oact) {
+    long koact[3] = {0};
+    memcpy_to_user(oact, koact, sizeof(koact));
+  }
 
   return 0;
 }
 
 long sys_time(long* loc)
 {
-  uint64_t t = rdcycle64() / CLOCK_FREQ;
+  long t = (long)(rdcycle64() / CLOCK_FREQ);
   if (loc)
-    *loc = t;
+    memcpy_to_user(loc, &t, sizeof(t));
   return t;
 }
 
@@ -381,10 +486,11 @@ int sys_times(long* loc)
 {
   uint64_t t = rdcycle64();
   kassert(CLOCK_FREQ % 1000000 == 0);
-  loc[0] = t / (CLOCK_FREQ / 1000000);
-  loc[1] = 0;
-  loc[2] = 0;
-  loc[3] = 0;
+
+  long kloc[4] = {0};
+  kloc[0] = t / (CLOCK_FREQ / 1000000);
+
+  memcpy_to_user(loc, kloc, sizeof(kloc));
   
   return 0;
 }
@@ -392,8 +498,12 @@ int sys_times(long* loc)
 int sys_gettimeofday(long* loc)
 {
   uint64_t t = rdcycle64();
-  loc[0] = t / CLOCK_FREQ;
-  loc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000);
+
+  long kloc[2];
+  kloc[0] = t / CLOCK_FREQ;
+  kloc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000);
+
+  memcpy_to_user(loc, kloc, sizeof(kloc));
   
   return 0;
 }
@@ -401,8 +511,12 @@ int sys_gettimeofday(long* loc)
 long sys_clock_gettime(int clk_id, long *loc)
 {
   uint64_t t = rdcycle64();
-  loc[0] = t / CLOCK_FREQ;
-  loc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000000);
+
+  long kloc[2];
+  kloc[0] = t / CLOCK_FREQ;
+  kloc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000000);
+
+  memcpy_to_user(loc, kloc, sizeof(kloc));
 
   return 0;
 }
@@ -410,9 +524,11 @@ long sys_clock_gettime(int clk_id, long *loc)
 ssize_t sys_writev(int fd, const long* iov, int cnt)
 {
   ssize_t ret = 0;
-  for (int i = 0; i < cnt; i++)
-  {
-    ssize_t r = sys_write(fd, (void*)iov[2*i], iov[2*i+1]);
+  for (int i = 0; i < cnt; i++) {
+    long kiov[2];
+    memcpy_from_user(kiov, iov + 2*i, 2*sizeof(long));
+
+    ssize_t r = sys_write(fd, (void*)kiov[0], kiov[1]);
     if (r < 0)
       return r;
     ret += r;
@@ -422,7 +538,11 @@ ssize_t sys_writev(int fd, const long* iov, int cnt)
 
 int sys_chdir(const char *path)
 {
-  return frontend_syscall(SYS_chdir, va2pa(path), 0, 0, 0, 0, 0, 0);
+  char kbuf[MAX_BUF];
+  if (!strcpy_from_user(kbuf, path, MAX_BUF))
+    return -ENAMETOOLONG;
+
+  return frontend_syscall(SYS_chdir, kva2pa(kbuf), 0, 0, 0, 0, 0, 0);
 }
 
 int sys_getdents(int fd, void* dirbuf, int count)

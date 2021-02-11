@@ -6,6 +6,7 @@
 #include "elf.h"
 #include "mtrap.h"
 #include "frontend.h"
+#include "usermem.h"
 #include <stdbool.h>
 
 elf_info current;
@@ -58,7 +59,7 @@ typedef union {
 
 static size_t parse_args(arg_buf* args)
 {
-  long r = frontend_syscall(SYS_getmainvars, va2pa(args), sizeof(*args), 0, 0, 0, 0, 0);
+  long r = frontend_syscall(SYS_getmainvars, kva2pa(args), sizeof(*args), 0, 0, 0, 0, 0);
   if (r != 0)
     panic("args must not exceed %d bytes", (int)sizeof(arg_buf));
 
@@ -86,14 +87,14 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 {
   // copy phdrs to user stack
   size_t stack_top = current.stack_top - current.phdr_size;
-  memcpy((void*)stack_top, (void*)current.phdr, current.phdr_size);
+  memcpy_to_user((void*)stack_top, (void*)current.phdr, current.phdr_size);
   current.phdr = stack_top;
 
   // copy argv to user stack
   for (size_t i = 0; i < argc; i++) {
     size_t len = strlen((char*)(uintptr_t)argv[i])+1;
     stack_top -= len;
-    memcpy((void*)stack_top, (void*)(uintptr_t)argv[i], len);
+    memcpy_to_user((void*)stack_top, (void*)(uintptr_t)argv[i], len);
     argv[i] = (void*)stack_top;
   }
 
@@ -105,7 +106,7 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   for (size_t i = 0; i < envc; i++) {
     size_t len = strlen(envp[i]) + 1;
     stack_top -= len;
-    memcpy((void*)stack_top, envp[i], len);
+    memcpy_to_user((void*)stack_top, envp[i], len);
     envp[i] = (void*)stack_top;
   }
 
@@ -128,7 +129,8 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 
   // place argc, argv, envp, auxp on stack
   #define PUSH_ARG(type, value) do { \
-    *((type*)sp) = (type)value; \
+    type __tmp = (type)(value); \
+    memcpy_to_user(sp, &__tmp, sizeof(type)); \
     sp ++; \
   } while (0)
 
@@ -187,7 +189,7 @@ void boot_loader(uintptr_t dtb)
   write_csr(stvec, &trap_entry);
   write_csr(sscratch, 0);
   write_csr(sie, 0);
-  set_csr(sstatus, SSTATUS_SUM | SSTATUS_FS | SSTATUS_VS);
+  set_csr(sstatus, SSTATUS_FS | SSTATUS_VS);
 
   file_init();
   enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);

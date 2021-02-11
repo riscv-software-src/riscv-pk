@@ -34,8 +34,7 @@ uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
 
-#define va2pa(va) ({ uintptr_t __va = (uintptr_t)(va); \
-  extern uintptr_t first_free_paddr; \
-  __va >= MEM_START ? __va : __va + first_free_paddr; })
+#define kva2pa(va) ((uintptr_t)(va))
+#define is_uva(va) ((uintptr_t)(va) < MEM_START)
 
 #endif

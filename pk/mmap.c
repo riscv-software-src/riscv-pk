@@ -388,10 +388,12 @@ uintptr_t __do_brk(size_t addr)
     current.brk = ROUNDUP(current.brk_min, RISCV_PGSIZE);
 
   uintptr_t newbrk_page = ROUNDUP(newbrk, RISCV_PGSIZE);
-  if (current.brk > newbrk_page)
+  if (current.brk > newbrk_page) {
     __do_munmap(newbrk_page, current.brk - newbrk_page);
-  else if (current.brk < newbrk_page)
-    kassert(__do_mmap(current.brk, newbrk_page - current.brk, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) == current.brk);
+  } else if (current.brk < newbrk_page) {
+    if (__do_mmap(current.brk, newbrk_page - current.brk, -1, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, 0, 0) != current.brk)
+      return current.brk;
+  }
   current.brk = newbrk_page;
 
   return newbrk;

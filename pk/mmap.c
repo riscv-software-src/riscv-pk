@@ -7,9 +7,11 @@
 #include "bits.h"
 #include "mtrap.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <errno.h>
 
-typedef struct {
+typedef struct vmr_t {
+  struct vmr_t* next;
   uintptr_t addr;
   size_t length;
   file_t* file;
@@ -18,92 +20,126 @@ typedef struct {
   int prot;
 } vmr_t;
 
+static vmr_t* vmr_freelist_head;
+
 #define RISCV_PGLEVELS ((VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS)
 
-#define MAX_VMR (RISCV_PGSIZE / sizeof(vmr_t))
 static spinlock_t vm_lock = SPINLOCK_INIT;
-static vmr_t* vmrs;
 
 static uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
+static size_t pages_promised;
 
 int demand_paging = 1; // unless -p flag is given
 
-struct freelist_node_t {
+typedef struct freelist_node_t {
   struct freelist_node_t* next;
   uintptr_t addr;
-};
+} freelist_node_t;
 
-static struct freelist_node_t* freelist_head;
-static struct freelist_node_t* freelist_node_array;
+static freelist_node_t* page_freelist_head;
+size_t page_freelist_depth;
+static freelist_node_t* page_freelist_node_array;
 
-static void __augment_freelist()
+static bool __augment_freelist()
 {
   if (next_free_page == free_pages)
-    panic("Out of memory!");
+    return false;
 
-  struct freelist_node_t* node = &freelist_node_array[next_free_page];
+  freelist_node_t* node = &page_freelist_node_array[next_free_page];
   node->addr = first_free_page + RISCV_PGSIZE * next_free_page;
-  node->next = freelist_head;
-  freelist_head = node;
-
+  node->next = page_freelist_head;
+  page_freelist_head = node;
+  page_freelist_depth++;
   next_free_page++;
+
+  return true;
 }
 
 static uintptr_t __page_alloc()
 {
-  if (freelist_head == NULL)
-    __augment_freelist();
+  if (page_freelist_head == NULL && !__augment_freelist())
+    return 0;
 
-  struct freelist_node_t* node = freelist_head;
+  freelist_node_t* node = page_freelist_head;
   uintptr_t addr = node->addr;
-  freelist_head = node->next;
+  page_freelist_head = node->next;
   node->next = NULL;
+  page_freelist_depth--;
 
   return (uintptr_t)memset((void*)addr, 0, RISCV_PGSIZE);
+}
+
+static uintptr_t __page_alloc_assert()
+{
+  uintptr_t res = __page_alloc();
+
+  if (!res)
+    panic("Out of memory!");
+
+  return res;
 }
 
 static void __page_free(uintptr_t addr)
 {
   size_t idx = (addr - first_free_page) / RISCV_PGSIZE;
   kassert(idx < free_pages);
-  struct freelist_node_t* node = &freelist_node_array[idx];
+  freelist_node_t* node = &page_freelist_node_array[idx];
   kassert(node->addr == addr);
   kassert(node->next == NULL);
 
-  node->next = freelist_head;
-  freelist_head = node;
+  node->next = page_freelist_head;
+  page_freelist_head = node;
+  page_freelist_depth++;
+}
+
+static size_t __num_free_pages()
+{
+  return page_freelist_depth + (free_pages - next_free_page);
 }
 
 static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
                           size_t offset, unsigned refcnt, int prot)
 {
-  if (!vmrs)
-    vmrs = (vmr_t*)__page_alloc();
+  if (vmr_freelist_head == NULL) {
+    vmr_t* new_vmrs = (vmr_t*)__page_alloc();
+    if (new_vmrs == NULL)
+      return NULL;
 
-  for (vmr_t* v = vmrs; v < vmrs + MAX_VMR; v++) {
-    if (v->refcnt == 0) {
-      if (file)
-        file_incref(file);
-      v->addr = addr;
-      v->length = length;
-      v->file = file;
-      v->offset = offset;
-      v->refcnt = refcnt;
-      v->prot = prot;
-      return v;
-    }
+    vmr_freelist_head = new_vmrs;
+
+    for (size_t i = 0; i < (RISCV_PGSIZE / sizeof(vmr_t)) - 1; i++)
+      new_vmrs[i].next = &new_vmrs[i+1];
   }
-  return NULL;
+
+  vmr_t* v = vmr_freelist_head;
+  vmr_freelist_head = v->next;
+
+  pages_promised += refcnt;
+
+  if (file)
+    file_incref(file);
+
+  v->addr = addr;
+  v->length = length;
+  v->file = file;
+  v->offset = offset;
+  v->refcnt = refcnt;
+  v->prot = prot;
+  return v;
 }
 
 static void __vmr_decref(vmr_t* v, unsigned dec)
 {
-  if ((v->refcnt -= dec) == 0)
-  {
+  pages_promised -= dec;
+
+  if ((v->refcnt -= dec) == 0) {
     if (v->file)
       file_decref(v->file);
+
+    v->next = vmr_freelist_head;
+    vmr_freelist_head = v;
   }
 }
 
@@ -129,10 +165,14 @@ static pte_t* __walk_internal(uintptr_t addr, int create, int level)
   for (int i = RISCV_PGLEVELS - 1; i > level; i--) {
     size_t idx = pt_idx(addr, i);
     if (unlikely(!(t[idx] & PTE_V))) {
-      if (create)
-        t[idx] = ptd_create(ppn(__page_alloc()));
-      else
+      if (create) {
+        uintptr_t new_ptd = __page_alloc();
+        if (!new_ptd)
+          return 0;
+        t[idx] = ptd_create(ppn(new_ptd));
+      } else {
         return 0;
+      }
     }
     t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
@@ -155,11 +195,9 @@ static int __va_avail(uintptr_t vaddr)
   return pte == 0 || *pte == 0;
 }
 
-static uintptr_t __vm_alloc(size_t npage)
+static uintptr_t __vm_alloc_at(uintptr_t start, uintptr_t end, size_t npage)
 {
-  uintptr_t start = current.brk, end = current.mmap_max - npage*RISCV_PGSIZE;
-  for (uintptr_t a = start; a <= end; a += RISCV_PGSIZE)
-  {
+  for (uintptr_t a = start; a <= end; a += RISCV_PGSIZE) {
     if (!__va_avail(a))
       continue;
     uintptr_t first = a, last = a + (npage-1) * RISCV_PGSIZE;
@@ -170,6 +208,18 @@ static uintptr_t __vm_alloc(size_t npage)
     return a;
   }
   return 0;
+}
+
+static uintptr_t __vm_alloc(size_t npage)
+{
+  uintptr_t end = current.mmap_max - npage * RISCV_PGSIZE;
+  if (current.vm_alloc_guess) {
+    uintptr_t ret = __vm_alloc_at(current.vm_alloc_guess, end, npage);
+    if (ret)
+      return ret;
+  }
+
+  return __vm_alloc_at(current.brk, end, npage);
 }
 
 static inline pte_t prot_to_type(int prot, int user)
@@ -201,7 +251,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     return -1;
   else if (!(*pte & PTE_V))
   {
-    uintptr_t kva = __page_alloc();
+    uintptr_t kva = __page_alloc_assert();
     uintptr_t ppn = kva / RISCV_PGSIZE;
 
     vmr_t* v = (vmr_t*)*pte;
@@ -258,6 +308,10 @@ static void __do_munmap(uintptr_t addr, size_t len)
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* f, off_t offset)
 {
   size_t npage = (length-1)/RISCV_PGSIZE+1;
+
+  if (npage * 17 / 16 + 16 + pages_promised >= __num_free_pages())
+    return (uintptr_t)-1;
+
   if (flags & MAP_FIXED)
   {
     if ((addr & (RISCV_PGSIZE-1)) || !__valid_user_range(addr, length))
@@ -284,6 +338,8 @@ uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* 
   if (!demand_paging || (flags & MAP_POPULATE))
     for (uintptr_t a = addr; a < addr + length; a += RISCV_PGSIZE)
       kassert(__handle_page_fault(a, prot) == 0);
+
+  current.vm_alloc_guess = addr + npage * RISCV_PGSIZE;
 
   return addr;
 }
@@ -435,11 +491,11 @@ uintptr_t pk_vm_init()
   free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
 
   size_t num_freelist_nodes = mem_size / RISCV_PGSIZE;
-  size_t freelist_node_array_size = ROUNDUP(num_freelist_nodes * sizeof(struct freelist_node_t), RISCV_PGSIZE);
-  freelist_node_array = (struct freelist_node_t*)first_free_page;
+  size_t freelist_node_array_size = ROUNDUP(num_freelist_nodes * sizeof(freelist_node_t), RISCV_PGSIZE);
+  page_freelist_node_array = (freelist_node_t*)first_free_page;
   next_free_page = freelist_node_array_size / RISCV_PGSIZE;
 
-  root_page_table = (void*)__page_alloc();
+  root_page_table = (void*)__page_alloc_assert();
   __map_kernel_range(MEM_START, MEM_START, mem_size, PROT_READ|PROT_WRITE|PROT_EXEC);
 
   current.mmap_max = current.brk_max = MEM_START;
@@ -453,6 +509,6 @@ uintptr_t pk_vm_init()
   flush_tlb();
   write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
 
-  uintptr_t kernel_stack_top = __page_alloc() + RISCV_PGSIZE;
+  uintptr_t kernel_stack_top = __page_alloc_assert() + RISCV_PGSIZE;
   return kernel_stack_top;
 }

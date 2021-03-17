@@ -122,5 +122,7 @@ void handle_trap(trapframe_t* tf)
 
   kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);
 
-  trap_handlers[tf->cause](tf);
+  trap_handler f = (void*)pa2kva(trap_handlers[tf->cause]);
+
+  f(tf);
 }

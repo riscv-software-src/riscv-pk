@@ -6,6 +6,7 @@
 #include "elf.h"
 #include "mtrap.h"
 #include "frontend.h"
+#include "bits.h"
 #include "usermem.h"
 #include <stdbool.h>
 
@@ -67,11 +68,11 @@ static size_t parse_args(arg_buf* args)
   uint64_t* pk_argv = &args->buf[1];
   // pk_argv[0] is the proxy kernel itself.  skip it and any flags.
   size_t pk_argc = args->buf[0], arg = 1;
-  for ( ; arg < pk_argc && *(char*)(uintptr_t)pk_argv[arg] == '-'; arg++)
-    handle_option((const char*)(uintptr_t)pk_argv[arg]);
+  for ( ; arg < pk_argc && *(char*)pa2kva(pk_argv[arg]) == '-'; arg++)
+    handle_option((const char*)pa2kva(pk_argv[arg]));
 
   for (size_t i = 0; arg + i < pk_argc; i++)
-    args->argv[i] = (char*)(uintptr_t)pk_argv[arg + i];
+    args->argv[i] = (char*)pa2kva(pk_argv[arg + i]);
   return pk_argc - arg;
 }
 
@@ -85,6 +86,12 @@ static void init_tf(trapframe_t* tf, long pc, long sp)
 
 static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 {
+  size_t mem_pages = mem_size >> RISCV_PGSHIFT;
+  size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
+  size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
+  kassert(stack_bottom != (uintptr_t)-1);
+  current.stack_top = stack_bottom + stack_size;
+
   // copy phdrs to user stack
   size_t stack_top = current.stack_top - current.phdr_size;
   memcpy_to_user((void*)stack_top, (void*)current.phdr, current.phdr_size);
@@ -167,15 +174,25 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   start_user(&tf);
 }
 
-static void rest_of_boot_loader(uintptr_t kstack_top)
+void rest_of_boot_loader(uintptr_t kstack_top);
+
+asm ("\n\
+  .globl rest_of_boot_loader\n\
+rest_of_boot_loader:\n\
+  mv sp, a0\n\
+  tail rest_of_boot_loader_2");
+
+void rest_of_boot_loader_2(uintptr_t kstack_top)
 {
-  arg_buf args;
+  file_init();
+
+  static arg_buf args; // avoid large stack allocation
   size_t argc = parse_args(&args);
   if (!argc)
     panic("tell me what ELF to load!");
 
   // load program named by argv[0]
-  long phdrs[128];
+  static long phdrs[128]; // avoid large stack allocation
   current.phdr = (uintptr_t)phdrs;
   current.phdr_size = sizeof(phdrs);
   load_elf(args.argv[0], &current);
@@ -185,14 +202,15 @@ static void rest_of_boot_loader(uintptr_t kstack_top)
 
 void boot_loader(uintptr_t dtb)
 {
+  uintptr_t kernel_stack_top = pk_vm_init();
+
   extern char trap_entry;
-  write_csr(stvec, &trap_entry);
+  write_csr(stvec, pa2kva(&trap_entry));
   write_csr(sscratch, 0);
   write_csr(sie, 0);
   set_csr(sstatus, SSTATUS_FS | SSTATUS_VS);
 
-  file_init();
-  enter_supervisor_mode(rest_of_boot_loader, pk_vm_init(), 0);
+  enter_supervisor_mode((void*)pa2kva(rest_of_boot_loader), pa2kva(kernel_stack_top), 0);
 }
 
 void boot_other_hart(uintptr_t dtb)

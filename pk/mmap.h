@@ -34,7 +34,12 @@ uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
 
-#define kva2pa(va) ((uintptr_t)(va))
-#define is_uva(va) ((uintptr_t)(va) < MEM_START)
+#define KVA_START ((uintptr_t)-1 << (VA_BITS-1))
+
+extern uintptr_t kva2pa_offset;
+#define kva2pa(va) ((uintptr_t)(va) - kva2pa_offset)
+#define pa2kva(pa) ((uintptr_t)(pa) + kva2pa_offset)
+#define kva2pa_maybe(va) ((uintptr_t)(va) >= KVA_START ? kva2pa(va) : (uintptr_t)(va))
+#define is_uva(va) ((uintptr_t)(va) < KVA_START)
 
 #endif

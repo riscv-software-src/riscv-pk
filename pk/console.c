@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "pk.h"
+#include "mmap.h"
 #include "file.h"
 #include "frontend.h"
 #include <stdint.h>
@@ -23,21 +24,27 @@ void printk(const char* s, ...)
   va_end(vl);
 }
 
+static const char* get_regname(int r)
+{
+  static const char regnames[] = {
+    "z \0" "ra\0" "sp\0" "gp\0" "tp\0" "t0\0"  "t1\0"  "t2\0"
+    "s0\0" "s1\0" "a0\0" "a1\0" "a2\0" "a3\0"  "a4\0"  "a5\0"
+    "a6\0" "a7\0" "s2\0" "s3\0" "s4\0" "s5\0"  "s6\0"  "s7\0"
+    "s8\0" "s9\0" "sA\0" "sB\0" "t3\0" "t4\0"  "t5\0"  "t6"
+  };
+
+  return &regnames[r * 3];
+}
+
 void dump_tf(trapframe_t* tf)
 {
-  static const char* regnames[] = {
-    "z ", "ra", "sp", "gp", "tp", "t0",  "t1",  "t2",
-    "s0", "s1", "a0", "a1", "a2", "a3",  "a4",  "a5",
-    "a6", "a7", "s2", "s3", "s4", "s5",  "s6",  "s7",
-    "s8", "s9", "sA", "sB", "t3", "t4",  "t5",  "t6"
-  };
 
   tf->gpr[0] = 0;
 
   for(int i = 0; i < 32; i+=4)
   {
     for(int j = 0; j < 4; j++)
-      printk("%s %lx%c",regnames[i+j],tf->gpr[i+j],j < 3 ? ' ' : '\n');
+      printk("%s %lx%c", get_regname(i+j), tf->gpr[i+j], j < 3 ? ' ' : '\n');
   }
   printk("pc %lx va %lx insn       %x sr %lx\n", tf->epc, tf->badvaddr,
          (uint32_t)tf->insn, tf->status);

@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <errno.h>
 
+uintptr_t kva2pa_offset;
+
 typedef struct vmr_t {
   struct vmr_t* next;
   uintptr_t addr;
@@ -68,7 +70,9 @@ static uintptr_t __page_alloc()
   node->next = NULL;
   page_freelist_depth--;
 
-  return (uintptr_t)memset((void*)addr, 0, RISCV_PGSIZE);
+  memset((void*)pa2kva(addr), 0, RISCV_PGSIZE);
+
+  return addr;
 }
 
 static uintptr_t __page_alloc_assert()
@@ -103,7 +107,7 @@ static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
                           size_t offset, unsigned refcnt, int prot)
 {
   if (vmr_freelist_head == NULL) {
-    vmr_t* new_vmrs = (vmr_t*)__page_alloc();
+    vmr_t* new_vmrs = (vmr_t*)pa2kva(__page_alloc());
     if (new_vmrs == NULL)
       return NULL;
 
@@ -161,7 +165,7 @@ static size_t pt_idx(uintptr_t addr, int level)
 
 static pte_t* __walk_internal(uintptr_t addr, int create, int level)
 {
-  pte_t* t = root_page_table;
+  pte_t* t = (pte_t*)pa2kva(root_page_table);
   for (int i = RISCV_PGLEVELS - 1; i > level; i--) {
     size_t idx = pt_idx(addr, i);
     if (unlikely(!(t[idx] & PTE_V))) {
@@ -174,7 +178,7 @@ static pte_t* __walk_internal(uintptr_t addr, int create, int level)
         return 0;
       }
     }
-    t = (pte_t*)(pte_ppn(t[idx]) << RISCV_PGSHIFT);
+    t = (pte_t*)pa2kva(pte_ppn(t[idx]) << RISCV_PGSHIFT);
   }
   return &t[pt_idx(addr, level)];
 }
@@ -251,8 +255,8 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     return -1;
   else if (!(*pte & PTE_V))
   {
-    uintptr_t kva = __page_alloc_assert();
-    uintptr_t ppn = kva / RISCV_PGSIZE;
+    uintptr_t ppn = __page_alloc_assert() / RISCV_PGSIZE;
+    uintptr_t kva = pa2kva(ppn * RISCV_PGSIZE);
 
     vmr_t* v = (vmr_t*)*pte;
     *pte = pte_create(ppn, prot_to_type(PROT_READ|PROT_WRITE, 0));
@@ -488,6 +492,10 @@ void populate_mapping(const void* start, size_t size, int prot)
 
 uintptr_t pk_vm_init()
 {
+  // PA space must fit within half of VA space
+  uintptr_t user_size = -KVA_START;
+  mem_size = MIN(mem_size, user_size);
+
   extern char _end;
   first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
   free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
@@ -498,19 +506,18 @@ uintptr_t pk_vm_init()
   next_free_page = freelist_node_array_size / RISCV_PGSIZE;
 
   root_page_table = (void*)__page_alloc_assert();
-  __map_kernel_range(MEM_START, MEM_START, mem_size, PROT_READ|PROT_WRITE|PROT_EXEC);
+  __map_kernel_range(KVA_START, MEM_START, mem_size, PROT_READ|PROT_WRITE|PROT_EXEC);
 
-  current.mmap_max = current.brk_max = MEM_START;
-
-  size_t mem_pages = mem_size >> RISCV_PGSHIFT;
-  size_t stack_size = MIN(mem_pages >> 5, 2048) * RISCV_PGSIZE;
-  size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
-  kassert(stack_bottom != (uintptr_t)-1);
-  current.stack_top = stack_bottom + stack_size;
+  current.mmap_max = current.brk_max = user_size;
 
   flush_tlb();
   write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
 
   uintptr_t kernel_stack_top = __page_alloc_assert() + RISCV_PGSIZE;
+
+  // relocate
+  kva2pa_offset = KVA_START - MEM_START;
+  page_freelist_node_array = (void*)pa2kva(page_freelist_node_array);
+
   return kernel_stack_top;
 }

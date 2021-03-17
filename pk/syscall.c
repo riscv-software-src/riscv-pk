@@ -662,5 +662,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
   if (!f)
     panic("bad syscall #%ld!",n);
 
+  f = (void*)pa2kva(f);
+
   return f(a0, a1, a2, a3, a4, a5, n);
 }

@@ -36,6 +36,12 @@ int snprintf(char* out, size_t n, const char* s, ...);
 void start_user(trapframe_t* tf) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
 
+static uint64_t lfsr63(uint64_t x)
+{
+  uint64_t bit = (x ^ (x >> 1)) & 1;
+  return (x >> 1) | (bit << 62);
+}
+
 static inline int insn_len(long insn)
 {
   return (insn & 0x3) < 0x3 ? 2 : 4;

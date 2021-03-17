@@ -34,45 +34,94 @@ static size_t free_pages;
 static size_t pages_promised;
 
 int demand_paging = 1; // unless -p flag is given
+uint64_t randomize_mapping; // set by --randomize-mapping
 
 typedef struct freelist_node_t {
-  struct freelist_node_t* next;
   uintptr_t addr;
 } freelist_node_t;
 
-static freelist_node_t* page_freelist_head;
 size_t page_freelist_depth;
-static freelist_node_t* page_freelist_node_array;
+static freelist_node_t* page_freelist_storage;
 
-static bool __augment_freelist()
+static uintptr_t free_page_addr(size_t idx)
 {
-  if (next_free_page == free_pages)
-    return false;
+  return first_free_page + idx * RISCV_PGSIZE;
+}
 
-  freelist_node_t* node = &page_freelist_node_array[next_free_page];
-  node->addr = first_free_page + RISCV_PGSIZE * next_free_page;
-  node->next = page_freelist_head;
-  page_freelist_head = node;
-  page_freelist_depth++;
-  next_free_page++;
+static uintptr_t __early_alloc(size_t size)
+{
+  size_t num_pages = ROUNDUP(size, RISCV_PGSIZE) / RISCV_PGSIZE;
+  if (num_pages + next_free_page < num_pages || num_pages + next_free_page > free_pages)
+    return 0;
 
-  return true;
+  uintptr_t addr = free_page_addr(next_free_page);
+  next_free_page += num_pages;
+  return addr;
+}
+
+static void __maybe_fuzz_page_freelist();
+
+static void __page_freelist_insert(freelist_node_t node)
+{
+  __maybe_fuzz_page_freelist();
+
+  page_freelist_storage[page_freelist_depth++] = node;
+}
+
+static freelist_node_t __page_freelist_remove()
+{
+  __maybe_fuzz_page_freelist();
+
+  return page_freelist_storage[--page_freelist_depth];
+}
+
+static bool __augment_page_freelist()
+{
+  uintptr_t page = __early_alloc(RISCV_PGSIZE);
+  if (page != 0) {
+    freelist_node_t node = { .addr = page };
+    __page_freelist_insert(node);
+  }
+  return page;
+}
+
+static void __maybe_fuzz_page_freelist()
+{
+  if (randomize_mapping) {
+    randomize_mapping = lfsr63(randomize_mapping);
+
+    if (randomize_mapping % 2 == 0 && page_freelist_depth) {
+      size_t swap_idx = randomize_mapping % page_freelist_depth;
+      freelist_node_t tmp = page_freelist_storage[swap_idx];
+      page_freelist_storage[swap_idx] = page_freelist_storage[page_freelist_depth-1];
+      page_freelist_storage[page_freelist_depth-1] = tmp;
+    }
+
+    if (randomize_mapping % 16 == 0)
+      __augment_page_freelist();
+  }
+}
+
+static bool __page_freelist_empty()
+{
+  return page_freelist_depth == 0;
+}
+
+static size_t __num_free_pages()
+{
+  return page_freelist_depth + (free_pages - next_free_page);
 }
 
 static uintptr_t __page_alloc()
 {
-  if (page_freelist_head == NULL && !__augment_freelist())
+  if (__page_freelist_empty() && !__augment_page_freelist())
     return 0;
 
-  freelist_node_t* node = page_freelist_head;
-  uintptr_t addr = node->addr;
-  page_freelist_head = node->next;
-  node->next = NULL;
-  page_freelist_depth--;
+  freelist_node_t node = __page_freelist_remove();
 
-  memset((void*)pa2kva(addr), 0, RISCV_PGSIZE);
+  memset((void*)pa2kva(node.addr), 0, RISCV_PGSIZE);
 
-  return addr;
+  return node.addr;
 }
 
 static uintptr_t __page_alloc_assert()
@@ -87,20 +136,8 @@ static uintptr_t __page_alloc_assert()
 
 static void __page_free(uintptr_t addr)
 {
-  size_t idx = (addr - first_free_page) / RISCV_PGSIZE;
-  kassert(idx < free_pages);
-  freelist_node_t* node = &page_freelist_node_array[idx];
-  kassert(node->addr == addr);
-  kassert(node->next == NULL);
-
-  node->next = page_freelist_head;
-  page_freelist_head = node;
-  page_freelist_depth++;
-}
-
-static size_t __num_free_pages()
-{
-  return page_freelist_depth + (free_pages - next_free_page);
+  freelist_node_t node = { .addr = addr };
+  __page_freelist_insert(node);
 }
 
 static vmr_t* __vmr_alloc(uintptr_t addr, size_t length, file_t* file,
@@ -163,7 +200,7 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static pte_t* __walk_internal(uintptr_t addr, int create, int level)
+static inline pte_t* __walk_internal(uintptr_t addr, int create, int level)
 {
   pte_t* t = (pte_t*)pa2kva(root_page_table);
   for (int i = RISCV_PGLEVELS - 1; i > level; i--) {
@@ -269,8 +306,6 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
       if (ret < RISCV_PGSIZE)
         memset((void*)vaddr + ret, 0, RISCV_PGSIZE - ret);
     }
-    else
-      memset((void*)vaddr, 0, RISCV_PGSIZE);
     __vmr_decref(v, 1);
     *pte = pte_create(ppn, prot_to_type(v->prot, 1));
   }
@@ -458,23 +493,27 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
   return res;
 }
 
-void __map_kernel_range(uintptr_t vaddr, uintptr_t paddr, size_t len, int prot)
+static inline void __map_kernel_page(uintptr_t vaddr, uintptr_t paddr, int level, int prot)
 {
-  uintptr_t n = ROUNDUP(len, RISCV_PGSIZE) / RISCV_PGSIZE;
-  uintptr_t offset = paddr - vaddr;
+  pte_t* pte = __walk_internal(vaddr, 1, level);
+  kassert(pte);
+  *pte = pte_create(paddr >> RISCV_PGSHIFT, prot_to_type(prot, 0));
+}
+
+static void __map_kernel_range(uintptr_t vaddr, uintptr_t paddr, size_t len, int prot)
+{
+  size_t megapage_size = RISCV_PGSIZE << RISCV_PGLEVEL_BITS;
+  bool megapage_coaligned = (vaddr ^ paddr) % megapage_size == 0;
+
+  // could support misaligned mappings, but no need today
+  kassert((vaddr | paddr | len) % megapage_size == 0);
 
   while (len > 0) {
-    size_t megapage_size = RISCV_PGSIZE << RISCV_PGLEVEL_BITS;
-    int level = (vaddr | paddr) % megapage_size == 0 && len >= megapage_size;
-    size_t pgsize = RISCV_PGSIZE << (level * RISCV_PGLEVEL_BITS);
+    __map_kernel_page(vaddr, paddr, 1, prot);
 
-    pte_t* pte = __walk_internal(vaddr, 1, level);
-    kassert(pte);
-    *pte = pte_create((vaddr + offset) >> RISCV_PGSHIFT, prot_to_type(prot, 0));
-
-    len -= pgsize;
-    vaddr += pgsize;
-    paddr += pgsize;
+    len -= megapage_size;
+    vaddr += megapage_size;
+    paddr += megapage_size;
   }
 }
 
@@ -490,25 +529,28 @@ void populate_mapping(const void* start, size_t size, int prot)
   }
 }
 
-uintptr_t pk_vm_init()
+static void init_early_alloc()
 {
   // PA space must fit within half of VA space
   uintptr_t user_size = -KVA_START;
   mem_size = MIN(mem_size, user_size);
 
+  current.mmap_max = current.brk_max = user_size;
+
   extern char _end;
   first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
   free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
+}
+
+uintptr_t pk_vm_init()
+{
+  init_early_alloc();
 
   size_t num_freelist_nodes = mem_size / RISCV_PGSIZE;
-  size_t freelist_node_array_size = ROUNDUP(num_freelist_nodes * sizeof(freelist_node_t), RISCV_PGSIZE);
-  page_freelist_node_array = (freelist_node_t*)first_free_page;
-  next_free_page = freelist_node_array_size / RISCV_PGSIZE;
+  page_freelist_storage = (freelist_node_t*)__early_alloc(num_freelist_nodes * sizeof(freelist_node_t));
 
   root_page_table = (void*)__page_alloc_assert();
   __map_kernel_range(KVA_START, MEM_START, mem_size, PROT_READ|PROT_WRITE|PROT_EXEC);
-
-  current.mmap_max = current.brk_max = user_size;
 
   flush_tlb();
   write_csr(sptbr, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
@@ -517,7 +559,7 @@ uintptr_t pk_vm_init()
 
   // relocate
   kva2pa_offset = KVA_START - MEM_START;
-  page_freelist_node_array = (void*)pa2kva(page_freelist_node_array);
+  page_freelist_storage = (void*)pa2kva(page_freelist_storage);
 
   return kernel_stack_top;
 }

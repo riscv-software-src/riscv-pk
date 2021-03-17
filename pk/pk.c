@@ -48,6 +48,11 @@ static void handle_option(const char* arg)
     return;
   }
 
+  if (strcmp(arg, "--randomize-mapping") == 0) {
+    randomize_mapping = 1;
+    return;
+  }
+
   panic("unrecognized option: `%s'", arg);
   suggest_help();
 }
@@ -184,8 +189,6 @@ rest_of_boot_loader:\n\
 
 void rest_of_boot_loader_2(uintptr_t kstack_top)
 {
-  file_init();
-
   static arg_buf args; // avoid large stack allocation
   size_t argc = parse_args(&args);
   if (!argc)
@@ -202,6 +205,8 @@ void rest_of_boot_loader_2(uintptr_t kstack_top)
 
 void boot_loader(uintptr_t dtb)
 {
+  file_init();
+
   uintptr_t kernel_stack_top = pk_vm_init();
 
   extern char trap_entry;

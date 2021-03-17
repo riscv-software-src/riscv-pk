@@ -7,6 +7,7 @@
 #define SYS_exit_group 94
 #define SYS_getpid 172
 #define SYS_kill 129
+#define SYS_tgkill 131
 #define SYS_read 63
 #define SYS_write 64
 #define SYS_openat 56
@@ -29,6 +30,7 @@
 #define SYS_geteuid 175
 #define SYS_getgid 176
 #define SYS_getegid 177
+#define SYS_gettid 178
 #define SYS_mmap 222
 #define SYS_munmap 215
 #define SYS_mremap 216

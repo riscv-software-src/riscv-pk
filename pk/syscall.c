@@ -564,6 +564,12 @@ int sys_chdir(const char *path)
   return frontend_syscall(SYS_chdir, kva2pa(kbuf), 0, 0, 0, 0, 0, 0);
 }
 
+void sys_tgkill(int tgid, int tid, int sig)
+{
+  // assume target is current thread
+  sys_exit(sig);
+}
+
 int sys_getdents(int fd, void* dirbuf, int count)
 {
   return 0; //stub
@@ -605,6 +611,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_geteuid] = sys_getuid,
     [SYS_getgid] = sys_getuid,
     [SYS_getegid] = sys_getuid,
+    [SYS_gettid] = sys_getuid,
+    [SYS_tgkill] = sys_tgkill,
     [SYS_mmap] = sys_mmap,
     [SYS_munmap] = sys_munmap,
     [SYS_mremap] = sys_mremap,

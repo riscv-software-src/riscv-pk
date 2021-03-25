@@ -45,7 +45,8 @@ static void uart_litex_prop(const struct fdt_scan_prop *prop, void *extra)
 {
     struct uart_litex_scan *scan = (struct uart_litex_scan *)extra;
     if (!strcmp(prop->name, "compatible") &&
-        !strcmp((const char *)prop->value, "litex,uart0")) {
+        (!strcmp((const char *)prop->value, "litex,uart0") ||
+         !strcmp((const char *)prop->value, "litex,liteuart"))) {
         scan->compat = 1;
     } else if (!strcmp(prop->name, "reg")) {
         fdt_get_address(prop->node->parent, prop->value, &scan->reg);

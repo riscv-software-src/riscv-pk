@@ -14,9 +14,6 @@ typedef struct file
 } file_t;
 
 extern file_t files[];
-#define stdin  (files + 0)
-#define stdout (files + 1)
-#define stderr (files + 2)
 
 file_t* file_get(int fd);
 file_t* file_open(const char* fn, int flags, int mode);

@@ -4,6 +4,7 @@
 #include "mmap.h"
 #include "file.h"
 #include "frontend.h"
+#include "bits.h"
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -11,7 +12,8 @@ static void vprintk(const char* s, va_list vl)
 {
   char out[256]; // XXX
   int res = vsnprintf(out, sizeof(out), s, vl);
-  file_write(stderr, out, res < sizeof(out) ? res : sizeof(out));
+  int size = MIN(res, sizeof(out));
+  frontend_syscall(SYS_write, 2, kva2pa(out), size, 0, 0, 0, 0);
 }
 
 void printk(const char* s, ...)

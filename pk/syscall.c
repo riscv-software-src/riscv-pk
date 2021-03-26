@@ -239,6 +239,25 @@ long sys_stat(const char* name, void* st)
   return sys_fstatat(AT_FDCWD, name, st, 0);
 }
 
+long sys_statx(int dirfd, const char* name, int flags, unsigned int mask, void * st)
+{
+  int kfd = at_kfd(dirfd);
+  if (kfd != -1) {
+    char buf[FRONTEND_STATX_SIZE];
+
+    char kname[MAX_BUF];
+    if (!strcpy_from_user(kname, name, MAX_BUF))
+      return -ENAMETOOLONG;
+
+    size_t name_size = strlen(kname)+1;
+
+    long ret = frontend_syscall(SYS_statx, kfd, kva2pa(kname), name_size, flags, mask, kva2pa(&buf), 0);
+    memcpy_to_user(st, &buf, sizeof(buf));
+    return ret;
+  }
+  return -EBADF;
+}
+
 long sys_faccessat(int dirfd, const char *name, int mode)
 {
   int kfd = at_kfd(dirfd);
@@ -451,6 +470,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_openat] = sys_openat,
     [SYS_close] = sys_close,
     [SYS_fstat] = sys_fstat,
+    [SYS_statx] = sys_statx,
     [SYS_lseek] = sys_lseek,
     [SYS_fstatat] = sys_fstatat,
     [SYS_linkat] = sys_linkat,

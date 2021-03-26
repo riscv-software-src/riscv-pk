@@ -32,4 +32,6 @@ struct frontend_stat {
   uint32_t __unused5;
 };
 
+#define FRONTEND_STATX_SIZE 256
+
 #endif

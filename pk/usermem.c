@@ -43,6 +43,8 @@ void memcpy_from_user(void* dst, const void* src, size_t n)
 
 bool strcpy_from_user(char* dst, const char* src, size_t n)
 {
+  bool res = false;
+
   uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
 
   while (n > 0) {
@@ -52,8 +54,10 @@ bool strcpy_from_user(char* dst, const char* src, size_t n)
     char ch = *(volatile const char*)src;
     *dst = ch;
 
-    if (ch == 0)
-      return true;
+    if (ch == 0) {
+      res = true;
+      break;
+    }
 
     src++;
     dst++;
@@ -62,5 +66,5 @@ bool strcpy_from_user(char* dst, const char* src, size_t n)
 
   write_csr(sstatus, sstatus);
 
-  return false;
+  return res;
 }

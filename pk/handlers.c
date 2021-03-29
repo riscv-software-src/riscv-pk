@@ -25,13 +25,6 @@ static void handle_store_access_fault(trapframe_t *tf)
 
 static void handle_illegal_instruction(trapframe_t* tf)
 {
-  tf->insn = *(uint16_t*)tf->epc;
-  int len = insn_len(tf->insn);
-  if (len == 4)
-    tf->insn |= ((uint32_t)*(uint16_t*)(tf->epc + 2) << 16);
-  else
-    kassert(len == 2);
-
   dump_tf(tf);
   panic("An illegal instruction was executed!");
 }

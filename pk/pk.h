@@ -17,7 +17,6 @@ typedef struct
   long epc;
   long badvaddr;
   long cause;
-  long insn;
 } trapframe_t;
 
 #define panic(s,...) do { do_panic(s"\n", ##__VA_ARGS__); } while(0)

@@ -24,6 +24,8 @@ typedef struct vmr_t {
 
 static vmr_t* vmr_freelist_head;
 
+static pte_t* root_page_table;
+
 #define RISCV_PGLEVELS ((VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS)
 
 static spinlock_t vm_lock = SPINLOCK_INIT;

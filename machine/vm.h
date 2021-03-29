@@ -17,7 +17,6 @@
 #endif
 
 typedef uintptr_t pte_t;
-extern pte_t* root_page_table;
 
 static inline void flush_tlb()
 {

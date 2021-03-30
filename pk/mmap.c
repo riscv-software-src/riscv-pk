@@ -202,9 +202,8 @@ static size_t pt_idx(uintptr_t addr, int level)
   return idx & ((1 << RISCV_PGLEVEL_BITS) - 1);
 }
 
-static inline pte_t* __walk_internal(uintptr_t addr, int create, int level)
+static inline pte_t* __walk_internal(pte_t* t, uintptr_t addr, int create, int level)
 {
-  pte_t* t = (pte_t*)pa2kva(root_page_table);
   for (int i = RISCV_PGLEVELS - 1; i > level; i--) {
     size_t idx = pt_idx(addr, i);
     if (unlikely(!(t[idx] & PTE_V))) {
@@ -224,12 +223,12 @@ static inline pte_t* __walk_internal(uintptr_t addr, int create, int level)
 
 static pte_t* __walk(uintptr_t addr)
 {
-  return __walk_internal(addr, 0, 0);
+  return __walk_internal(root_page_table, addr, 0, 0);
 }
 
 static pte_t* __walk_create(uintptr_t addr)
 {
-  return __walk_internal(addr, 1, 0);
+  return __walk_internal(root_page_table, addr, 1, 0);
 }
 
 static int __va_avail(uintptr_t vaddr)
@@ -283,6 +282,11 @@ int __valid_user_range(uintptr_t vaddr, size_t len)
   return vaddr + len <= current.mmap_max;
 }
 
+static void flush_tlb_entry(uintptr_t vaddr)
+{
+  asm volatile ("sfence.vma %0" : : "r" (vaddr) : "memory");
+}
+
 static int __handle_page_fault(uintptr_t vaddr, int prot)
 {
   uintptr_t vpn = vaddr >> RISCV_PGSHIFT;
@@ -299,7 +303,7 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
 
     vmr_t* v = (vmr_t*)*pte;
     *pte = pte_create(ppn, prot_to_type(PROT_READ|PROT_WRITE, 0));
-    flush_tlb();
+    flush_tlb_entry(vaddr);
     if (v->file)
     {
       size_t flen = MIN(RISCV_PGSIZE, v->length - (vaddr - v->addr));
@@ -310,13 +314,13 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
     }
     __vmr_decref(v, 1);
     *pte = pte_create(ppn, prot_to_type(v->prot, 1));
+    flush_tlb_entry(vaddr);
   }
 
   pte_t perms = pte_create(0, prot_to_type(prot, 1));
   if ((*pte & perms) != perms)
     return -1;
 
-  flush_tlb();
   return 0;
 }
 
@@ -342,8 +346,8 @@ static void __do_munmap(uintptr_t addr, size_t len)
       __vmr_decref((vmr_t*)*pte, 1);
 
     *pte = 0;
+    flush_tlb_entry(a);
   }
-  flush_tlb(); // TODO: shootdown
 }
 
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* f, off_t offset)
@@ -488,16 +492,17 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
         }
         *pte = pte_create(pte_ppn(*pte), prot_to_type(prot, 1));
       }
+
+      flush_tlb_entry(a);
     }
   spinlock_unlock(&vm_lock);
 
-  flush_tlb();
   return res;
 }
 
 static inline void __map_kernel_page(uintptr_t vaddr, uintptr_t paddr, int level, int prot)
 {
-  pte_t* pte = __walk_internal(vaddr, 1, level);
+  pte_t* pte = __walk_internal(root_page_table, vaddr, 1, level);
   kassert(pte);
   *pte = pte_create(paddr >> RISCV_PGSHIFT, prot_to_type(prot, 0));
 }
@@ -562,6 +567,7 @@ uintptr_t pk_vm_init()
   // relocate
   kva2pa_offset = KVA_START - MEM_START;
   page_freelist_storage = (void*)pa2kva(page_freelist_storage);
+  root_page_table = (void*)pa2kva(root_page_table);
 
   return kernel_stack_top;
 }

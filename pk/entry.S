@@ -40,7 +40,7 @@
   csrrw  t0,sscratch,x0
   csrr   s0,sstatus
   csrr   t1,sepc
-  csrr   t2,sbadaddr
+  csrr   t2,stval
   csrr   t3,scause
   STORE  t0,2*REGBYTES(x2)
   STORE  s0,32*REGBYTES(x2)

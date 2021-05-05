@@ -178,7 +178,7 @@ send_ipi:
 
 void redirect_trap(uintptr_t epc, uintptr_t mstatus, uintptr_t badaddr)
 {
-  write_csr(sbadaddr, badaddr);
+  write_csr(stval, badaddr);
   write_csr(sepc, epc);
   write_csr(scause, read_csr(mcause));
   write_csr(mepc, read_csr(stvec));

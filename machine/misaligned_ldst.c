@@ -20,7 +20,7 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
   uintptr_t mstatus;
   insn_t insn = get_insn(mepc, &mstatus);
   uintptr_t npc = mepc + insn_len(insn);
-  uintptr_t addr = read_csr(mbadaddr);
+  uintptr_t addr = read_csr(mtval);
 
   int shift = 0, fp = 0, len;
   if ((insn & MASK_LW) == MATCH_LW)
@@ -142,7 +142,7 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     return truly_illegal_insn(regs, mcause, mepc, mstatus, insn);
   }
 
-  uintptr_t addr = read_csr(mbadaddr);
+  uintptr_t addr = read_csr(mtval);
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
   intptr_t offs = (len == 8? 0 : sizeof(val.intx) - len);
 #else

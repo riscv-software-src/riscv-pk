@@ -5,7 +5,7 @@
 
 #define punt_to_misaligned_handler(align, handler) \
   if (addr % (align) != 0) \
-    return write_csr(mbadaddr, addr), (handler)(regs, mcause, mepc)
+    return write_csr(mtval, addr), (handler)(regs, mcause, mepc)
 
 DECLARE_EMULATION_FUNC(emulate_float_load)
 {

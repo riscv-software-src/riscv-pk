@@ -196,7 +196,7 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus, uintptr_t badaddr)
 
 void pmp_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 {
-  redirect_trap(mepc, read_csr(mstatus), read_csr(mbadaddr));
+  redirect_trap(mepc, read_csr(mstatus), read_csr(mtval));
 }
 
 static void machine_page_fault(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
@@ -218,7 +218,7 @@ static void machine_page_fault(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc
       goto fail;
     }
 
-    return redirect_trap(regs[12], regs[13], read_csr(mbadaddr));
+    return redirect_trap(regs[12], regs[13], read_csr(mtval));
   }
 
 fail:

@@ -46,7 +46,7 @@ static void mstatus_init()
 
   // Disable paging
   if (supports_extension('S'))
-    write_csr(sptbr, 0);
+    write_csr(satp, 0);
 }
 
 // send S-mode interrupts and most exceptions straight to S-mode

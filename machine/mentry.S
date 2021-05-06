@@ -312,7 +312,9 @@ do_reset:
   # make sure our hart id is within a valid range
   fence
   li a2, MAX_HARTS
-  bltu a3, a2, init_other_hart
+  bgeu a3, a2, .Lcont
+  j init_other_hart
+.Lcont:
 #endif
   wfi
   j .LmultiHart

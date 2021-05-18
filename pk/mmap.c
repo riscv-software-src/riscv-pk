@@ -277,9 +277,10 @@ static inline pte_t prot_to_type(int prot, int user)
 
 int __valid_user_range(uintptr_t vaddr, size_t len)
 {
-  if (vaddr + len < vaddr)
+  uintptr_t last_vaddr = vaddr + len - 1;
+  if (last_vaddr < vaddr)
     return 0;
-  return vaddr + len <= current.mmap_max;
+  return last_vaddr < current.mmap_max;
 }
 
 static void flush_tlb_entry(uintptr_t vaddr)

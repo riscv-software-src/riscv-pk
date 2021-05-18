@@ -50,15 +50,23 @@ static uintptr_t free_page_addr(size_t idx)
   return first_free_page + idx * RISCV_PGSIZE;
 }
 
-static uintptr_t __early_alloc(size_t size)
+static uintptr_t __early_pgalloc_align(size_t num_pages, size_t align)
 {
-  size_t num_pages = ROUNDUP(size, RISCV_PGSIZE) / RISCV_PGSIZE;
+  size_t skip_pages = (align - 1) & -(free_page_addr(next_free_page) / RISCV_PGSIZE);
+  num_pages += skip_pages;
+
   if (num_pages + next_free_page < num_pages || num_pages + next_free_page > free_pages)
     return 0;
 
-  uintptr_t addr = free_page_addr(next_free_page);
+  uintptr_t addr = free_page_addr(next_free_page + skip_pages);
   next_free_page += num_pages;
   return addr;
+}
+
+static uintptr_t __early_alloc(size_t size)
+{
+  size_t num_pages = ROUNDUP(size, RISCV_PGSIZE) / RISCV_PGSIZE;
+  return __early_pgalloc_align(num_pages, 1);
 }
 
 static void __maybe_fuzz_page_freelist();

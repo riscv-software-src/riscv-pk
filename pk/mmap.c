@@ -25,6 +25,7 @@ typedef struct vmr_t {
 static vmr_t* vmr_freelist_head;
 
 static pte_t* root_page_table;
+static pte_t* g_root_page_table;
 
 #define RISCV_PGLEVELS ((VA_BITS - RISCV_PGSHIFT) / RISCV_PGLEVEL_BITS)
 
@@ -36,6 +37,7 @@ static size_t free_pages;
 static size_t pages_promised;
 
 int demand_paging = 1; // unless -p flag is given
+int have_hypervisor;
 uint64_t randomize_mapping; // set by --randomize-mapping
 
 typedef struct freelist_node_t {
@@ -293,6 +295,8 @@ int __valid_user_range(uintptr_t vaddr, size_t len)
 
 static void flush_tlb_entry(uintptr_t vaddr)
 {
+  if (have_hypervisor)
+    asm (".insn r 0x73, 0x0, 0x11, x0, %0, x0" : : "r" (vaddr)); // hfence.vvma vaddr
   asm volatile ("sfence.vma %0" : : "r" (vaddr) : "memory");
 }
 
@@ -558,6 +562,65 @@ static void init_early_alloc()
   free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
 }
 
+static bool __make_host_mapping(uintptr_t paddr)
+{
+  pte_t* hpte = __walk_internal(g_root_page_table, paddr, 1, 0);
+  kassert(hpte);
+
+  if (!*hpte) {
+    *hpte = pte_create(paddr >> RISCV_PGSHIFT, prot_to_type(PROT_READ | PROT_WRITE | PROT_EXEC, 1));
+    asm (".insn r 0x73, 0x0, 0x31, x0, %0, x0" : : "r" (paddr / 4)); // hfence.gvma paddr, x0
+    return true;
+  }
+  return false;
+}
+
+static int __handle_guest_page_fault(uintptr_t vaddr)
+{
+  for (int level = RISCV_PGLEVELS - 1; level >= 0; level--) {
+    pte_t* vpte = __walk_internal(root_page_table, vaddr, 0, level);
+    if (!vpte)
+      return -1;
+
+    if (__make_host_mapping(kva2pa(vpte)))
+      return 0;
+
+    if (level == 0 && (*vpte & PTE_V)) {
+      if (__make_host_mapping(pte_ppn(*vpte) << RISCV_PGSHIFT))
+        return 0;
+    }
+  }
+
+  return -1;
+}
+
+int handle_guest_page_fault(uintptr_t addr)
+{
+  spinlock_lock(&vm_lock);
+    int ret = __handle_guest_page_fault(addr);
+  spinlock_unlock(&vm_lock);
+  return ret;
+}
+
+static void hypervisor_vm_init()
+{
+  have_hypervisor = sizeof(uintptr_t) == 8 && ((read_csr(misa) >> ('H' - 'A')) & 1);
+  if (!have_hypervisor)
+    return;
+
+  size_t root_pages = 4;
+  g_root_page_table = (uintptr_t*)__early_pgalloc_align(root_pages, root_pages);
+  memset(g_root_page_table, 0, root_pages * RISCV_PGSIZE);
+
+  asm ("csrw %0, %1" : : "I" (CSR_HEDELEG), "r" (0));
+  asm ("csrw %0, %1" : : "I" (CSR_HIDELEG), "r" (0));
+  asm ("csrw %0, %1" : : "I" (CSR_VSSTATUS), "r" (SSTATUS_FS));
+  asm ("csrw %0, %1" : : "I" (CSR_HSTATUS), "r" (HSTATUS_SPV));
+  asm ("csrw %0, %1" : : "I" (CSR_HGATP), "r" (SATP_MODE_CHOICE | ((uintptr_t)g_root_page_table >> RISCV_PGSHIFT)));
+  asm ("csrw %0, %1" : : "I" (CSR_VSATP), "r" (SATP_MODE_CHOICE | ((uintptr_t)root_page_table >> RISCV_PGSHIFT)));
+  asm (".insn r 0x73, 0x0, 0x31, x0, x0, x0"); // hfence.gvma x0, x0
+}
+
 uintptr_t pk_vm_init()
 {
   init_early_alloc();
@@ -571,12 +634,15 @@ uintptr_t pk_vm_init()
   flush_tlb();
   write_csr(satp, ((uintptr_t)root_page_table >> RISCV_PGSHIFT) | SATP_MODE_CHOICE);
 
+  hypervisor_vm_init();
+
   uintptr_t kernel_stack_top = __page_alloc_assert() + RISCV_PGSIZE;
 
   // relocate
   kva2pa_offset = KVA_START - MEM_START;
   page_freelist_storage = (void*)pa2kva(page_freelist_storage);
   root_page_table = (void*)pa2kva(root_page_table);
+  g_root_page_table = (void*)pa2kva(g_root_page_table);
 
   return kernel_stack_top;
 }

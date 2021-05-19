@@ -66,8 +66,14 @@ static void delegate_traps()
 
   write_csr(mideleg, interrupts);
   write_csr(medeleg, exceptions);
-  assert(read_csr(mideleg) == interrupts);
+  assert((~read_csr(mideleg) & interrupts) == 0);
   assert(read_csr(medeleg) == exceptions);
+
+  uintptr_t hypervisor_exceptions =
+    (1U << CAUSE_FETCH_GUEST_PAGE_FAULT) |
+    (1U << CAUSE_LOAD_GUEST_PAGE_FAULT) |
+    (1U << CAUSE_STORE_GUEST_PAGE_FAULT);
+  set_csr(medeleg, hypervisor_exceptions);
 }
 
 static void fp_init()

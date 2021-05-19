@@ -22,10 +22,12 @@
 #define MREMAP_FIXED 0x2
 
 extern int demand_paging;
+extern int have_hypervisor;
 extern uint64_t randomize_mapping;
 
 uintptr_t pk_vm_init();
 int handle_page_fault(uintptr_t vaddr, int prot);
+int handle_guest_page_fault(uintptr_t vaddr);
 void populate_mapping(const void* start, size_t size, int prot);
 int __valid_user_range(uintptr_t vaddr, size_t len);
 uintptr_t __do_mmap(uintptr_t addr, size_t length, int prot, int flags, file_t* file, off_t offset);

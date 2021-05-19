@@ -76,6 +76,17 @@ start_user:
   csrw sstatus, t0
   csrw sepc, t1
 
+  # If hypervisor present, use VU-mode in place of U-mode
+  lw t2, have_hypervisor
+  beqz t2, 1f
+  li t1, HSTATUS_SPV
+  andi t0, t0, SSTATUS_SPP
+  beqz t0, 2f
+  li t1, 0
+2:
+  csrw CSR_HSTATUS, t1
+1:
+
   # restore x registers
   LOAD  x1,1*REGBYTES(a0)
   LOAD  x2,2*REGBYTES(a0)

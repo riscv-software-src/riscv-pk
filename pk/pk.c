@@ -197,6 +197,9 @@ void rest_of_boot_loader_2(uintptr_t kstack_top)
   if (!argc)
     panic("tell me what ELF to load!");
 
+  if (!randomize_mapping)
+    have_hypervisor = 0;
+
   // load program named by argv[0]
   static long phdrs[128]; // avoid large stack allocation
   current.phdr = (uintptr_t)phdrs;

@@ -78,6 +78,12 @@ static void handle_fault_store(trapframe_t* tf)
     segfault(tf, tf->badvaddr, "store");
 }
 
+static void handle_guest_fault(trapframe_t* tf)
+{
+  if (handle_guest_page_fault(tf->badvaddr) != 0)
+    panic("Unexpected guest fault @ %p!\n", tf->badvaddr);
+}
+
 static void handle_syscall(trapframe_t* tf)
 {
   tf->gpr[10] = do_syscall(tf->gpr[10], tf->gpr[11], tf->gpr[12], tf->gpr[13],
@@ -110,6 +116,9 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,
     [CAUSE_LOAD_PAGE_FAULT] = handle_fault_load,
     [CAUSE_STORE_PAGE_FAULT] = handle_fault_store,
+    [CAUSE_FETCH_GUEST_PAGE_FAULT] = handle_guest_fault,
+    [CAUSE_LOAD_GUEST_PAGE_FAULT] = handle_guest_fault,
+    [CAUSE_STORE_GUEST_PAGE_FAULT] = handle_guest_fault,
   };
 
   kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);

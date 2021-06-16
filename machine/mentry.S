@@ -255,6 +255,17 @@ do_reset:
   li x31, 0
   csrw mscratch, x0
 
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  # fixup endianness before making any loads or stores
+#if __riscv_xlen == 32
+  li t0, MSTATUSH_MBE
+  csrs CSR_MSTATUSH, t0
+#else
+  li t0, MSTATUS_MBE
+  csrs CSR_MSTATUS, t0
+#endif
+#endif
+
   # write mtvec and make sure it sticks
   la t0, trap_vector
   csrw mtvec, t0

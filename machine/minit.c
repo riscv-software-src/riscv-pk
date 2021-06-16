@@ -24,6 +24,19 @@ void* kernel_end;
 static void mstatus_init()
 {
   uintptr_t mstatus = 0;
+#if __riscv_xlen == 32
+  uint32_t mstatush = 0;
+#endif
+
+  // Set endianness
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if __riscv_xlen == 32
+  mstatush |= MSTATUSH_SBE | MSTATUSH_MBE;
+#else
+  mstatus |= MSTATUS_SBE | MSTATUS_MBE;
+#endif
+  mstatus |= MSTATUS_UBE;
+#endif
 
   // Enable FPU
   if (supports_extension('F'))
@@ -34,6 +47,9 @@ static void mstatus_init()
     mstatus |= MSTATUS_VS;
 
   write_csr(mstatus, mstatus);
+#if __riscv_xlen == 32 && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  write_csr(0x310, mstatush); /* mstatush is not known to gas */
+#endif
 
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))

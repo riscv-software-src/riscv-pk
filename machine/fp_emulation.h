@@ -47,22 +47,14 @@
   else tp = GET_RM(insn); \
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) set_csr(fflags, which)
-# define softfloat_roundingMode ({    \
-  uintptr_t __tp;                     \
-  __asm__("mv %0, tp" : "=r"(__tp));  \
-  __tp;                               \
-})
+# define softfloat_roundingMode ({ register int tp asm("tp"); tp; })
 # define SET_FS_DIRTY() ((void) 0)
 #else
 # define GET_F64_REG(insn, pos, regs) (*(int64_t*)((void*)((regs) + 32) + (SHIFT_RIGHT(insn, (pos)-3) & 0xf8)))
 # define SET_F64_REG(insn, pos, regs, val) (GET_F64_REG(insn, pos, regs) = (val))
 # define GET_F32_REG(insn, pos, regs) (*(int32_t*)&GET_F64_REG(insn, pos, regs))
 # define SET_F32_REG(insn, pos, regs, val) (GET_F32_REG(insn, pos, regs) = (val))
-# define GET_FCSR() ({                \
-  uintptr_t __tp;                     \
-  __asm__("mv %0, tp" : "=r"(__tp));  \
-  __tp & 0xff;                        \
-})
+# define GET_FCSR() ({ register int tp asm("tp"); tp & 0xFF; })
 # define SET_FCSR(value) ({ asm volatile("add tp, x0, %0" :: "rI"((value) & 0xFF)); SET_FS_DIRTY(); })
 # define GET_FRM() (GET_FCSR() >> 5)
 # define SET_FRM(value) SET_FCSR(GET_FFLAGS() | ((value) << 5))
@@ -70,19 +62,13 @@
 # define SET_FFLAGS(value) SET_FCSR((GET_FRM() << 5) | ((value) & 0x1F))
 
 # define SETUP_STATIC_ROUNDING(insn) ({ \
-  register uintptr_t tp asm("tp");      \
-  __asm__("mv %0, tp" : "=r"(tp));      \
-  tp &= 0xff;                           \
+  register int tp asm("tp"); tp &= 0xFF; \
   if (likely(((insn) & MASK_FUNCT3) == MASK_FUNCT3)) tp |= tp << 8; \
   else if (GET_RM(insn) > 4) return truly_illegal_insn(regs, mcause, mepc, mstatus, insn); \
   else tp |= GET_RM(insn) << 13; \
   asm volatile ("":"+r"(tp)); })
 # define softfloat_raiseFlags(which) ({ asm volatile ("or tp, tp, %0" :: "rI"(which)); })
-# define softfloat_roundingMode ({    \
-  uintptr_t __tp;                     \
-  __asm__("mv %0, tp" : "=r"(__tp));  \
-  __tp >> 13;                         \
-})
+# define softfloat_roundingMode ({ register int tp asm("tp"); tp >> 13; })
 # define SET_FS_DIRTY() set_csr(mstatus, MSTATUS_FS)
 #endif
 

@@ -48,14 +48,9 @@ typedef struct {
   volatile uint32_t* plic_s_ie;
 } hls_t;
 
-#define STACK_POINTER() ({            \
-  uintptr_t __sp;                     \
-  __asm__("mv %0, sp" : "=r"(__sp));  \
-  __sp;                               \
-})
-
-#define MACHINE_STACK_TOP()           \
-  ({ (void*)((STACK_POINTER() + RISCV_PGSIZE) & -RISCV_PGSIZE); })
+#define MACHINE_STACK_TOP() ({ \
+  register uintptr_t sp asm ("sp"); \
+  (void*)((sp + RISCV_PGSIZE) & -RISCV_PGSIZE); })
 
 // hart-local storage, at top of stack
 #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))

@@ -420,7 +420,7 @@ long sys_getcwd(char* buf, size_t size)
 {
   char kbuf[MAX_BUF];
   long ret = frontend_syscall(SYS_getcwd, kva2pa(kbuf), MIN(size, MAX_BUF), 0, 0, 0, 0, 0);
-  if (ret == 0)
+  if (ret > 0)
     memcpy_to_user(buf, kbuf, strlen(kbuf) + 1);
   return ret;
 }

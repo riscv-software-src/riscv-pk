@@ -162,64 +162,18 @@ static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result
 
   switch (num)
   {
-    case CSR_CYCLE:
-      if (!((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
-        return -1;
-      *result = read_csr(mcycle);
-      return 0;
     case CSR_TIME:
       if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime;
       return 0;
-    case CSR_INSTRET:
-      if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
-        return -1;
-      *result = read_csr(minstret);
-      return 0;
-    case CSR_MHPMCOUNTER3:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
-        return -1;
-      *result = read_csr(mhpmcounter3);
-      return 0;
-    case CSR_MHPMCOUNTER4:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
-        return -1;
-      *result = read_csr(mhpmcounter4);
-      return 0;
 #if __riscv_xlen == 32
-    case CSR_CYCLEH:
-      if (!((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
-        return -1;
-      *result = read_csr(mcycleh);
-      return 0;
     case CSR_TIMEH:
       if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime >> 32;
       return 0;
-    case CSR_INSTRETH:
-      if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
-        return -1;
-      *result = read_csr(minstreth);
-      return 0;
-    case CSR_MHPMCOUNTER3H:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
-        return -1;
-      *result = read_csr(mhpmcounter3h);
-      return 0;
-    case CSR_MHPMCOUNTER4H:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
-        return -1;
-      *result = read_csr(mhpmcounter4h);
-      return 0;
 #endif
-    case CSR_MHPMEVENT3:
-      *result = read_csr(mhpmevent3);
-      return 0;
-    case CSR_MHPMEVENT4:
-      *result = read_csr(mhpmevent4);
-      return 0;
 #if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM:
       if ((mstatus & MSTATUS_FS) == 0) break;
@@ -242,18 +196,6 @@ static inline int emulate_write_csr(int num, uintptr_t value, uintptr_t mstatus)
 {
   switch (num)
   {
-    case CSR_CYCLE: write_csr(mcycle, value); return 0;
-    case CSR_INSTRET: write_csr(minstret, value); return 0;
-    case CSR_MHPMCOUNTER3: write_csr(mhpmcounter3, value); return 0;
-    case CSR_MHPMCOUNTER4: write_csr(mhpmcounter4, value); return 0;
-#if __riscv_xlen == 32
-    case CSR_CYCLEH: write_csr(mcycleh, value); return 0;
-    case CSR_INSTRETH: write_csr(minstreth, value); return 0;
-    case CSR_MHPMCOUNTER3H: write_csr(mhpmcounter3h, value); return 0;
-    case CSR_MHPMCOUNTER4H: write_csr(mhpmcounter4h, value); return 0;
-#endif
-    case CSR_MHPMEVENT3: write_csr(mhpmevent3, value); return 0;
-    case CSR_MHPMEVENT4: write_csr(mhpmevent4, value); return 0;
 #if !defined(__riscv_flen) && defined(PK_ENABLE_FP_EMULATION)
     case CSR_FRM: SET_FRM(value); return 0;
     case CSR_FFLAGS: SET_FFLAGS(value); return 0;

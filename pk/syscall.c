@@ -145,8 +145,8 @@ int sys_openat(int dirfd, const char* name, int flags, int mode)
       return PTR_ERR(file);
 
     int fd = file_dup(file);
+    file_decref(file); // counteract file_dup's file_incref
     if (fd < 0) {
-      file_decref(file);
       return -ENOMEM;
     }
 

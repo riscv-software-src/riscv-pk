@@ -554,7 +554,8 @@ static void init_early_alloc()
   current.mmap_max = current.brk_max = user_size;
 
   extern char _end;
-  first_free_page = ROUNDUP((uintptr_t)&_end, RISCV_PGSIZE);
+  volatile uintptr_t last_static_addr = (uintptr_t)&_end;
+  first_free_page = ROUNDUP(last_static_addr, RISCV_PGSIZE);
   free_pages = (mem_size - (first_free_page - MEM_START)) / RISCV_PGSIZE;
 }
 

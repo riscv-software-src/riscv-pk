@@ -30,7 +30,7 @@ static pte_t* root_page_table;
 
 static spinlock_t vm_lock = SPINLOCK_INIT;
 
-static uintptr_t first_free_page;
+static volatile uintptr_t first_free_page;
 static size_t next_free_page;
 static size_t free_pages;
 static size_t pages_promised;

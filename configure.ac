@@ -96,7 +96,7 @@ LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
-AC_SUBST([LIBS], ["-lgcc"])
+AC_SUBST(LIBS)
 AC_SUBST(WITH_ARCH)
 AC_SUBST(host_alias)
 

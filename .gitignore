@@ -9,3 +9,10 @@ build/
 autom4te.cache/
 *.swp
 *~
+
+/aclocal.m4
+/configure
+/config.h.in
+/scripts/config.guess
+/scripts/config.sub
+/scripts/install-sh

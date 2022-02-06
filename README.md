@@ -22,6 +22,7 @@ install path, and that the riscv-gnu-toolchain package is installed.
 Please note that building the binaries directly inside the source
 directory is not supported; you need to use a separate build directory.
 
+    $ autoreconf -fi
     $ mkdir build
     $ cd build
     $ ../configure --prefix=$RISCV --host=riscv64-unknown-elf

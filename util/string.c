@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__llvm__)
 // Don't let GCC pattern-match these functions' bodies into self-calls
 #pragma GCC optimize ("no-tree-loop-distribute-patterns")
 #endif

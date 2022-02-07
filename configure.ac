@@ -91,7 +91,7 @@ AS_IF([test "x$enable_print_device_tree" = "xyes"], [
   AC_DEFINE([PK_PRINT_DEVICE_TREE],,[Define if the DTS is to be displayed])
 ])
 
-CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -fno-delete-null-pointer-checks -fno-PIE"
+CFLAGS="-Wall -Werror -D__NO_INLINE__ -mcmodel=medany -O2 -std=gnu99 -Wno-unused -Wno-attributes -Wno-uninitialized -fno-delete-null-pointer-checks -fno-PIE"
 LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 
 AC_SUBST(CFLAGS)

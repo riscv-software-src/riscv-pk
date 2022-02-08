@@ -64,6 +64,5 @@ void do_panic(const char* s, ...)
 
 void kassert_fail(const char* s)
 {
-  register uintptr_t ra asm ("ra");
-  do_panic("assertion failed @ %p: %s\n", ra, s);
+  do_panic("assertion failed @ %p: %s\n", __builtin_return_address(0), s);
 }

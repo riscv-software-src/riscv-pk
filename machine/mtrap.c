@@ -77,7 +77,7 @@ static uintptr_t mcall_console_getchar()
   } else if (htif) {
     return htif_console_getchar();
   } else {
-    return '\0';
+    return (uintptr_t)-1;
   }
 }
 

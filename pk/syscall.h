@@ -31,6 +31,7 @@
 #define SYS_getgid 176
 #define SYS_getegid 177
 #define SYS_gettid 178
+#define SYS_sysinfo 179
 #define SYS_mmap 222
 #define SYS_munmap 215
 #define SYS_mremap 216

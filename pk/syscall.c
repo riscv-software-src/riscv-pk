@@ -639,6 +639,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_set_tid_address] = sys_stub_nosys,
     [SYS_set_robust_list] = sys_stub_nosys,
     [SYS_madvise] = sys_stub_nosys,
+    [SYS_sysinfo] = sys_stub_nosys,
   };
 
   const static void* old_syscall_table[] = {

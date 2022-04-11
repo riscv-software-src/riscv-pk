@@ -617,7 +617,6 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_munmap] = sys_munmap,
     [SYS_mremap] = sys_mremap,
     [SYS_mprotect] = sys_mprotect,
-    [SYS_prlimit64] = sys_stub_nosys,
     [SYS_rt_sigaction] = sys_rt_sigaction,
     [SYS_gettimeofday] = sys_gettimeofday,
     [SYS_times] = sys_times,
@@ -628,18 +627,9 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_getdents] = sys_getdents,
     [SYS_dup] = sys_dup,
     [SYS_dup3] = sys_dup3,
-    [SYS_readlinkat] = sys_stub_nosys,
     [SYS_rt_sigprocmask] = sys_stub_success,
-    [SYS_ioctl] = sys_stub_nosys,
     [SYS_clock_gettime] = sys_clock_gettime,
-    [SYS_getrusage] = sys_stub_nosys,
-    [SYS_getrlimit] = sys_stub_nosys,
-    [SYS_setrlimit] = sys_stub_nosys,
     [SYS_chdir] = sys_chdir,
-    [SYS_set_tid_address] = sys_stub_nosys,
-    [SYS_set_robust_list] = sys_stub_nosys,
-    [SYS_madvise] = sys_stub_nosys,
-    [SYS_sysinfo] = sys_stub_nosys,
   };
 
   const static void* old_syscall_table[] = {
@@ -661,7 +651,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     f = old_syscall_table[n - OLD_SYSCALL_THRESHOLD];
 
   if (!f)
-    panic("bad syscall #%ld!",n);
+    return sys_stub_nosys();
 
   f = (void*)pa2kva(f);
 

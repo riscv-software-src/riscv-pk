@@ -129,7 +129,9 @@ static int at_kfd(int dirfd)
   file_t* dir = file_get(dirfd);
   if (dir == NULL)
     return -1;
-  return dir->kfd;
+  int kfd = dir->kfd;
+  file_decref(dir);
+  return kfd;
 }
 
 int sys_openat(int dirfd, const char* name, int flags, int mode)

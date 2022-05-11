@@ -484,21 +484,8 @@ uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot)
   
       if (!(*pte & PTE_V)) {
         vmr_t* v = (vmr_t*)*pte;
-        if((v->prot ^ prot) & ~v->prot){
-          //TODO:look at file to find perms
-          res = -EACCES;
-          break;
-        }
         v->prot = prot;
       } else {
-        if (!(*pte & PTE_U) ||
-            ((prot & PROT_READ) && !(*pte & PTE_R)) ||
-            ((prot & PROT_WRITE) && !(*pte & PTE_W)) ||
-            ((prot & PROT_EXEC) && !(*pte & PTE_X))) {
-          //TODO:look at file to find perms
-          res = -EACCES;
-          break;
-        }
         *pte = pte_create(pte_ppn(*pte), prot_to_type(prot, 1));
       }
 

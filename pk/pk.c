@@ -183,10 +183,12 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
 void rest_of_boot_loader(uintptr_t kstack_top);
 
 asm ("\n\
+  .pushsection .text\n\
   .globl rest_of_boot_loader\n\
 rest_of_boot_loader:\n\
   mv sp, a0\n\
-  tail rest_of_boot_loader_2");
+  tail rest_of_boot_loader_2\n\
+  .popsection");
 
 void rest_of_boot_loader_2(uintptr_t kstack_top)
 {

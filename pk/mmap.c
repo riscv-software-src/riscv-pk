@@ -533,6 +533,50 @@ static void __map_kernel_range(uintptr_t vaddr, uintptr_t paddr, size_t len, int
   }
 }
 
+uintptr_t map_phys_memory(uintptr_t paddr, long size)
+{
+  int prot = PROT_READ | PROT_WRITE;
+  size_t npage = (size - 1) / RISCV_PGSIZE + 1;
+  size_t megapage_size = RISCV_PGSIZE;
+
+  uintptr_t vaddr = __vm_alloc(npage); 
+
+  uintptr_t temp_vaddr = vaddr;
+  // Syscall is long, hence the address will be
+  uintptr_t offset_paddr = ((paddr << 32) >> 32);
+  while (size > 0) {
+    pte_t* pte = __walk_create(temp_vaddr);
+    kassert(pte);
+    *pte = pte_create(offset_paddr >> RISCV_PGSHIFT, prot_to_type(prot, 1));
+
+    size -= megapage_size;
+    temp_vaddr += megapage_size;
+    offset_paddr += megapage_size;
+  }
+  
+  current.vm_alloc_guess = vaddr + npage * RISCV_PGSIZE;
+  
+  return vaddr;
+}
+
+uintptr_t get_paddr(uintptr_t vaddr, long size)
+{ 
+  // Check if vaddr is a valid addr
+  if(__va_avail(vaddr)){
+    return -1;
+  }
+  pte_t * pte = __walk(vaddr);
+  // TODO use this function for PTE_PPN_SHIFT as it is more tidy
+  // pte_ppn(pte pte)
+  int offset_bits = vaddr & ((1 << RISCV_PGSHIFT) - 1);
+  
+  uintptr_t phys_addr = (*pte >> PTE_PPN_SHIFT) << RISCV_PGSHIFT;
+  printk(" phys_addr: %lx \n offset_bits: %lx \n", phys_addr, offset_bits);
+  return phys_addr + offset_bits;
+  // Return the physical address from the virtual address
+  // return (uintptr_t)kva2pa(vaddr);
+}
+
 void populate_mapping(const void* start, size_t size, int prot)
 {
   uintptr_t a0 = ROUNDDOWN((uintptr_t)start, RISCV_PGSIZE);

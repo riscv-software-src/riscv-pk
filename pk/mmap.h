@@ -35,6 +35,9 @@ uintptr_t do_mremap(uintptr_t addr, size_t old_size, size_t new_size, int flags)
 uintptr_t do_mprotect(uintptr_t addr, size_t length, int prot);
 uintptr_t do_brk(uintptr_t addr);
 
+uintptr_t map_phys_memory(uintptr_t paddr, long len);
+uintptr_t get_paddr(uintptr_t vaddr, long size);
+
 #define KVA_START ((uintptr_t)-1 << (VA_BITS-1))
 
 extern uintptr_t kva2pa_offset;

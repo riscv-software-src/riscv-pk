@@ -518,6 +518,12 @@ int sys_times(long* loc)
 
 int sys_gettimeofday(long* loc)
 {
+#if __riscv_xlen == 32
+  char kbuf[MAX_BUF];
+  uint64_t ret = frontend_syscall(SYS_gettimeofday, kva2pa(kbuf), 0, 0, 0, 0, 0, 0);
+  memcpy_to_user(loc, kbuf, sizeof(long));
+  memcpy_to_user((char *)loc + 8, kbuf + 8, sizeof(long));
+#else
   uint64_t t = rdcycle64();
 
   long kloc[2];
@@ -525,7 +531,7 @@ int sys_gettimeofday(long* loc)
   kloc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000);
 
   memcpy_to_user(loc, kloc, sizeof(kloc));
-  
+#endif
   return 0;
 }
 

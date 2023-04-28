@@ -96,6 +96,7 @@ void load_elf(const char* fn, elf_info* info)
   }
 
   file_decref(file);
+  info->brk = ROUNDUP(info->brk_min, RISCV_PGSIZE);
   return;
 
 fail:

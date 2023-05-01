@@ -433,13 +433,8 @@ uintptr_t do_mmap(uintptr_t addr, size_t length, int prot, int flags, int fd, of
 uintptr_t __do_brk(size_t addr)
 {
   uintptr_t newbrk = addr;
-  if (addr < current.brk_min)
-    newbrk = current.brk_min;
-  else if (addr > current.brk_max)
-    newbrk = current.brk_max;
-
-  if (current.brk == 0)
-    current.brk = ROUNDUP(current.brk_min, RISCV_PGSIZE);
+  if (addr < current.brk_min || addr > current.brk_max)
+    return current.brk;
 
   uintptr_t newbrk_page = ROUNDUP(newbrk, RISCV_PGSIZE);
   if (current.brk > newbrk_page) {

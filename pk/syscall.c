@@ -632,6 +632,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_clock_gettime] = sys_clock_gettime,
     [SYS_chdir] = sys_chdir,
+    [SYS_getrandom] = sys_stub_nosys,
   };
 
   const static void* old_syscall_table[] = {

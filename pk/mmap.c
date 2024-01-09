@@ -327,6 +327,11 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
   }
 
   pte_t perms = pte_create(0, prot_to_type(prot, 1));
+
+  // allow shadow stack only allocate W permission
+  // maybe we should check insn which is shstk insn from epc
+  if (current.shstk)
+    return 0;
   if ((*pte & perms) != perms)
     return -1;
 

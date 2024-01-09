@@ -6,6 +6,7 @@
 #ifndef __ASSEMBLER__
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct {
   int phent;
@@ -24,6 +25,8 @@ typedef struct {
   uint64_t time0;
   uint64_t cycle0;
   uint64_t instret0;
+  bool shstk;
+  bool lpad;
 } elf_info;
 
 extern elf_info current;

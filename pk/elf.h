@@ -15,9 +15,11 @@
 #if __riscv_xlen == 64
 # define Elf_Ehdr Elf64_Ehdr
 # define Elf_Phdr Elf64_Phdr
+# define Elf_Note Elf64_Note
 #else
 # define Elf_Ehdr Elf32_Ehdr
 # define Elf_Phdr Elf32_Phdr
+# define Elf_Note Elf32_Note
 #endif
 
 #define ET_EXEC 2
@@ -27,6 +29,17 @@
 
 #define PT_LOAD 1
 #define PT_INTERP 3
+#define PT_LOOS 0x60000000
+#define PT_GNU_PROPERTY (PT_LOOS + 0x474e553)
+#define GNU_PROPERTY_TYPE_0_NAME "GNU"
+#define NOTE_NAME_SZ (sizeof(GNU_PROPERTY_TYPE_0_NAME))
+
+#define NT_GNU_PROPERTY_TYPE_0 5
+#define GNU_PROPERTY_ALIGN 4
+
+#define GUN_PROPERTY_RISCV_FEATURE_1_AND 0xc0000000
+#define GNU_PROPERTY_RISCV_FEATURE_1_ZICFILP (1 << 0)
+#define GNU_PROPERTY_RISCV_FEATURE_1_ZICFISS (1 << 1)
 
 #define AT_NULL   0
 #define AT_PHDR   3
@@ -142,5 +155,22 @@ typedef struct {
   uint64_t st_value;
   uint64_t st_size;
 } Elf64_Sym;
+
+typedef struct {
+  uint32_t n_namesz;
+  uint32_t n_descsz;
+  uint32_t n_type;
+} Elf32_Note;
+
+typedef struct {
+  uint32_t n_namesz;
+  uint32_t n_descsz;
+  uint32_t n_type;
+} Elf64_Note;
+
+struct gnu_property {
+  uint32_t pr_type;
+  uint32_t pr_datasz;
+};
 
 #endif

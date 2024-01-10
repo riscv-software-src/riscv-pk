@@ -29,6 +29,9 @@ trap_table:
   /* 13 */ .dc.a __trap_from_machine_mode
   /* 14 */ .dc.a bad_trap
   /* 15 */ .dc.a bad_trap
+  /* 16 */ .dc.a bad_trap
+  /* 17 */ .dc.a bad_trap
+  /* 18 */ .dc.a bad_trap
 
   .option norvc
   .section .text.init,"ax",@progbits

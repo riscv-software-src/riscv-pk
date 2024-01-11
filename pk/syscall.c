@@ -566,6 +566,31 @@ int sys_chdir(const char *path)
   return frontend_syscall(SYS_chdir, kva2pa(kbuf), 0, 0, 0, 0, 0, 0);
 }
 
+int sys_readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz)
+{
+  if (bufsiz > MAX_BUF)
+    return -ENOMEM;
+
+  const int kdirfd = at_kfd(dirfd);
+  if (kdirfd == -1)
+    return -EBADF;
+
+  char kpathname[MAX_BUF];
+  if (!strcpy_from_user(kpathname, pathname, MAX_BUF))
+    return -ENAMETOOLONG;
+  const size_t pathname_len = strlen(kpathname);
+
+  char kbuf[MAX_BUF];
+  const ssize_t ret = frontend_syscall(SYS_readlinkat, kdirfd, kva2pa(kpathname),
+                                       pathname_len + 1, kva2pa(kbuf), bufsiz, 0, 0);
+  if (ret < 0)
+    return ret;
+
+  if (ret > 0)
+    memcpy_to_user(buf, kbuf, ret);
+  return ret;
+}
+
 void sys_tgkill(int tgid, int tid, int sig)
 {
   // assume target is current thread
@@ -632,6 +657,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_clock_gettime] = sys_clock_gettime,
     [SYS_chdir] = sys_chdir,
+    [SYS_readlinkat] = sys_readlinkat,
   };
 
   const static void* old_syscall_table[] = {

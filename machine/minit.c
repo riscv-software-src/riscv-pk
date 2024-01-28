@@ -192,7 +192,6 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_uart16550(dtb);
   query_uart_litex(dtb);
   query_htif(dtb);
-  printm("bbl loader\r\n");
 
   hart_init();
   hls_init(0); // this might get called again from parse_config_string

@@ -9,13 +9,21 @@ _start:
 1:
   lbu a0, (s0)
   beqz a0, 1f
+#ifdef __riscv_e
+  li t0, SBI_CONSOLE_PUTCHAR
+#else
   li a7, SBI_CONSOLE_PUTCHAR
+#endif
   ecall
   add s0, s0, 1
   j 1b
 
 1:
+#ifdef __riscv_e
+  li t0, SBI_SHUTDOWN
+#else
   li a7, SBI_SHUTDOWN
+#endif
   ecall
 
   .data

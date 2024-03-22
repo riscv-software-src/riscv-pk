@@ -13,6 +13,11 @@
 
 typedef long (*syscall_t)(long, long, long, long, long, long, long);
 
+struct iovec {
+  void *iov_base;
+  size_t iov_len;
+};
+
 #define CLOCK_FREQ 1000000000
 
 #define MAX_BUF 512
@@ -566,6 +571,86 @@ int sys_chdir(const char *path)
   return frontend_syscall(SYS_chdir, kva2pa(kbuf), 0, 0, 0, 0, 0, 0);
 }
 
+int sys_readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz)
+{
+  if (bufsiz > MAX_BUF)
+    return -ENOMEM;
+
+  const int kdirfd = at_kfd(dirfd);
+  if (kdirfd == -1)
+    return -EBADF;
+
+  char kpathname[MAX_BUF];
+  if (!strcpy_from_user(kpathname, pathname, MAX_BUF))
+    return -ENAMETOOLONG;
+  const size_t pathname_len = strlen(kpathname);
+
+  char kbuf[MAX_BUF];
+  const ssize_t ret = frontend_syscall(SYS_readlinkat, kdirfd, kva2pa(kpathname),
+                                       pathname_len + 1, kva2pa(kbuf), bufsiz, 0, 0);
+  if (ret < 0)
+    return ret;
+
+  if (ret > 0)
+    memcpy_to_user(buf, kbuf, ret);
+  return ret;
+}
+
+ssize_t sys_readv(int fd, const struct iovec *iov, int iovcnt)
+{
+  if (iovcnt < 0)
+    return -EINVAL;
+  if (iov == NULL)
+    return -EFAULT;
+
+  file_t * const f = file_get(fd);
+  if (!f)
+    return -EBADF;
+
+  ssize_t ret = 0;
+  for (int cur_iovcnt = 0; cur_iovcnt < iovcnt; ++cur_iovcnt) {
+    struct iovec kiov;
+    memcpy_from_user(&kiov, iov + cur_iovcnt, sizeof(struct iovec));
+
+    // iov_len is too large to be represented in ssize_t
+    if (kiov.iov_len & (1ULL << (sizeof(kiov.iov_len) * 8 - 1))) {
+      ret = -EINVAL;
+      goto out_decref_f;
+    }
+
+    char *buf = kiov.iov_base;
+    for (size_t already_read_size = 0; already_read_size < kiov.iov_len; ) {
+      char kread_buf[MAX_BUF];
+      const size_t to_read_size = MIN(kiov.iov_len - already_read_size, sizeof(kread_buf));
+      const ssize_t read_res = file_read(f, kread_buf, to_read_size);
+      if (read_res < 0) {
+        ret = read_res;
+        goto out_decref_f;
+      }
+
+      memcpy_to_user(buf, kread_buf, read_res);
+
+      already_read_size += read_res;
+      if (read_res < to_read_size) {
+        ret += already_read_size;
+        goto out_decref_f;
+      }
+
+      buf += read_res;
+    }
+
+    ret += kiov.iov_len;
+    if (ret < 0) {  // ret overflowed
+      ret = -EINVAL;
+      goto out_decref_f;
+    }
+  }
+
+out_decref_f:
+  file_decref(f);
+  return ret;
+}
+
 void sys_tgkill(int tgid, int tid, int sig)
 {
   // assume target is current thread
@@ -632,6 +717,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_rt_sigprocmask] = sys_stub_success,
     [SYS_clock_gettime] = sys_clock_gettime,
     [SYS_chdir] = sys_chdir,
+    [SYS_readlinkat] = sys_readlinkat,
+    [SYS_readv] = sys_readv,
   };
 
   const static void* old_syscall_table[] = {

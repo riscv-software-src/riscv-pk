@@ -13,6 +13,7 @@
 
 elf_info current;
 long disabled_hart_mask;
+bool zicfilp_enabled;
 
 static void help()
 {
@@ -22,6 +23,7 @@ static void help()
   printk("  -h, --help            Print this help message\n");
   printk("  -p                    Disable on-demand program paging\n");
   printk("  -s                    Print cycles upon termination\n");
+  printk("  --zicfilp             Enable Zicfilp CFI mechanism for user program\n");
 
   shutdown(0);
 }
@@ -51,6 +53,11 @@ static void handle_option(const char* arg)
 
   if (strcmp(arg, "--randomize-mapping") == 0) {
     randomize_mapping = 1;
+    return;
+  }
+
+  if (strcmp(arg, "--zicfilp") == 0) {
+    zicfilp_enabled = true;
     return;
   }
 
@@ -177,6 +184,8 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   init_tf(&tf, current.entry, stack_top);
   __riscv_flush_icache();
   write_csr(sscratch, kstack_top);
+  if (zicfilp_enabled)
+    set_csr(senvcfg, SENVCFG_LPE);
   start_user(&tf);
 }
 

@@ -8,27 +8,30 @@
   .align 6
 trap_table:
 #define BAD_TRAP_VECTOR 0
-  .dc.a bad_trap
-  .dc.a pmp_trap
-  .dc.a illegal_insn_trap
-  .dc.a bad_trap
-  .dc.a misaligned_load_trap
-  .dc.a pmp_trap
-  .dc.a misaligned_store_trap
-  .dc.a pmp_trap
-  .dc.a bad_trap
-  .dc.a mcall_trap
-  .dc.a bad_trap
+  /* 00 */ .dc.a bad_trap
+  /* 01 */ .dc.a pmp_trap
+  /* 02 */ .dc.a illegal_insn_trap
+  /* 03 */ .dc.a bad_trap
+  /* 04 */ .dc.a misaligned_load_trap
+  /* 05 */ .dc.a pmp_trap
+  /* 06 */ .dc.a misaligned_store_trap
+  /* 07 */ .dc.a pmp_trap
+  /* 08 */ .dc.a bad_trap
+  /* 09 */ .dc.a mcall_trap
+  /* 10 */ .dc.a bad_trap
 #ifdef BBL_BOOT_MACHINE
-  .dc.a mcall_trap
+  /* 11 */ .dc.a mcall_trap
 #else
-  .dc.a bad_trap
+  /* 11 */ .dc.a bad_trap
 #endif /* BBL_BOOT_MACHINE */
-  .dc.a bad_trap
+  /* 12 */ .dc.a bad_trap
 #define TRAP_FROM_MACHINE_MODE_VECTOR 13
-  .dc.a __trap_from_machine_mode
-  .dc.a bad_trap
-  .dc.a bad_trap
+  /* 13 */ .dc.a __trap_from_machine_mode
+  /* 14 */ .dc.a bad_trap
+  /* 15 */ .dc.a bad_trap
+  /* 16 */ .dc.a bad_trap
+  /* 17 */ .dc.a bad_trap
+  /* 18 */ .dc.a bad_trap
 
   .option norvc
   .section .text.init,"ax",@progbits

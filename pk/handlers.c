@@ -90,6 +90,21 @@ static void handle_interrupt(trapframe_t* tf)
   clear_csr(sip, SIP_SSIP);
 }
 
+static void handle_software_check_fault(trapframe_t* tf)
+{
+  dump_tf(tf);
+
+  const uint64_t stval = read_csr(stval);
+  switch (stval) {
+    case LANDING_PAD_FAULT:
+      panic("Invalid landing pad!");
+      break;
+    default:
+      panic("Software check fault: unhandled stval: %d", stval);
+      break;
+  }
+}
+
 void handle_trap(trapframe_t* tf)
 {
   if ((intptr_t)tf->cause < 0)
@@ -110,6 +125,7 @@ void handle_trap(trapframe_t* tf)
     [CAUSE_MISALIGNED_STORE] = handle_misaligned_store,
     [CAUSE_LOAD_PAGE_FAULT] = handle_fault_load,
     [CAUSE_STORE_PAGE_FAULT] = handle_fault_store,
+    [CAUSE_SOFTWARE_CHECK_FAULT] = handle_software_check_fault,
   };
 
   kassert(tf->cause < ARRAY_SIZE(trap_handlers) && trap_handlers[tf->cause]);

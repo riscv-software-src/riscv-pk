@@ -76,6 +76,8 @@ void load_elf(const char* fn, elf_info* info)
       panic("not a statically linked ELF program");
     }
     if(ph[i].p_type == PT_LOAD && ph[i].p_memsz) {
+      if (ph[i].p_filesz > ph[i].p_memsz)
+        goto fail;
       uintptr_t prepad = ph[i].p_vaddr % RISCV_PGSIZE;
       uintptr_t vaddr = ph[i].p_vaddr + bias;
       if (vaddr + ph[i].p_memsz > info->brk_min)

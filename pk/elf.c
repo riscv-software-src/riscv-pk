@@ -89,12 +89,12 @@ void load_elf(const char* fn, elf_info* info)
           goto fail;
       }
       memset_user((void*)vaddr - prepad, 0, prepad);
-      if (!(prot & PROT_WRITE))
-        if (do_mprotect(vaddr - prepad, ph[i].p_filesz + prepad, prot))
-          goto fail;
       size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad;
       if (ph[i].p_memsz > mapped)
         if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, prot, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped)
+          goto fail;
+      if (!(prot & PROT_WRITE))
+        if (do_mprotect(vaddr - prepad, ph[i].p_memsz + prepad, prot))
           goto fail;
     }
   }

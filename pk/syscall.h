@@ -59,6 +59,7 @@
 #define SYS_madvise 233
 #define SYS_statx 291
 #define SYS_readv 65
+#define SYS_riscv_hwprobe 258
 
 #define OLD_SYSCALL_THRESHOLD 1024
 #define SYS_open 1024

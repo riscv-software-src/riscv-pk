@@ -17,6 +17,7 @@
 uintptr_t mem_size;
 volatile uint64_t* mtime;
 volatile uint32_t* plic_priorities;
+uint64_t misa_image;
 size_t plic_ndevs;
 void* kernel_start;
 void* kernel_end;
@@ -125,6 +126,7 @@ static void memory_init()
 
 static void hart_init()
 {
+  misa_image = read_csr(misa);
   mstatus_init();
   fp_init();
 #ifndef BBL_BOOT_MACHINE

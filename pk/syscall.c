@@ -8,6 +8,7 @@
 #include "mmap.h"
 #include "boot.h"
 #include "usermem.h"
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 
@@ -662,6 +663,55 @@ int sys_getdents(int fd, void* dirbuf, int count)
   return 0; //stub
 }
 
+// Partial implementation on riscv_hwprobe from Linux
+// See: https://www.kernel.org/doc/html/latest/arch/riscv/hwprobe.html
+
+#define RISCV_HWPROBE_KEY_IMA_EXT_0 4
+#define     RISCV_HWPROBE_IMA_FD        (1 << 0)
+#define     RISCV_HWPROBE_IMA_C         (1 << 1)
+#define     RISCV_HWPROBE_IMA_V         (1 << 2)
+#define     RISCV_HWPROBE_EXT_ZBA       (1 << 3)
+#define     RISCV_HWPROBE_EXT_ZBB       (1 << 4)
+#define     RISCV_HWPROBE_EXT_ZBS       (1 << 5)
+#define     RISCV_HWPROBE_EXT_ZICBOZ    (1 << 6)
+
+struct riscv_hwprobe {
+    int64_t  key;
+    uint64_t value;
+};
+
+long sys_riscv_hwprobe(struct riscv_hwprobe* probes, size_t count, size_t reserved_cpusetsize, void* reserved_cpuset, unsigned int reserved_flags)
+{
+  if ((reserved_cpusetsize != 0) || (reserved_cpuset != NULL) || (reserved_flags != 0)) {
+    return -EBADF;
+  }
+
+  for (size_t i=0; i < count; i++) {
+    struct riscv_hwprobe kv;
+    memcpy_from_user(&kv, &probes[i], sizeof(kv));
+
+    if (kv.key == RISCV_HWPROBE_KEY_IMA_EXT_0) {
+        kv.value = 0;
+        #define supports_extension(letter) (misa_image & (1 << (letter - 'A')))
+
+        if (supports_extension('C'))
+            kv.value |= RISCV_HWPROBE_IMA_C;
+        if (supports_extension('V'))
+            kv.value |= RISCV_HWPROBE_IMA_V;
+
+        #undef supports_extension
+    } else {
+        // "If a key is unknown to the kernel, its key field will be cleared to -1, and its value set to 0"
+        kv.key = -1;
+        kv.value = 0;
+    }
+
+    memcpy_to_user(&probes[i], &kv, sizeof(kv));
+  }
+
+  return 0;
+}
+
 static int sys_stub_success()
 {
   return 0;
@@ -719,6 +769,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_chdir] = sys_chdir,
     [SYS_readlinkat] = sys_readlinkat,
     [SYS_readv] = sys_readv,
+    [SYS_riscv_hwprobe] = sys_riscv_hwprobe,
   };
 
   const static void* old_syscall_table[] = {

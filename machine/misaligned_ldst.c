@@ -116,12 +116,12 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 # if __riscv_xlen >= 64
   else if ((insn & MASK_C_SD) == MATCH_C_SD)
     len = 8, val.intx = GET_RS2S(insn, regs);
-  else if ((insn & MASK_C_SDSP) == MATCH_C_SDSP && ((insn >> SH_RD) & 0x1f))
+  else if ((insn & MASK_C_SDSP) == MATCH_C_SDSP)
     len = 8, val.intx = GET_RS2C(insn, regs);
 # endif
   else if ((insn & MASK_C_SW) == MATCH_C_SW)
     len = 4, val.intx = GET_RS2S(insn, regs);
-  else if ((insn & MASK_C_SWSP) == MATCH_C_SWSP && ((insn >> SH_RD) & 0x1f))
+  else if ((insn & MASK_C_SWSP) == MATCH_C_SWSP)
     len = 4, val.intx = GET_RS2C(insn, regs);
 # ifdef PK_ENABLE_FP_EMULATION
   else if ((insn & MASK_C_FSD) == MATCH_C_FSD)

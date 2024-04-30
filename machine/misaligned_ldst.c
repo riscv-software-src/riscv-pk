@@ -10,6 +10,7 @@
 union byte_array {
   uint8_t bytes[8];
   uintptr_t intx;
+  uint16_t int16;
   uint32_t int32;
   uint64_t int64;
 };
@@ -36,6 +37,8 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     fp = 1, len = 8;
   else if ((insn & MASK_FLW) == MATCH_FLW)
     fp = 1, len = 4;
+  else if ((insn & MASK_FLH) == MATCH_FLH)
+    fp = 1, len = 2;
 #endif
   else if ((insn & MASK_LH) == MATCH_LH)
     len = 2, shift = 8*(sizeof(uintptr_t) - len);
@@ -83,8 +86,10 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 #endif
   else if (len == 8)
     SET_F64_RD(insn, regs, val.int64);
-  else
+  else if (len == 4)
     SET_F32_RD(insn, regs, val.int32);
+  else
+    SET_F32_RD(insn, regs, val.int16 | 0xffff0000U);
 
   write_csr(mepc, npc);
 }
@@ -109,6 +114,8 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     len = 8, val.int64 = GET_F64_RS2(insn, regs);
   else if ((insn & MASK_FSW) == MATCH_FSW)
     len = 4, val.intx = GET_F32_RS2(insn, regs);
+  else if ((insn & MASK_FSH) == MATCH_FSH)
+    len = 2, val.intx = GET_F32_RS2(insn, regs);
 #endif
   else if ((insn & MASK_SH) == MATCH_SH)
     len = 2;

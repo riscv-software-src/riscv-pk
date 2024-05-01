@@ -34,6 +34,7 @@ machine_c_srcs = \
   uart_litex.c \
   finisher.c \
   misaligned_ldst.c \
+  misaligned_vec_ldst.c \
   flush_icache.c \
 
 machine_asm_srcs = \

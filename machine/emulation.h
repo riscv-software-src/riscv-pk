@@ -17,6 +17,7 @@ void redirect_trap(uintptr_t epc, uintptr_t mstatus, uintptr_t badaddr);
 DECLARE_EMULATION_FUNC(truly_illegal_insn);
 DECLARE_EMULATION_FUNC(emulate_rvc_0);
 DECLARE_EMULATION_FUNC(emulate_rvc_2);
+DECLARE_EMULATION_FUNC(misaligned_vec_ldst);
 
 #define SH_RD 7
 #define SH_RS1 15

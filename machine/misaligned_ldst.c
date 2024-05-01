@@ -44,6 +44,13 @@ void misaligned_load_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
     len = 2, shift = 8*(sizeof(uintptr_t) - len);
   else if ((insn & MASK_LHU) == MATCH_LHU)
     len = 2;
+#ifdef __riscv_vector
+  else if ((insn & (MASK_VLE8_V & 0x707f)) == (MATCH_VLE8_V & 0x707f)
+           || (insn & (MASK_VLE16_V & 0x707f)) == (MATCH_VLE16_V & 0x707f)
+           || (insn & (MASK_VLE32_V & 0x707f)) == (MATCH_VLE32_V & 0x707f)
+           || (insn & (MASK_VLE64_V & 0x707f)) == (MATCH_VLE64_V & 0x707f))
+    return misaligned_vec_ldst(regs, mcause, mepc, mstatus, insn);
+#endif
 #ifdef __riscv_compressed
 # if __riscv_xlen >= 64
   else if ((insn & MASK_C_LD) == MATCH_C_LD)
@@ -119,6 +126,13 @@ void misaligned_store_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
 #endif
   else if ((insn & MASK_SH) == MATCH_SH)
     len = 2;
+#ifdef __riscv_vector
+  else if ((insn & (MASK_VSE8_V & 0x707f)) == (MATCH_VSE8_V & 0x707f)
+           || (insn & (MASK_VSE16_V & 0x707f)) == (MATCH_VSE16_V & 0x707f)
+           || (insn & (MASK_VSE32_V & 0x707f)) == (MATCH_VSE32_V & 0x707f)
+           || (insn & (MASK_VSE64_V & 0x707f)) == (MATCH_VSE64_V & 0x707f))
+    return misaligned_vec_ldst(regs, mcause, mepc, mstatus, insn);
+#endif
 #ifdef __riscv_compressed
 # if __riscv_xlen >= 64
   else if ((insn & MASK_C_SD) == MATCH_C_SD)

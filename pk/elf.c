@@ -38,13 +38,13 @@ void load_elf(const char* fn, elf_info* info)
     goto fail;
 
 #if __riscv_xlen == 64
-  assert(IS_ELF64(eh));
+  kassert(IS_ELF64(eh));
 #else
-  assert(IS_ELF32(eh));
+  kassert(IS_ELF32(eh));
 #endif
 
 #ifndef __riscv_compressed
-  assert(!(eh.e_flags & EF_RISCV_RVC));
+  kassert(!(eh.e_flags & EF_RISCV_RVC));
 #endif
 
   size_t phdr_size = eh.e_phnum * sizeof(Elf_Phdr);

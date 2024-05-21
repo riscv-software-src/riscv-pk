@@ -156,60 +156,68 @@ DECLARE_EMULATION_FUNC(truly_illegal_insn)
 
 static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result)
 {
-  uintptr_t counteren = -1;
+  // mcounteren and scounteren are set to all ones during boot.
+  // We read them here to determine whether the corresponding counter exists
+  // (can be read without illegal instruction exception) in S or U mode.
+  // If the corresponding counteren bit is SET, the counter exists and the CSR
+  // instruction should NOT cause the illegal-instruction exception. Thus, we
+  // are NOT expected to emulate this CSR instruction here.
+  // For short, emulate the CSR read only if counteren is NOT set.
+  uintptr_t counteren = read_csr(mcounteren);
+  // U-mode is affected by both mcounteren and scounteren.
   if (EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U)
-    counteren = read_csr(scounteren);
+    counteren &= read_csr(scounteren);
 
   switch (num)
   {
     case CSR_CYCLE:
-      if (!((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
         return -1;
       *result = read_csr(mcycle);
       return 0;
     case CSR_TIME:
-      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime;
       return 0;
     case CSR_INSTRET:
-      if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
         return -1;
       *result = read_csr(minstret);
       return 0;
     case CSR_MHPMCOUNTER3:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
+      if (((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter3);
       return 0;
     case CSR_MHPMCOUNTER4:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
+      if (((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter4);
       return 0;
 #if __riscv_xlen == 32
     case CSR_CYCLEH:
-      if (!((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_CYCLE - CSR_CYCLE)) & 1))
         return -1;
       *result = read_csr(mcycleh);
       return 0;
     case CSR_TIMEH:
-      if (!((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_TIME - CSR_CYCLE)) & 1))
         return -1;
       *result = *mtime >> 32;
       return 0;
     case CSR_INSTRETH:
-      if (!((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
+      if (((counteren >> (CSR_INSTRET - CSR_CYCLE)) & 1))
         return -1;
       *result = read_csr(minstreth);
       return 0;
     case CSR_MHPMCOUNTER3H:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
+      if (((counteren >> (3 + CSR_MHPMCOUNTER3 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter3h);
       return 0;
     case CSR_MHPMCOUNTER4H:
-      if (!((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
+      if (((counteren >> (3 + CSR_MHPMCOUNTER4 - CSR_MHPMCOUNTER3)) & 1))
         return -1;
       *result = read_csr(mhpmcounter4h);
       return 0;

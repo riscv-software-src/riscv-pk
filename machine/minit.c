@@ -73,19 +73,21 @@ static void delegate_traps()
     return;
 
   uintptr_t interrupts = MIP_SSIP | MIP_STIP | MIP_SEIP;
-  uintptr_t exceptions =
+  uintptr_t mandatorily_delegable_exceptions =
     (1U << CAUSE_MISALIGNED_FETCH) |
     (1U << CAUSE_FETCH_PAGE_FAULT) |
     (1U << CAUSE_BREAKPOINT) |
     (1U << CAUSE_LOAD_PAGE_FAULT) |
     (1U << CAUSE_STORE_PAGE_FAULT) |
-    (1U << CAUSE_USER_ECALL) |
+    (1U << CAUSE_USER_ECALL);
+  uintptr_t exceptions =
+    mandatorily_delegable_exceptions |
     (1U << CAUSE_SOFTWARE_CHECK_FAULT);
 
   write_csr(mideleg, interrupts);
   write_csr(medeleg, exceptions);
   assert((read_csr(mideleg) & interrupts) == interrupts);
-  assert(read_csr(medeleg) == exceptions);
+  assert((~read_csr(medeleg) & mandatorily_delegable_exceptions) == 0);
 }
 
 static void fp_init()

@@ -80,8 +80,13 @@ static void handle_fault_store(trapframe_t* tf)
 
 static void handle_syscall(trapframe_t* tf)
 {
+#ifdef __riscv_e
+  tf->gpr[10] = do_syscall(tf->gpr[10], tf->gpr[11], tf->gpr[12], tf->gpr[13],
+                           tf->gpr[14], tf->gpr[15], tf->gpr[5]);
+#else
   tf->gpr[10] = do_syscall(tf->gpr[10], tf->gpr[11], tf->gpr[12], tf->gpr[13],
                            tf->gpr[14], tf->gpr[15], tf->gpr[17]);
+#endif
   tf->epc += 4;
 }
 

@@ -34,6 +34,9 @@ by setting `--host=riscv64-unknown-linux-gnu`.
 By default, 64-bit (RV64) versions of `pk` and `bbl` are built.  To
 built 32-bit (RV32) versions, supply a `--with-arch=rv32i` flag to the
 configure command.
+To process RVC binaries, supply a `--with-arch=rv32ic` flag, because the
+emulation code (floating point and miss-aligned load and store) is different in
+the RVC case.
 
 The `install` step installs 64-bit build products into a directory
 matching your host (e.g. `$RISCV/riscv64-unknown-elf`). 32-bit versions 

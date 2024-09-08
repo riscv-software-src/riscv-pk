@@ -32,9 +32,9 @@ Alternatively, the GNU/Linux toolchain may be used to build this package,
 by setting `--host=riscv64-unknown-linux-gnu`.
 
 By default, 64-bit (RV64) versions of `pk` and `bbl` are built.  To
-built 32-bit (RV32) versions, supply a `--with-arch=rv32i` flag to the
+built 32-bit (RV32) versions, supply a `--with-arch=rv32i_zicsr_zifencei` flag to the
 configure command.
-To process RVC binaries, supply a `--with-arch=rv32ic` flag, because the
+To process RVC binaries, supply a `--with-arch=rv32ic_zicsr_zifencei` flag, because the
 emulation code (floating point and miss-aligned load and store) is different in
 the RVC case.
 

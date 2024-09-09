@@ -128,6 +128,7 @@ trap_vector:
   csrrw t0, mscratch, x0           # t0 <- user sp
   STORE a4,14*REGBYTES(sp)
   STORE a5,15*REGBYTES(sp)
+#ifndef __riscv_e
   STORE a6,16*REGBYTES(sp)
   STORE a7,17*REGBYTES(sp)
   STORE s2,18*REGBYTES(sp)
@@ -144,6 +145,7 @@ trap_vector:
   STORE t4,29*REGBYTES(sp)
   STORE t5,30*REGBYTES(sp)
   STORE t6,31*REGBYTES(sp)
+#endif
   STORE t0, 2*REGBYTES(sp)         # sp
 
 #ifndef __riscv_flen
@@ -178,6 +180,7 @@ restore_regs:
   LOAD a3,13*REGBYTES(sp)
   LOAD a4,14*REGBYTES(sp)
   LOAD a5,15*REGBYTES(sp)
+#ifndef __riscv_e
   LOAD a6,16*REGBYTES(sp)
   LOAD a7,17*REGBYTES(sp)
   LOAD s2,18*REGBYTES(sp)
@@ -194,6 +197,7 @@ restore_regs:
   LOAD t4,29*REGBYTES(sp)
   LOAD t5,30*REGBYTES(sp)
   LOAD t6,31*REGBYTES(sp)
+#endif
   LOAD sp, 2*REGBYTES(sp)
   mret
 
@@ -240,6 +244,7 @@ do_reset:
   li x13, 0
   li x14, 0
   li x15, 0
+#ifndef __riscv_e
   li x16, 0
   li x17, 0
   li x18, 0
@@ -256,6 +261,7 @@ do_reset:
   li x29, 0
   li x30, 0
   li x31, 0
+#endif
   csrw mscratch, x0
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__

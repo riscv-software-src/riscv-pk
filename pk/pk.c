@@ -122,6 +122,8 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
     write_csr(ssp, shadow_stack_top);
   }
 
+  set_csr(senvcfg, SENVCFG_CBCFE | INSERT_FIELD(0, SENVCFG_CBIE, 1));
+
   // copy phdrs to user stack
   size_t stack_top = current.stack_top - current.phdr_size;
   memcpy_to_user((void*)stack_top, (void*)current.phdr, current.phdr_size);

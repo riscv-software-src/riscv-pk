@@ -246,7 +246,7 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
   mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
-  write_csr(menvcfg, MENVCFG_SSE);
+  write_csr(menvcfg, MENVCFG_SSE | MENVCFG_CBCFE | INSERT_FIELD(0, MENVCFG_CBIE, 1));
 #ifndef __riscv_flen
   uintptr_t *p_fcsr = (uintptr_t*)(MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE); // the x0's save slot
   *p_fcsr = 0;

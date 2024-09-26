@@ -99,6 +99,9 @@ static void handle_software_check_fault(trapframe_t* tf)
     case LANDING_PAD_FAULT:
       panic("Invalid landing pad!");
       break;
+    case SHADOW_STACK_FAULT:
+      panic("Shadow stack comparison failed!");
+      break;
     default:
       panic("Software check fault: unhandled stval: %d", stval);
       break;

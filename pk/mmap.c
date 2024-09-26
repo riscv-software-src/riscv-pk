@@ -276,7 +276,7 @@ static inline pte_t prot_to_type(int prot, int user)
 {
   pte_t pte = 0;
   if (prot & PROT_READ) pte |= PTE_R | PTE_A;
-  if (prot & PROT_WRITE) pte |= PTE_W | PTE_D;
+  if (prot & PROT_WRITE) pte |= PTE_W | PTE_A | PTE_D;
   if (prot & PROT_EXEC) pte |= PTE_X | PTE_A;
   if (pte == 0) pte = PTE_R;
   if (user) pte |= PTE_U;
@@ -327,7 +327,8 @@ static int __handle_page_fault(uintptr_t vaddr, int prot)
   }
 
   pte_t perms = pte_create(0, prot_to_type(prot, 1));
-  if ((*pte & perms) != perms)
+  pte_t pte_perms = *pte | ((*pte & PTE_W) ? PTE_R : 0); // loads to shadow-stack pages are permitted
+  if ((pte_perms & perms) != perms)
     return -1;
 
   return 0;

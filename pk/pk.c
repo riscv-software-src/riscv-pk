@@ -13,7 +13,8 @@
 
 elf_info current;
 long disabled_hart_mask;
-bool zicfilp_enabled;
+static bool zicfilp_enabled;
+static bool zicfiss_enabled;
 
 static void help()
 {
@@ -24,6 +25,7 @@ static void help()
   printk("  -p                    Disable on-demand program paging\n");
   printk("  -s                    Print cycles upon termination\n");
   printk("  --zicfilp             Enable Zicfilp CFI mechanism for user program\n");
+  printk("  --zicfiss             Enable Zicfiss CFI mechanism for user program\n");
 
   shutdown(0);
 }
@@ -58,6 +60,11 @@ static void handle_option(const char* arg)
 
   if (strcmp(arg, "--zicfilp") == 0) {
     zicfilp_enabled = true;
+    return;
+  }
+
+  if (strcmp(arg, "--zicfiss") == 0) {
+    zicfiss_enabled = true;
     return;
   }
 
@@ -104,6 +111,16 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
   size_t stack_bottom = __do_mmap(current.mmap_max - stack_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
   kassert(stack_bottom != (uintptr_t)-1);
   current.stack_top = stack_bottom + stack_size;
+
+  if (zicfiss_enabled) {
+    size_t shadow_stack_size = MAX(RISCV_PGSIZE, stack_size >> 5);
+    size_t shadow_stack_bottom = __do_mmap(stack_bottom - shadow_stack_size, shadow_stack_size, PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, 0, 0);
+    kassert(shadow_stack_bottom != (uintptr_t)-1);
+    size_t shadow_stack_top = shadow_stack_bottom + shadow_stack_size;
+
+    set_csr(senvcfg, SENVCFG_SSE);
+    write_csr(ssp, shadow_stack_top);
+  }
 
   // copy phdrs to user stack
   size_t stack_top = current.stack_top - current.phdr_size;

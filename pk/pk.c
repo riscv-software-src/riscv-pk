@@ -119,7 +119,7 @@ static void run_loaded_program(size_t argc, char** argv, uintptr_t kstack_top)
     size_t shadow_stack_top = shadow_stack_bottom + shadow_stack_size;
 
     set_csr(senvcfg, SENVCFG_SSE);
-    write_csr(ssp, shadow_stack_top);
+    asm volatile ("csrw %0, %1" :: "I" (CSR_SSP), "r" (shadow_stack_top) : "memory");
   }
 
   set_csr(senvcfg, SENVCFG_CBCFE | INSERT_FIELD(0, SENVCFG_CBIE, 1));

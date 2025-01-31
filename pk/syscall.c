@@ -518,7 +518,7 @@ int sys_times(long* loc)
   kloc[0] = t / (CLOCK_FREQ / 1000000);
 
   memcpy_to_user(loc, kloc, sizeof(kloc));
-  
+
   return 0;
 }
 
@@ -531,7 +531,7 @@ int sys_gettimeofday(long* loc)
   kloc[1] = (t % CLOCK_FREQ) / (CLOCK_FREQ / 1000000);
 
   memcpy_to_user(loc, kloc, sizeof(kloc));
-  
+
   return 0;
 }
 
@@ -770,6 +770,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_readlinkat] = sys_readlinkat,
     [SYS_readv] = sys_readv,
     [SYS_riscv_hwprobe] = sys_riscv_hwprobe,
+    [SYS_futex] = sys_stub_success,
   };
 
   const static void* old_syscall_table[] = {

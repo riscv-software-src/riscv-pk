@@ -25,16 +25,27 @@ register long tp asm("tp");
   asm volatile ("1: auipc %0, %%pcrel_hi(put_f32_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(value), "r"(offset) : "t0"); })
 # define init_fp_reg(i) SET_F32_REG((i) << 3, 3, 0, 0)
 # define GET_F64_REG(insn, pos, regs) ({ \
-  register uintptr_t value asm("a0") = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
-  uintptr_t tmp; \
-  asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %1; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp), "+&r"(value) :: "t0"); \
-  sizeof(uintptr_t) == 4 ? *(int64_t*)value : (int64_t)value; })
+  uintptr_t offset = SHIFT_RIGHT(insn, (pos)-3) & 0xf8, tmp; \
+  int64_t value; \
+  if (sizeof(uintptr_t) == 4) { \
+    register int64_t* a0 asm("a0") = &value; \
+    asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp), "=m"(value) : "r"(offset), "r"(a0) : "t0"); \
+  } else { \
+    register int64_t a0 asm("a0") = offset; \
+    asm ("1: auipc %0, %%pcrel_hi(get_f64_reg); add %0, %0, %1; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp), "+&r"(a0) :: "t0"); \
+    value = a0; \
+  } \
+  value; })
 # define SET_F64_REG(insn, pos, regs, val) ({ \
-  uint64_t __val = (val); \
-  register uintptr_t value asm("a0") = sizeof(uintptr_t) == 4 ? (uintptr_t)&__val : (uintptr_t)__val; \
-  uintptr_t offset = SHIFT_RIGHT(insn, (pos)-3) & 0xf8; \
-  uintptr_t tmp; \
-  asm volatile ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(value), "r"(offset) : "t0"); })
+  uintptr_t offset = SHIFT_RIGHT(insn, (pos)-3) & 0xf8, tmp; \
+  if (sizeof(uintptr_t) == 4) { \
+    uint64_t __val = (val); \
+    register uint64_t* a0 asm("a0") = &__val; \
+    asm volatile ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(a0), "r"(offset), "m"(__val) : "t0"); \
+  } else { \
+    register uintptr_t a0 asm("a0") = (uintptr_t)(val); \
+    asm volatile ("1: auipc %0, %%pcrel_hi(put_f64_reg); add %0, %0, %2; jalr t0, %0, %%pcrel_lo(1b)" : "=&r"(tmp) : "r"(a0), "r"(offset) : "t0"); \
+  } })
 # define GET_FCSR() read_csr(fcsr)
 # define SET_FCSR(value) write_csr(fcsr, (value))
 # define GET_FRM() read_csr(frm)

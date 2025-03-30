@@ -19,6 +19,7 @@
   STORE  x13,13*REGBYTES(x2)
   STORE  x14,14*REGBYTES(x2)
   STORE  x15,15*REGBYTES(x2)
+#ifndef __riscv_e
   STORE  x16,16*REGBYTES(x2)
   STORE  x17,17*REGBYTES(x2)
   STORE  x18,18*REGBYTES(x2)
@@ -35,18 +36,19 @@
   STORE  x29,29*REGBYTES(x2)
   STORE  x30,30*REGBYTES(x2)
   STORE  x31,31*REGBYTES(x2)
+#endif
 
   # get sr, epc, badvaddr, cause
   csrrw  t0,sscratch,x0
   csrr   s0,sstatus
   csrr   t1,sepc
   csrr   t2,stval
-  csrr   t3,scause
+  csrr   s1,scause
   STORE  t0,2*REGBYTES(x2)
   STORE  s0,32*REGBYTES(x2)
   STORE  t1,33*REGBYTES(x2)
   STORE  t2,34*REGBYTES(x2)
-  STORE  t3,35*REGBYTES(x2)
+  STORE  s1,35*REGBYTES(x2)
 1:
   .endm
 
@@ -91,6 +93,7 @@ start_user:
   LOAD  x13,13*REGBYTES(a0)
   LOAD  x14,14*REGBYTES(a0)
   LOAD  x15,15*REGBYTES(a0)
+#ifndef __riscv_e
   LOAD  x16,16*REGBYTES(a0)
   LOAD  x17,17*REGBYTES(a0)
   LOAD  x18,18*REGBYTES(a0)
@@ -107,6 +110,7 @@ start_user:
   LOAD  x29,29*REGBYTES(a0)
   LOAD  x30,30*REGBYTES(a0)
   LOAD  x31,31*REGBYTES(a0)
+#endif
   # restore a0 last
   LOAD  x10,10*REGBYTES(a0)
 

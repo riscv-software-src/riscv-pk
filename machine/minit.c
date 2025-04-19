@@ -191,6 +191,7 @@ static void wake_harts()
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)
 {
+  mstatus_init();
   // Confirm console as early as possible
   query_uart(dtb);
   query_uart16550(dtb);

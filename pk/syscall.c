@@ -509,6 +509,27 @@ long sys_time(long* loc)
   return t;
 }
 
+ssize_t sys_getrandom(void *buf, size_t buflen, unsigned int flags)
+{
+  size_t buflen0 = buflen;
+
+  // the following is intentionally not random; it is intended to be
+  // deterministic for repeatability on an otherwise deterministic machine
+  for (uint64_t r64 = rdcycle64(); ; ) {
+    r64 = r64 * 6364136223846793005 + 1442695040888963407; // knuth
+
+    memcpy_to_user(buf, &r64, MIN(buflen, sizeof(r64)));
+
+    if (buflen <= sizeof(r64))
+      break;
+
+    buf += sizeof(r64);
+    buflen -= sizeof(r64);
+  }
+
+  return buflen0;
+}
+
 int sys_times(long* loc)
 {
   uint64_t t = rdcycle64();
@@ -771,6 +792,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, unsigned l
     [SYS_readv] = sys_readv,
     [SYS_riscv_hwprobe] = sys_riscv_hwprobe,
     [SYS_futex] = sys_stub_success,
+    [SYS_getrandom] = sys_getrandom,
   };
 
   const static void* old_syscall_table[] = {

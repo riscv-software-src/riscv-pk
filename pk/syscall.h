@@ -61,6 +61,7 @@
 #define SYS_readv 65
 #define SYS_riscv_hwprobe 258
 #define SYS_futex 98
+#define SYS_getrandom 278
 
 #define OLD_SYSCALL_THRESHOLD 1024
 #define SYS_open 1024

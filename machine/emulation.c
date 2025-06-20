@@ -284,6 +284,7 @@ DECLARE_EMULATION_FUNC(emulate_system_opcode)
     case 5: new_csr_val = rs1_num; do_write = 1; break;
     case 6: new_csr_val = csr_val | rs1_num; break;
     case 7: new_csr_val = csr_val & ~rs1_num; break;
+    default: __builtin_unreachable();
   }
 
   if (do_write && emulate_write_csr(csr_num, new_csr_val, mstatus))

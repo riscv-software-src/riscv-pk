@@ -74,7 +74,6 @@ static void delegate_traps()
 
   uintptr_t interrupts = MIP_SSIP | MIP_STIP | MIP_SEIP;
   uintptr_t mandatorily_delegable_exceptions =
-    (1U << CAUSE_MISALIGNED_FETCH) |
     (1U << CAUSE_FETCH_PAGE_FAULT) |
     (1U << CAUSE_BREAKPOINT) |
     (1U << CAUSE_LOAD_PAGE_FAULT) |
@@ -82,6 +81,7 @@ static void delegate_traps()
     (1U << CAUSE_USER_ECALL);
   uintptr_t exceptions =
     mandatorily_delegable_exceptions |
+    (1U << CAUSE_MISALIGNED_FETCH) |
     (1U << CAUSE_SOFTWARE_CHECK_FAULT);
 
   write_csr(mideleg, interrupts);
